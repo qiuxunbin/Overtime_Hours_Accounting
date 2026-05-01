@@ -88,6 +88,10 @@
       "description": "所属项目名称",
       "maxLength": 50
     },
+    "project_id": {
+      "bsonType": "string",
+      "description": "关联 project-config._id"
+    },
     "settled": {
       "bsonType": "bool",
       "description": "是否已结算",

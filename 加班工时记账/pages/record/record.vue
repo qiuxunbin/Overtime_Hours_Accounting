@@ -69,10 +69,15 @@
 			</view>
 
 			<!-- 项目名称 -->
-			<view class="field-row">
+			<view class="field-row" @tap="showProjectSelector">
 				<text class="field-row__label">项目</text>
 				<view class="field-row__right">
-					<input class="project-input" type="text" v-model="projectName" placeholder="选填" placeholder-style="color: #CCCCCC; font-size: 14px;" />
+					<view class="project-tag" v-if="selectedProject" :style="{ background: selectedProject.color + '20' }">
+						<view class="project-tag__dot" :style="{ background: selectedProject.color }"></view>
+						<text class="project-tag__text" :style="{ color: selectedProject.color }">{{ selectedProject.name }}</text>
+					</view>
+					<text class="field-row__value" v-else style="color: #CCCCCC;">选项目</text>
+					<text class="field-row__arrow">›</text>
 				</view>
 			</view>
 			<!-- 预估金额 -->
@@ -199,7 +204,8 @@
 import NavBar from '../../components/NavBar.vue'
 import { useOvertimeStore } from '../../stores/overtimeStore'
 import { useSalaryStore } from '../../stores/salaryStore'
-import { COMMON_PHRASES } from '../../utils/constants.js'
+import { COMMON_PHRASES, PROJECT_COLORS } from '../../utils/constants.js'
+import { useProjectStore } from '../../stores/projectStore'
 import { formatDate, calcDuration } from '../../utils/date.js'
 import { getOvertimeType } from '../../utils/holidays.js'
 
@@ -223,6 +229,7 @@ export default {
 			],
 			remark: '',
 			projectName: '',
+				selectedProjectId: null,
 			editId: null,
 			pageReady: false,
 			saving: false,
@@ -313,6 +320,7 @@ export default {
 			}
 		} else {
 			this.autoDetectType(this.pickerDate)
+			this.loadProjectPicker()
 		}
 	},
 	methods: {
@@ -320,7 +328,14 @@ export default {
 			this.pickerDate = e.detail.value
 			this.autoDetectType(e.detail.value)
 		},
-		autoDetectType(date) {
+		loadProjectPicker() {
+				const pStore = useProjectStore()
+				if (pStore.projects.length === 0) {
+					pStore.loadProjects()
+				}
+			},
+
+			autoDetectType(date) {
 			this.overtimeType = getOvertimeType(date)
 		},
 		onStartChange(e) {
@@ -356,6 +371,26 @@ export default {
 			}
 		},
 			
+			showProjectSelector() {
+				const pStore = useProjectStore()
+				pStore.loadProjects()
+				setTimeout(() => {
+					const items = [{ text: '无项目', value: null },
+						...pStore.activeProjects.map(p => ({ text: p.name, value: p._id }))
+					]
+					uni.showActionSheet({
+						itemList: items.map(i => i.text),
+						success: (res) => {
+							const selected = items[res.tapIndex]
+							this.selectedProjectId = selected.value
+							const proj = pStore.getProjectById(selected.value)
+							if (proj) this.projectName = proj.name
+							else this.projectName = ''
+						}
+					})
+				}, 100)
+			},
+
 			handleDelete() {
 				uni.showModal({
 					title: '确认删除',
@@ -387,7 +422,6 @@ export default {
 			this.showRateSheet = false
 			uni.showToast({ title: '时薪已设置', icon: 'success' })
 		},
-		asyn
 		async handleSave() {
 			if (this.saving) return
 			if (this.duration <= 0) {
@@ -412,6 +446,7 @@ export default {
 				pay: this.estimatedPay,
 				remark: this.remark,
 				project_name: this.projectName,
+					project_id: this.selectedProjectId,
 				photos: [],
 				settled: this.settled,
 				subsidies: { ...this.subsidies },
@@ -662,8 +697,26 @@ export default {
 
 
 
-/* 项目输入 */
-.project-input {
+/* 项目选择器 */
+.project-tag {
+		display: flex;
+		align-items: center;
+		padding: 4px 10px;
+		border-radius: 12px;
+		margin-right: 4px;
+	}
+	.project-tag__dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 2px;
+		margin-right: 6px;
+	}
+	.project-tag__text {
+		font-size: 13px;
+		font-weight: 500;
+	}
+
+	.project-input {
 	font-size: 15px;
 	color: #666666;
 	text-align: right;

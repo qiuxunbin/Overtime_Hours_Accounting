@@ -90,7 +90,25 @@
 				</view>
 			</view>
 
-			<!-- 空状态 -->
+			<!-- 项目收入对比 -->
+			<view class="card" v-if="projectStats.length > 0">
+				<text class="card__title">项目收入对比</text>
+				<view class="project-stats">
+					<view class="project-stat" v-for="(ps, idx) in projectStats" :key="idx">
+						<view class="project-stat__header">
+							<view class="project-stat__color" :style="{ background: ps.color }"></view>
+							<text class="project-stat__name">{{ ps.name }}</text>
+							<text class="project-stat__hours">{{ ps.hours }}h</text>
+							<text class="project-stat__pay">¥{{ ps.pay.toFixed(0) }}</text>
+						</view>
+						<view class="project-stat__bar">
+							<view class="project-stat__fill" :style="{ width: ps.pct + '%', background: ps.color }"></view>
+						</view>
+					</view>
+				</view>
+			</view>
+
+				<!-- 空状态 -->
 			<view class="empty-wrap" v-if="totalHours === 0">
 				<text class="empty-wrap__icon">&#x1F4CA;</text>
 				<text class="empty-wrap__text">本月没有加班记录</text>
@@ -105,6 +123,7 @@
 <script>
 import NavBar from '../../components/NavBar.vue'
 import { useOvertimeStore } from '../../stores/overtimeStore'
+import { useProjectStore } from '../../stores/projectStore'
 import uCharts from '@qiun/ucharts'
 
 function pad(n) { return String(n).padStart(2, '0') }
@@ -204,7 +223,33 @@ export default {
 				.filter(r => r.date && r.date.startsWith(year))
 				.reduce((s, r) => s + (r.pay || 0), 0)
 		},
-		yearMonths() {
+		projectStats() {
+				if (this.monthRecords.length === 0) return []
+				const pStore = useProjectStore()
+				const projMap = new Map(pStore.projects.map(p => [p._id, p]))
+				const groups = {}
+				this.monthRecords.forEach(r => {
+					const key = r.project_id || '__none__'
+					if (!groups[key]) groups[key] = { hours: 0, pay: 0 }
+					groups[key].hours += r.duration || 0
+					groups[key].pay += r.pay || 0
+				})
+				let items = Object.entries(groups).map(([id, stats]) => {
+					const proj = id !== '__none__' ? projMap.get(id) : null
+					return {
+						name: proj ? proj.name : '无项目',
+						color: proj ? proj.color : '#CCCCCC',
+						hours: Math.round(stats.hours * 10) / 10,
+						pay: stats.pay,
+						pct: 0
+					}
+				})
+				const maxPay = Math.max(...items.map(i => i.pay), 1)
+				items = items.map(i => ({ ...i, pct: Math.round((i.pay / maxPay) * 100) }))
+				return items.sort((a, b) => b.pay - a.pay)
+			},
+
+			yearMonths() {
 			const year = String(this.viewYear)
 			const months = new Set()
 			this.allRecords.forEach(r => {
@@ -558,7 +603,53 @@ export default {
 	}
 }
 
-/* 空状态 */
+/* 项目统计 */
+.project-stats {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+	.project-stat__header {
+		display: flex;
+		align-items: center;
+		margin-bottom: 6px;
+	}
+	.project-stat__color {
+		width: 10px;
+		height: 10px;
+		border-radius: 2px;
+		margin-right: 8px;
+	}
+	.project-stat__name {
+		font-size: 14px;
+		color: #666666;
+		flex: 1;
+	}
+	.project-stat__hours {
+		font-size: 13px;
+		color: #999999;
+		margin-right: 12px;
+	}
+	.project-stat__pay {
+		font-size: 14px;
+		font-weight: 600;
+		color: #1A1C1C;
+		min-width: 60px;
+		text-align: right;
+	}
+	.project-stat__bar {
+		height: 6px;
+		background: #F0F0F0;
+		border-radius: 3px;
+		overflow: hidden;
+	}
+	.project-stat__fill {
+		height: 100%;
+		border-radius: 3px;
+		transition: width 0.3s;
+	}
+
+	/* 空状态 */
 .empty-wrap {
 	text-align: center;
 	padding: 60px 0;

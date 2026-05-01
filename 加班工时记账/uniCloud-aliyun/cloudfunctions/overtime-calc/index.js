@@ -57,7 +57,18 @@ exports.main = async (event, context) => {
 			return await getSalaryConfig(uid)
 		case 'salarySet':
 			return await setSalaryConfig(uid, event.data)
-		default:
+		
+			case 'projectList':
+				return await listProjects(uid)
+			case 'projectAdd':
+				return await addProject(uid, event.data)
+			case 'projectUpdate':
+				return await updateProject(uid, event.id, event.data)
+			case 'projectDelete':
+				return await deleteProject(uid, event.id)
+			case 'syncProjects':
+				return await syncProjects(uid, event)
+default:
 			return { code: 400, message: '未知动作' }
 	}
 }
@@ -251,4 +262,104 @@ async function syncRecords(uid, event) {
 		conflicts: conflicts,
 		server_time: Date.now()
 	}
+
+
+// ========== 项目管理 CRUD ==========
+
+async function listProjects(uid) {
+	const { data } = await db.collection('project-config')
+		.where({ user_id: uid }).orderBy('sort_order', 'asc').limit(100).get()
+	return { code: 0, data }
+}
+
+async function addProject(uid, data) {
+	const doc = { ...data, user_id: uid, created_at: Date.now(), updated_at: Date.now() }
+	const res = await db.collection('project-config').add(doc)
+	return { code: 0, id: res.id, data: { ...doc, _id: res.id } }
+}
+
+async function updateProject(uid, id, data) {
+	const { data: exist } = await db.collection('project-config').where({ _id: id, user_id: uid }).limit(1).get()
+	if (!exist.length) return { code: 404, message: '项目不存在' }
+	await db.collection('project-config').doc(id).update({ ...data, updated_at: Date.now() })
+	return { code: 0 }
+}
+
+async function deleteProject(uid, id) {
+	const { data: exist } = await db.collection('project-config').where({ _id: id, user_id: uid }).limit(1).get()
+	if (!exist.length) return { code: 404, message: '项目不存在' }
+	await db.collection('project-config').doc(id).remove()
+	return { code: 0 }
+}
+
+// ========== 项目批量同步（支持匿名设备） ==========
+
+async function syncProjects(uid, event) {
+	const { operations, device_id } = event
+	const collection = db.collection('project-config')
+	const idMappings = {}
+	const conflicts = []
+	const realUid = uid || null
+
+	for (const op of (operations || [])) {
+		try {
+			switch (op.action) {
+				case 'add': {
+					const doc = { ...op.data }
+					delete doc._id
+					delete doc.id
+					delete doc._synced
+					delete doc._updated_at
+
+					if (realUid) {
+						doc.user_id = realUid
+						doc.device_id = null
+					} else {
+						doc.user_id = null
+						doc.device_id = device_id || null
+					}
+
+					doc.created_at = doc.created_at || Date.now()
+					doc.updated_at = Date.now()
+
+					const res = await collection.add(doc)
+					idMappings[op.id] = res.id
+					break
+				}
+
+				case 'update': {
+					const ownerFilter = realUid ? { user_id: realUid } : { device_id: device_id }
+					const { data: exist } = await collection
+						.where({ _id: op.id, ...ownerFilter }).limit(1).get()
+					if (!exist.length) {
+						conflicts.push({ _id: op.id, reason: 'not_found' })
+						continue
+					}
+					const updateData = { ...op.data }
+					delete updateData._id
+					delete updateData.id
+					delete updateData._synced
+					delete updateData._updated_at
+					updateData.updated_at = Date.now()
+					await collection.doc(op.id).update(updateData)
+					break
+				}
+
+				case 'delete': {
+					const ownerFilter = realUid ? { user_id: realUid } : { device_id: device_id }
+					const { data: exist } = await collection
+						.where({ _id: op.id, ...ownerFilter }).limit(1).get()
+					if (exist.length) {
+						await collection.doc(op.id).remove()
+					}
+					break
+				}
+			}
+		} catch (e) {
+			conflicts.push({ _id: op.id, reason: e.message })
+		}
+	}
+
+	return { code: 0, id_mappings: idMappings, conflicts: conflicts, server_time: Date.now() }
+}
 }

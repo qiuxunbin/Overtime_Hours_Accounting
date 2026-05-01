@@ -4,6 +4,7 @@
 	import { useSalaryStore } from './stores/salaryStore'
 	import { collection } from '@/utils/localStore'
 	import { DEFAULT_SALARY_CONFIG } from './utils/constants'
+import { useProjectStore } from './stores/projectStore'
 
 	export default {
 		async onLaunch() {
@@ -47,6 +48,11 @@
 				const now = new Date()
 				const m = String(now.getMonth() + 1).padStart(2, '0')
 				overtimeStore.currentMonth = `${now.getFullYear()}-${m}`
+
+				// 从本地存储预加载项目列表
+				const projectStore = useProjectStore()
+				const projectDocs = collection('projects').getAll()
+				projectStore.projects = projectDocs.map(p => ({ ...p, id: p._id }))
 
 				// 从本地存储预加载薪资配置
 				const salaryStore = useSalaryStore()

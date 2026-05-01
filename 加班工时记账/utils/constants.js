@@ -82,6 +82,32 @@ export const SUBSIDY_TYPES = [
 	{ value: 'transport', label: '交通补贴', icon: '🚗' }
 ]
 
+// 项目预设颜色
+export const PROJECT_COLORS = [
+	{ value: '#07C160', label: '绿' },
+	{ value: '#006495', label: '蓝' },
+	{ value: '#FF8C00', label: '橙' },
+	{ value: '#BA1A1A', label: '红' },
+	{ value: '#9B59B6', label: '紫' },
+	{ value: '#00BCD4', label: '青' },
+	{ value: '#FF69B4', label: '粉' },
+	{ value: '#95A5A6', label: '灰' }
+]
+
+// 默认项目配置
+export const DEFAULT_PROJECT_CONFIG = {
+	name: '',
+	color: '#07C160',
+	sort_order: 0,
+	weekday_rate: 0,
+	weekend_rate: 0,
+	holiday_rate: 0,
+	is_archived: false
+}
+
+// 存储 key（补充）
+export const STORAGE_KEYS_PROJECTS = 'local:projects'
+
 // 月历配置
 export const CALENDAR = {
 	weekStartsOn: 1,

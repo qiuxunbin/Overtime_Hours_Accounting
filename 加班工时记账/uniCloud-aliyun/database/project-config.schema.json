@@ -1,0 +1,70 @@
+{
+  "bsonType": "object",
+  "required": ["user_id", "name"],
+  "permission": {
+    "read": "auth.uid == doc.user_id",
+    "create": "auth.uid != null",
+    "update": "auth.uid == doc.user_id",
+    "delete": "auth.uid == doc.user_id"
+  },
+  "properties": {
+    "_id": {
+      "bsonType": "string",
+      "description": "项目ID，自动生成"
+    },
+    "user_id": {
+      "bsonType": "string",
+      "description": "关联 uni-id-users._id",
+      "forceDefaultValue": {
+        "$env": "uid"
+      }
+    },
+    "name": {
+      "bsonType": "string",
+      "description": "项目名称",
+      "maxLength": 50
+    },
+    "color": {
+      "bsonType": "string",
+      "description": "显示色 #RRGGBB",
+      "defaultValue": "#07C160",
+      "pattern": "^#[0-9a-fA-F]{6}$"
+    },
+    "sort_order": {
+      "bsonType": "int",
+      "description": "排序序号",
+      "defaultValue": 0
+    },
+    "weekday_rate": {
+      "bsonType": "number",
+      "description": "平日时薪（0=使用全局配置）",
+      "defaultValue": 0,
+      "minimum": 0
+    },
+    "weekend_rate": {
+      "bsonType": "number",
+      "description": "周末时薪（0=使用全局配置）",
+      "defaultValue": 0,
+      "minimum": 0
+    },
+    "holiday_rate": {
+      "bsonType": "number",
+      "description": "节假时薪（0=使用全局配置）",
+      "defaultValue": 0,
+      "minimum": 0
+    },
+    "is_archived": {
+      "bsonType": "bool",
+      "description": "是否归档",
+      "defaultValue": false
+    },
+    "created_at": {
+      "bsonType": "timestamp",
+      "description": "创建时间"
+    },
+    "updated_at": {
+      "bsonType": "timestamp",
+      "description": "更新时间"
+    }
+  }
+}

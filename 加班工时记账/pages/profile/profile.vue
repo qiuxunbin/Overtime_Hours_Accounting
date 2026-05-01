@@ -27,6 +27,11 @@
 
 			<!-- 功能菜单 -->
 			<view class="profile-menu" v-if="isLoggedIn || !isApp">
+				<view class="cell-item" @tap="goProjects">
+					<view class="cell-item__icon"><text class="cell-item__icon-text">&#x1F3E0;</text></view>
+					<view class="cell-item__content"><text class="cell-item__label">项目管理</text></view>
+					<view class="cell-item__right"><text class="cell-item__arrow">&#x203A;</text></view>
+				</view>
 				<view class="cell-item" @tap="goSalary">
 					<view class="cell-item__icon"><text class="cell-item__icon-text">&#x1F4B0;</text></view>
 					<view class="cell-item__content"><text class="cell-item__label">薪资设置</text></view>
@@ -121,10 +126,15 @@ export default {
 		goLogin() {
 			uni.navigateTo({ url: '/pages/login/login' })
 		},
-		goSalary() {
-			uni.navigateTo({ url: '/pages/salary/salary' })
+
+		goProjects() {
+			uni.navigateTo({ url: '/pages/projects/projects' })
 		},
-		goClock() {
+		goBatchRecord() {
+			uni.navigateTo({ url: '/pages/batch-record/batch-record' })
+		},
+
+			goClock() {
 			uni.navigateTo({ url: '/pages/clock/clock' })
 		},
 		async handleExport() {
