@@ -124,7 +124,32 @@
 				</view>
 			</view>
 
-			<!-- 法律说明 -->
+			<!-- 各项目时薪 -->
+			<view class="project-rates" v-if="projectList.length > 0">
+				<view class="project-rates__header">
+					<text class="project-rates__title">各项目时薪</text>
+					<text class="project-rates__hint">点击管理项目时薪</text>
+				</view>
+				<view
+					v-for="proj in projectList"
+					:key="proj._id"
+					class="project-rate-item"
+					@tap="editProject(proj)"
+				>
+					<view class="project-rate-item__left">
+						<view class="project-rate-item__color" :style="{ background: proj.color }"></view>
+						<text class="project-rate-item__name">{{ proj.name }}</text>
+					</view>
+					<view class="project-rate-item__rates">
+						<text class="project-rate-item__rate">平 ¥{{ proj.weekday_rate || '—' }}</text>
+						<text class="project-rate-item__rate">周 ¥{{ proj.weekend_rate || '—' }}</text>
+						<text class="project-rate-item__rate">节 ¥{{ proj.holiday_rate || '—' }}</text>
+					</view>
+					<text class="project-rate-item__arrow">›</text>
+				</view>
+			</view>
+
+				<!-- 法律说明 -->
 			<view class="legal-note">
 				<text class="legal-note__icon">&#x26A0;</text>
 				<text class="legal-note__text">以上月薪换算依据《劳动法》第四十四条及劳社部发[2008]3号文件。本工具仅为加班费计算参考，不构成法律建议。</text>
@@ -149,6 +174,7 @@
 import NavBar from '../../components/NavBar.vue'
 import { useSalaryStore } from '../../stores/salaryStore'
 import { useOvertimeStore } from '../../stores/overtimeStore'
+import { useProjectStore } from '../../stores/projectStore'
 
 const LEGAL_DAYS = 21.75
 const LEGAL_HOURS = 8
@@ -186,6 +212,10 @@ export default {
 		},
 		helperHoliday() {
 			return this.helperHourly * 3.0
+		},
+		projectList() {
+			const pStore = useProjectStore()
+			return pStore.activeProjects
 		}
 	},
 	onShow() {
@@ -212,6 +242,10 @@ export default {
 			this.weekendRate = String(Math.round(this.helperWeekend))
 			this.holidayRate = String(Math.round(this.helperHoliday))
 		},
+		editProject(proj) {
+			uni.navigateTo({ url: '/pages/project-edit/project-edit?id=' + proj._id })
+		},
+
 		async handleSave() {
 			const store = useSalaryStore()
 			const precValues = ['15min', '30min', '60min', 'exact']
@@ -542,7 +576,71 @@ export default {
 	}
 }
 
-/* 法律说明 */
+/* 各项目时薪 */
+.project-rates {
+		margin-top: 16px;
+		padding: 16px 20px;
+		background: #FFFFFF;
+		border-radius: 12px;
+		border: 1px solid #E5E5E5;
+	}
+	.project-rates__header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 12px;
+	}
+	.project-rates__title {
+		font-size: 15px;
+		font-weight: 500;
+		color: #1A1C1C;
+	}
+	.project-rates__hint {
+		font-size: 12px;
+		color: #999999;
+	}
+	.project-rate-item {
+		display: flex;
+		align-items: center;
+		padding: 10px 0;
+		border-bottom: 1px solid #F3F3F3;
+	}
+	.project-rate-item:last-child {
+		border-bottom: none;
+	}
+	.project-rate-item__left {
+		display: flex;
+		align-items: center;
+		flex: 1;
+	}
+	.project-rate-item__color {
+		width: 10px;
+		height: 10px;
+		border-radius: 2px;
+		margin-right: 8px;
+	}
+	.project-rate-item__name {
+		font-size: 14px;
+		color: #1A1C1C;
+	}
+	.project-rate-item__rates {
+		display: flex;
+		gap: 8px;
+		margin: 0 8px;
+	}
+	.project-rate-item__rate {
+		font-size: 12px;
+		color: #999999;
+		background: #F7F7F7;
+		padding: 2px 6px;
+		border-radius: 4px;
+	}
+	.project-rate-item__arrow {
+		font-size: 16px;
+		color: #CCCCCC;
+	}
+
+	/* 法律说明 */
 .legal-note {
 	display: flex;
 	padding: 0 0 24px;

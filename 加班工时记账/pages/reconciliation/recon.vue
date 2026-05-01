@@ -258,6 +258,7 @@ export default {
 					r.rate,
 					r.pay || 0,
 					(r.project_name || ''),
+					(r.project_id || ''),
 					(r.remark || '').replace(/,/g, ';'),
 					subsidies,
 					deduction

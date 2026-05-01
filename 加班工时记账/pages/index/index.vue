@@ -86,6 +86,11 @@
 				<view class="records-section__header">
 					<text class="records-section__title">最近记录</text>
 					<view class="settle-filter">
+								<view class="project-filter" @tap="showProjectFilter">
+									<text class="project-filter__text" :style="{ color: selectedProjectFilter ? '#07C160' : '#999999' }">{{ selectedProjectFilter ? getProjectName(selectedProjectFilter) : '所有项目' }}</text>
+									<text class="field-row__arrow">›</text>
+								</view>
+							</view>
 						<text class="settle-filter__item" :class="{ 'settle-filter__item--active': settleFilter === 'all' }" @tap="settleFilter = 'all'">全部</text>
 						<text class="settle-filter__item" :class="{ 'settle-filter__item--active': settleFilter === 'unsettled' }" @tap="settleFilter = 'unsettled'">未结算</text>
 						<text class="settle-filter__item" :class="{ 'settle-filter__item--active': settleFilter === 'settled' }" @tap="settleFilter = 'settled'">已结算</text>
@@ -172,6 +177,7 @@
 import NavBar from '../../components/NavBar.vue'
 import { useOvertimeStore } from '../../stores/overtimeStore'
 import { useSalaryStore } from '../../stores/salaryStore'
+import { useProjectStore } from '../../stores/projectStore'
 
 function pad(n) { return String(n).padStart(2, '0') }
 
@@ -186,7 +192,8 @@ export default {
 			todayStr: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
 			showDaySheet: false,
 			daySheetDate: '',
-			settleFilter: 'all'
+			settleFilter: 'all',
+				selectedProjectFilter: null
 		}
 	},
 	computed: {
@@ -802,7 +809,21 @@ margin-top: 1px;
 	color: #999999;
 	background: #F0F0F0;
 }
-.settle-filter__item--active {
+.project-filter {
+		display: flex;
+		align-items: center;
+		margin-left: 8px;
+		padding: 2px 8px;
+		border-radius: 10px;
+		background: #F0F0F0;
+	}
+	.project-filter__text {
+		font-size: 11px;
+		color: #999999;
+		margin-right: 2px;
+	}
+
+	.settle-filter__item--active {
 	color: #07C160;
 	background: rgba(7, 193, 96, 0.1);
 }
