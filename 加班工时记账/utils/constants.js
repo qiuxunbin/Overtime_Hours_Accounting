@@ -36,7 +36,11 @@ export const LEGAL_RATES = {
 
 // 存储 key
 export const STORAGE_KEYS = {
-	USER_INFO: 'user_info'
+	USER_INFO: 'user_info',
+	DEVICE_ID: 'device_id',
+	LOCAL_RECORDS: 'local:overtime_records',
+	LOCAL_SALARY_CONFIG: 'salary_config',
+	LAST_SYNC_TIME: 'last_sync_time'
 }
 
 // 工时滑块配置

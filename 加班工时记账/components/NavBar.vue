@@ -6,6 +6,7 @@
 			</view>
 			<text class="nav-bar__title">{{ title }}</text>
 			<view class="nav-bar__right">
+				<SyncStatus />
 				<slot name="right" />
 			</view>
 		</view>
@@ -13,7 +14,10 @@
 </template>
 
 <script>
+import SyncStatus from './SyncStatus.vue'
+
 export default {
+	components: { SyncStatus },
 	props: {
 		title: { type: String, default: '' },
 		showBack: { type: Boolean, default: false }

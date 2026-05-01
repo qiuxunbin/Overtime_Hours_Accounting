@@ -40,6 +40,11 @@
     "updated_at": {
       "bsonType": "timestamp",
       "description": "更新时间"
+    },
+    "precision": {
+      "bsonType": "string",
+      "description": "结算精度（15min/30min/60min/exact）",
+      "defaultValue": "15min"
     }
   }
 }

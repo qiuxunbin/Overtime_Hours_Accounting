@@ -1,4 +1,8 @@
 import { defineStore } from 'pinia'
+import { collection } from '@/utils/localStore'
+import { getDeviceId, getOwner } from '@/utils/device'
+
+const col = collection('overtime_records')
 
 function hasToken() {
 	const token = uni.getStorageSync('uni_id_token')
@@ -6,12 +10,6 @@ function hasToken() {
 	const expired = uni.getStorageSync('uni_id_token_expired')
 	if (expired && Date.now() > expired) return false
 	return true
-}
-
-function requireAuth() {
-	if (!hasToken()) {
-		throw new Error('NOT_AUTH')
-	}
 }
 
 async function callOvertime(action, data = {}) {
@@ -29,7 +27,11 @@ export const useOvertimeStore = defineStore('overtime', {
 	state: () => ({
 		records: [],
 		currentMonth: '',
-		loading: false
+		loading: false,
+		syncStatus: 'synced',     // synced | syncing | error | offline
+		lastSyncAt: null,
+		_syncQueue: [],
+		_syncTimer: null
 	}),
 
 	getters: {
@@ -58,37 +60,57 @@ export const useOvertimeStore = defineStore('overtime', {
 	},
 
 	actions: {
+		// ========== 加载 ==========
+
 		async loadRecords() {
-			if (!hasToken()) return
 			this.loading = true
-			try {
-				const res = await callOvertime('list')
-				this.records = (res.data || []).map(r => ({ ...r, id: r._id }))
-			} catch (e) {
-				this.records = []
+
+			// 1. 从本地加载（瞬间完成）
+			const localDocs = col.getAll()
+			this.records = localDocs.map(r => ({ ...r, id: r._id }))
+
+			// 2. 后台尝试云同步
+			if (hasToken()) {
+				this.syncStatus = 'syncing'
+				try {
+					await this.pullFromCloud()
+					this.syncStatus = 'synced'
+					this.lastSyncAt = Date.now()
+				} catch (e) {
+					this.syncStatus = 'error'
+				}
+			} else {
+				this.syncStatus = 'offline'
 			}
+
 			this.loading = false
 		},
 
-		async addRecord(record) {
-			requireAuth()
-			const res = await callOvertime('add', { data: record })
+		// ========== CRUD — 本地优先 ==========
 
-			const newRecord = {
+		async addRecord(record) {
+			const owner = getOwner()
+			const doc = {
 				...record,
-				id: res.id,
-				_id: res.id,
-				created_at: Date.now()
+				user_id: owner.type === 'user' ? owner.id : null,
+				device_id: owner.type === 'device' ? owner.id : null,
+				created_at: record.created_at || Date.now(),
+				settled: record.settled || false,
+				subsidies: record.subsidies || { night_shift: 0, meal: 0, transport: 0 },
+				deduction: record.deduction || { amount: 0, note: '' }
 			}
 
+			const id = col.add(doc)
+			const newRecord = { ...doc, _id: id, id }
 			this.records.unshift(newRecord)
-			return { record: newRecord, duplicated: res.duplicated }
+
+			this.enqueueSync('add', id, doc)
+
+			return { record: newRecord, duplicated: false }
 		},
 
 		async updateRecord(id, data) {
-			requireAuth()
-			const res = await callOvertime('update', { id, data })
-			if (res.duplicated) return { duplicated: true }
+			col.update(id, data)
 
 			const index = this.records.findIndex(r => r.id === id || r._id === id)
 			if (index !== -1) {
@@ -98,18 +120,147 @@ export const useOvertimeStore = defineStore('overtime', {
 					updated_at: Date.now()
 				}
 			}
+
+			this.enqueueSync('update', id, data)
+
 			return { duplicated: false }
 		},
 
 		async deleteRecord(id) {
-			requireAuth()
-			await callOvertime('delete', { id })
-
+			col.remove(id)
 			this.records = this.records.filter(r => r.id !== id && r._id !== id)
+			this.enqueueSync('delete', id, null)
 		},
 
 		setCurrentMonth(month) {
 			this.currentMonth = month
+		},
+
+		// ========== 同步队列 ==========
+
+		enqueueSync(action, id, data) {
+			this._syncQueue.push({ action, id, data, timestamp: Date.now() })
+			this.syncStatus = 'syncing'
+
+			clearTimeout(this._syncTimer)
+			this._syncTimer = setTimeout(() => this.flushSyncQueue(), 2000)
+		},
+
+		async flushSyncQueue() {
+			if (this._syncQueue.length === 0) return
+			if (!hasToken()) {
+				this.syncStatus = 'offline'
+				return
+			}
+
+			const batch = [...this._syncQueue]
+			this._syncQueue = []
+
+			try {
+				const res = await callOvertime('sync', {
+					operations: batch,
+					device_id: getDeviceId()
+				})
+
+				if (res.code === 0) {
+					// 应用云端 ID 映射
+					if (res.id_mappings) {
+						for (const [localId, cloudId] of Object.entries(res.id_mappings)) {
+							col.update(localId, { _id: cloudId, _synced: true, updated_at: Date.now() })
+							const rec = this.records.find(r => r._id === localId || r.id === localId)
+							if (rec) {
+								rec._id = cloudId
+								rec.id = cloudId
+								rec._synced = true
+							}
+						}
+					}
+					this.syncStatus = 'synced'
+					this.lastSyncAt = Date.now()
+				} else {
+					this._syncQueue = [...batch, ...this._syncQueue]
+					this.syncStatus = 'error'
+				}
+			} catch (e) {
+				// 本地数据完好，重新入队
+				this._syncQueue = [...batch, ...this._syncQueue]
+				this.syncStatus = 'error'
+			}
+		},
+
+		// ========== 从云端拉取合并 ==========
+
+		async pullFromCloud() {
+			if (!hasToken()) return
+
+			try {
+				const res = await callOvertime('list')
+				if (res.data && Array.isArray(res.data)) {
+					const localDocs = col.getAll()
+					const localMap = new Map(localDocs.map(r => [r._id, r]))
+
+					for (const cloudRec of res.data) {
+						const localRec = localMap.get(cloudRec._id)
+						const cloudTime = cloudRec.updated_at || 0
+						const localTime = localRec ? (localRec._updated_at || 0) : 0
+
+						if (localRec && localTime > cloudTime) {
+							// 本地更新 → 推送到云端
+							this.enqueueSync('update', cloudRec._id, {
+								...localRec,
+								_id: undefined,
+								id: undefined,
+								_synced: undefined,
+								_updated_at: undefined
+							})
+						} else if (!localRec || cloudTime >= localTime) {
+							// 云端更新 → 覆盖本地
+							col.update(cloudRec._id, {
+								...cloudRec,
+								_synced: true,
+								_updated_at: cloudRec.updated_at || Date.now()
+							})
+						}
+					}
+
+					// 重新加载到 Pinia state
+					this.records = col.getAll().map(r => ({ ...r, id: r._id }))
+				}
+			} catch (e) {
+				// 静默失败，本地数据完好
+			}
+		},
+
+		// ========== 登录合并 ==========
+
+		async mergeOnLogin(uid) {
+			const deviceId = getDeviceId()
+			const localDocs = col.getAll()
+			let changed = false
+
+			for (const rec of localDocs) {
+				if (rec.device_id === deviceId && !rec.user_id) {
+					col.update(rec._id, {
+						user_id: uid,
+						device_id: null,
+						_updated_at: Date.now(),
+						_synced: false
+					})
+					changed = true
+				}
+			}
+
+			if (changed) {
+				this.records = col.getAll().map(r => ({ ...r, id: r._id }))
+			}
+
+			// 拉取云端数据合并，再推送本地变更
+			try {
+				await this.pullFromCloud()
+				await this.flushSyncQueue()
+			} catch (e) {
+				// 静默
+			}
 		}
 	}
 })

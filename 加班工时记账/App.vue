@@ -1,32 +1,66 @@
 <script>
 	import { useUserStore } from './stores/userStore'
+	import { useOvertimeStore } from './stores/overtimeStore'
+	import { useSalaryStore } from './stores/salaryStore'
+	import { collection } from '@/utils/localStore'
+	import { DEFAULT_SALARY_CONFIG } from './utils/constants'
 
 	export default {
 		async onLaunch() {
 			console.log('App Launch')
 			// 防止 uniCloud 客户端读到 undefined token 而 crash
-			// 客户端代码: getStorageSync("uni_id_token") || getStorageSync("uniIdToken")
-			// 若两个 key 都不存在则返回 undefined，后续 .split('.') 报错
 			if (!uni.getStorageSync('uni_id_token')) {
 				uni.setStorageSync('uni_id_token', '')
 			}
 			if (!uni.getStorageSync('uniIdToken')) {
 				uni.setStorageSync('uniIdToken', '')
 			}
+
+			// 预加载本地数据（在所有页面 onShow 之前）
+			this.preloadLocalData()
+
 			const userStore = useUserStore()
 			userStore.loadUser()
-			// 已有有效 token 则跳过登录，避免重复消耗资源
+
+			// 已有有效 token 则跳过登录
 			const token = uni.getStorageSync('uni_id_token')
 			const expired = uni.getStorageSync('uni_id_token_expired')
 			if (!token || (expired && Date.now() > expired)) {
-				// 不 await，避免阻塞启动
-				this.silentLogin(userStore)
+				await this.silentLogin(userStore)
+				// 静默登录成功后，合并本地数据到云端
+				if (userStore.isLoggedIn) {
+					const overtimeStore = useOvertimeStore()
+					await overtimeStore.mergeOnLogin(userStore.uid)
+				}
 			} else {
 				console.log('[silentLogin] 已有有效 token，跳过登录')
 			}
 			console.log('App Ready')
 		},
 		methods: {
+			preloadLocalData() {
+				// 从本地存储预加载工时记录
+				const overtimeStore = useOvertimeStore()
+				const localDocs = collection('overtime_records').getAll()
+				overtimeStore.records = localDocs.map(r => ({ ...r, id: r._id }))
+				// 设置当前月份
+				const now = new Date()
+				const m = String(now.getMonth() + 1).padStart(2, '0')
+				overtimeStore.currentMonth = `${now.getFullYear()}-${m}`
+
+				// 从本地存储预加载薪资配置
+				const salaryStore = useSalaryStore()
+				try {
+					const raw = uni.getStorageSync('salary_config')
+					if (raw) {
+						const local = JSON.parse(raw)
+						salaryStore.config = { ...DEFAULT_SALARY_CONFIG, ...local }
+					}
+				} catch {
+					// 使用默认配置
+				}
+			},
+
 			async silentLogin(userStore) {
 				// #ifdef MP-WEIXIN
 				try {
@@ -93,10 +127,19 @@
 		},
 		onShow: function() {
 			console.log('App Show')
-			// 不重复调用登录，onLaunch 已经处理了
+			// 每 5 分钟后台同步一次
+			this._syncInterval = setInterval(() => {
+				const overtimeStore = useOvertimeStore()
+				const token = uni.getStorageSync('uni_id_token')
+				if (token) {
+					overtimeStore.flushSyncQueue()
+					overtimeStore.pullFromCloud()
+				}
+			}, 300000)
 		},
 		onHide: function() {
 			console.log('App Hide')
+			clearInterval(this._syncInterval)
 		}
 	}
 </script>

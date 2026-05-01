@@ -199,7 +199,6 @@
 import NavBar from '../../components/NavBar.vue'
 import { useOvertimeStore } from '../../stores/overtimeStore'
 import { useSalaryStore } from '../../stores/salaryStore'
-import { useUserStore } from '../../stores/userStore'
 import { COMMON_PHRASES } from '../../utils/constants.js'
 import { formatDate, calcDuration } from '../../utils/date.js'
 import { getOvertimeType } from '../../utils/holidays.js'
@@ -388,6 +387,7 @@ export default {
 			this.showRateSheet = false
 			uni.showToast({ title: '时薪已设置', icon: 'success' })
 		},
+		asyn
 		async handleSave() {
 			if (this.saving) return
 			if (this.duration <= 0) {
@@ -418,68 +418,25 @@ export default {
 				deduction: { ...this.deduction }
 			}
 
-			try {
-				if (this.editId) {
-					const updRes = await store.updateRecord(this.editId, data)
-					if (updRes && updRes.duplicated) {
-						uni.showToast({ title: '该时段已有记录', icon: 'warning' })
-						this.saving = false
-						return
-					}
-					uni.showToast({ title: '已更新', icon: 'success' })
-				} else {
-					const saveRes = await store.addRecord(data)
-					if (saveRes.duplicated) {
-						uni.showToast({ title: '该时段已有记录', icon: 'warning' })
-						this.saving = false
-						return
-					}
-					uni.showToast({ title: '已保存', icon: 'success' })
+			if (this.editId) {
+				const updRes = await store.updateRecord(this.editId, data)
+				if (updRes && updRes.duplicated) {
+					uni.showToast({ title: '该时段已有记录', icon: 'warning' })
+					this.saving = false
+					return
 				}
-				setTimeout(() => { uni.navigateBack() }, 500)
-			} catch (e) {
-				this.saving = false
-				this.handleSaveError(e)
-			}
-		},
-		async handleSaveError(e) {
-			if (e.message !== 'NOT_AUTH') {
-				uni.showToast({ title: '保存失败，请重试', icon: 'none' })
-				return
-			}
-			// #ifdef MP-WEIXIN
-			uni.showLoading({ title: '登录中...' })
-			const ok = await this.quickLogin()
-			uni.hideLoading()
-			if (ok) {
-				this.handleSave()
+				uni.showToast({ title: '已更新', icon: 'success' })
 			} else {
-				uni.showToast({ title: '登录失败，请重试', icon: 'none' })
-			}
-			// #endif
-			// #ifndef MP-WEIXIN
-			uni.showToast({ title: '请先登录', icon: 'none' })
-			// #endif
-		},
-		async quickLogin() {
-			try {
-				const loginRes = await uni.login()
-				if (!loginRes || !loginRes.code) return false
-				const result = await uniCloud.callFunction({
-					name: 'user-auth',
-					data: { action: 'loginByWeixin', code: loginRes.code }
-				})
-				if (result && result.result && result.result.code === 0) {
-					const { uid, token, tokenExpired } = result.result.data
-					const userStore = useUserStore()
-					userStore.setUser({ uid })
-					uni.setStorageSync('uni_id_token', token)
-					uni.setStorageSync('uni_id_token_expired', tokenExpired)
-					return true
+				const saveRes = await store.addRecord(data)
+				if (saveRes.duplicated) {
+					uni.showToast({ title: '该时段已有记录', icon: 'warning' })
+					this.saving = false
+					return
 				}
-			} catch (e) { /* ignore */ }
-			return false
-		}
+				uni.showToast({ title: '已保存', icon: 'success' })
+			}
+			setTimeout(() => { uni.navigateBack() }, 500)
+		}		}
 	}
 }
 </script>

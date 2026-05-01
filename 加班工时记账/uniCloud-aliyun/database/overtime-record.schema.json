@@ -78,6 +78,37 @@
     "updated_at": {
       "bsonType": "timestamp",
       "description": "更新时间"
+    },
+    "device_id": {
+      "bsonType": "string",
+      "description": "匿名设备标识，未登录时使用"
+    },
+    "project_name": {
+      "bsonType": "string",
+      "description": "所属项目名称",
+      "maxLength": 50
+    },
+    "settled": {
+      "bsonType": "bool",
+      "description": "是否已结算",
+      "defaultValue": false
+    },
+    "subsidies": {
+      "bsonType": "object",
+      "description": "补贴明细",
+      "properties": {
+        "night_shift": { "bsonType": "number", "description": "夜班补贴" },
+        "meal": { "bsonType": "number", "description": "餐补" },
+        "transport": { "bsonType": "number", "description": "交通补贴" }
+      }
+    },
+    "deduction": {
+      "bsonType": "object",
+      "description": "扣款明细",
+      "properties": {
+        "amount": { "bsonType": "number", "description": "扣款金额" },
+        "note": { "bsonType": "string", "description": "扣款原因" }
+      }
     }
   }
 }

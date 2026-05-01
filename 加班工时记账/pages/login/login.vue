@@ -140,6 +140,7 @@
 
 <script>
 import { useUserStore } from '../../stores/userStore'
+import { useOvertimeStore } from '../../stores/overtimeStore'
 
 export default {
 	data() {
@@ -295,6 +296,11 @@ export default {
 			userStore.setUser({ uid })
 			uni.setStorageSync('uni_id_token', token)
 			uni.setStorageSync('uni_id_token_expired', tokenExpired)
+
+			// 合并本地数据到该用户账户
+			const overtimeStore = useOvertimeStore()
+			overtimeStore.mergeOnLogin(uid)
+
 			uni.showToast({ title: '登录成功', icon: 'success' })
 			setTimeout(() => {
 				uni.navigateBack()

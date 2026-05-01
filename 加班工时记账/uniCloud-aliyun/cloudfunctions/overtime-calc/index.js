@@ -28,6 +28,12 @@ function getUidFromEvent(event) {
 
 exports.main = async (event, context) => {
 	const uid = getUidFromEvent(event)
+
+	// sync 动作允许无 token（使用 device_id）
+	if (event.action === 'sync') {
+		return await syncRecords(uid, event)
+	}
+
 	if (!uid) {
 		return { code: 401, message: '请先登录' }
 	}
@@ -166,4 +172,83 @@ async function setSalaryConfig(uid, config) {
 		await db.collection('salary-config').add({ ...config, user_id: uid, updated_at: Date.now() })
 	}
 	return { code: 0 }
+}
+
+// ========== 批量同步（支持匿名设备） ==========
+
+async function syncRecords(uid, event) {
+	const { operations, device_id } = event
+	const collection = db.collection('overtime-record')
+	const idMappings = {}
+	const conflicts = []
+	const realUid = uid || null
+
+	for (const op of (operations || [])) {
+		try {
+			switch (op.action) {
+				case 'add': {
+					const doc = { ...op.data }
+					delete doc._id
+					delete doc.id
+					delete doc._synced
+					delete doc._updated_at
+
+					// 有用户登录则使用 user_id，否则用 device_id
+					if (realUid) {
+						doc.user_id = realUid
+						doc.device_id = null
+					} else {
+						doc.user_id = null
+						doc.device_id = device_id || null
+					}
+
+					doc.created_at = doc.created_at || Date.now()
+					doc.updated_at = Date.now()
+
+					const res = await collection.add(doc)
+					idMappings[op.id] = res.id
+					break
+				}
+
+				case 'update': {
+					const ownerFilter = realUid ? { user_id: realUid } : { device_id: device_id }
+					const { data: exist } = await collection
+						.where({ _id: op.id, ...ownerFilter }).limit(1).get()
+					if (!exist.length) {
+						conflicts.push({ _id: op.id, reason: 'not_found' })
+						continue
+					}
+
+					const updateData = { ...op.data }
+					delete updateData._id
+					delete updateData.id
+					delete updateData._synced
+					delete updateData._updated_at
+					updateData.updated_at = Date.now()
+
+					await collection.doc(op.id).update(updateData)
+					break
+				}
+
+				case 'delete': {
+					const ownerFilter = realUid ? { user_id: realUid } : { device_id: device_id }
+					const { data: exist } = await collection
+						.where({ _id: op.id, ...ownerFilter }).limit(1).get()
+					if (exist.length) {
+						await collection.doc(op.id).remove()
+					}
+					break
+				}
+			}
+		} catch (e) {
+			conflicts.push({ _id: op.id, reason: e.message })
+		}
+	}
+
+	return {
+		code: 0,
+		id_mappings: idMappings,
+		conflicts: conflicts,
+		server_time: Date.now()
+	}
 }
