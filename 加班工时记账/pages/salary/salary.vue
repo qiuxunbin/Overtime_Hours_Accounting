@@ -134,9 +134,9 @@
 					v-for="proj in projectList"
 					:key="proj._id"
 					class="project-rate-item"
-					@tap="editProject(proj)"
+					
 				>
-					<view class="project-rate-item__left">
+					<view class="project-rate-item__left" @tap="editProject(proj)">
 						<view class="project-rate-item__color" :style="{ background: proj.color }"></view>
 						<text class="project-rate-item__name">{{ proj.name }}</text>
 					</view>
@@ -145,7 +145,10 @@
 						<text class="project-rate-item__rate">周 ¥{{ proj.weekend_rate || '—' }}</text>
 						<text class="project-rate-item__rate">节 ¥{{ proj.holiday_rate || '—' }}</text>
 					</view>
-					<text class="project-rate-item__arrow">›</text>
+					<view class="project-rate-item__action" @tap.stop="copyProjectToGlobal(proj)">
+						<text class="project-rate-item__copy-btn">设为全局</text>
+					</view>
+					<text class="project-rate-item__arrow" @tap="editProject(proj)">›</text>
 				</view>
 			</view>
 
@@ -242,7 +245,25 @@ export default {
 			this.weekendRate = String(Math.round(this.helperWeekend))
 			this.holidayRate = String(Math.round(this.helperHoliday))
 		},
-		editProject(proj) {
+		copyProjectToGlobal(proj) {
+			uni.showModal({
+				title: '复制到全局',
+				content: '将「' + proj.name + '」的时薪复制为全局默认时薪？',
+				success: async (res) => {
+					if (res.confirm) {
+						const s = useSalaryStore()
+						await s.updateConfig({
+							weekday_rate: proj.weekday_rate || s.config.weekday_rate,
+							weekend_rate: proj.weekend_rate || s.config.weekend_rate,
+							holiday_rate: proj.holiday_rate || s.config.holiday_rate
+						})
+						uni.showToast({ title: '已复制为全局时薪', icon: 'success' })
+					}
+				}
+			})
+		},
+
+			editProject(proj) {
 			uni.navigateTo({ url: '/pages/project-edit/project-edit?id=' + proj._id })
 		},
 
@@ -635,6 +656,18 @@ export default {
 		padding: 2px 6px;
 		border-radius: 4px;
 	}
+	.project-rate-item__action {
+		margin-left: 6px;
+	}
+	.project-rate-item__copy-btn {
+		font-size: 11px;
+		color: #07C160;
+		background: rgba(7, 193, 96, 0.1);
+		padding: 2px 6px;
+		border-radius: 6px;
+		white-space: nowrap;
+	}
+
 	.project-rate-item__arrow {
 		font-size: 16px;
 		color: #CCCCCC;

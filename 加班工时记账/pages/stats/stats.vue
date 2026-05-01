@@ -1,6 +1,10 @@
 <template>
 	<view class="page-stats">
-		<NavBar title="统计" />
+		<NavBar title="统计">
+			<view slot="right" class="nav-export" @tap="handleExportCSV">
+				<text class="nav-export__text">导出</text>
+			</view>
+		</NavBar>
 
 		<view class="page-stats__content">
 			<!-- 月份切换 -->
@@ -71,7 +75,19 @@
 				</view>
 			</view>
 
-			<!-- 年度累计 -->
+			<!-- 近6月收入趋势 -->
+			<view class="card" v-if="trendMonths.length > 1">
+				<text class="card__title">近6月收入趋势</text>
+				<view class="chart-wrap chart-wrap--line">
+					<canvas
+						canvas-id="lineChart"
+						id="lineChart"
+						class="chart-canvas chart-canvas--line"
+					></canvas>
+				</view>
+			</view>
+
+				<!-- 年度累计 -->
 			<view class="card">
 				<text class="card__title">年度累计</text>
 				<view class="year-summary">
@@ -130,6 +146,8 @@ function pad(n) { return String(n).padStart(2, '0') }
 
 let ringInstance = null
 let barInstance = null
+			lineInstance = null
+let lineInstance = null
 
 export default {
 	components: { NavBar },
@@ -249,6 +267,21 @@ export default {
 				return items.sort((a, b) => b.pay - a.pay)
 			},
 
+			trendMonths() {
+				const months = []
+				const now = new Date()
+				for (let i = 5; i >= 0; i--) {
+					const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+					const key = d.getFullYear() + '-' + pad(d.getMonth() + 1)
+					const label = pad(d.getMonth() + 1) + '月'
+					const pay = this.allRecords
+						.filter(r => r.date && r.date.startsWith(key))
+						.reduce((s, r) => s + (r.pay || 0), 0)
+					months.push({ key, label, pay })
+				}
+				return months
+			},
+
 			yearMonths() {
 			const year = String(this.viewYear)
 			const months = new Set()
@@ -289,8 +322,14 @@ export default {
 	beforeDestroy() {
 		ringInstance = null
 		barInstance = null
+		lineInstance = null
 	},
 	methods: {
+			monthPayTotal(monthPrefix) {
+				return this.allRecords
+					.filter(r => r.date && r.date.startsWith(monthPrefix))
+					.reduce((s, r) => s + (r.pay || 0), 0)
+			},
 		prevMonth() {
 			if (this.viewMonth === 1) { this.viewYear--; this.viewMonth = 12 }
 			else { this.viewMonth-- }
@@ -302,7 +341,38 @@ export default {
 		renderCharts() {
 			this.renderRingChart()
 			this.renderBarChart()
-		},
+			this.renderLineChart() {
+				if (this.trendMonths.length < 2) return
+				const pr = this.pixelRatio
+				const w = 345 * pr
+				const h = 200 * pr
+				const categories = this.trendMonths.map(m => m.label)
+				const data = this.trendMonths.map(m => Math.round(m.pay * 100) / 100)
+				try {
+					const ctx = uni.createCanvasContext("lineChart", this)
+					lineInstance = new uCharts({
+						: this,
+						canvasId: "lineChart",
+						type: "line",
+						context: ctx,
+						width: w,
+						height: h,
+						pixelRatio: pr,
+						background: "#FFFFFF",
+						fontSize: 10,
+						categories: categories,
+						series: [{ name: "加班费", data: data }],
+						yAxis: { min: 0, gridColor: "#F0F0F0", fontSize: 9, splitNumber: 3 },
+						xAxis: { fontSize: 9, axisLineColor: "#E5E5E5", disableGrid: true },
+						legend: { show: false },
+						extra: { line: { type: "curve", width: 2 * pr } },
+						dataLabel: true,
+						color: ["#07C160"]
+					})
+				} catch (e) {
+					console.log("lineChart error:", e)
+				}
+			},
 		renderRingChart() {
 			if (this.totalHours <= 0) {
 				this.ringRendered = false
@@ -415,6 +485,43 @@ export default {
 							seriesGap: 2
 						}
 					},
+
+		typeLabel(type) {
+			const m = { weekday: "平日", weekend: "周末", holiday: "节假日" }
+			return m[type] || "平日"
+		},
+
+		handleExportCSV() {
+			const records = this.allRecords
+			if (records.length === 0) {
+				uni.showToast({ title: "无数据", icon: "none" })
+				return
+			}
+			let csv = "﻿日期,类型,时长(h),加班费,项目,备注,补贴,扣款
+"
+			records.forEach(r => {
+				const subsidies = r.subsidies ? ((r.subsidies.night_shift||0)+(r.subsidies.meal||0)+(r.subsidies.transport||0)) : 0
+				const deduction = r.deduction ? (r.deduction.amount||0) : 0
+				const row = [r.date, this.typeLabel(r.overtime_type), r.duration || 0, r.pay || 0, r.project_name || "", (r.remark || "").replace(/,/g, ";"), subsidies, deduction].join(",")
+				csv += row + "
+"
+			})
+			const now = new Date()
+			const fileName = "加班统计_" + now.getFullYear() + "-" + pad(now.getMonth()+1) + "-" + pad(now.getDate()) + ".csv"
+			// #ifdef MP-WEIXIN
+			try {
+				const fd = uni.getFileSystemManager()
+				const tmpPath = wx.env.USER_DATA_PATH + "/" + fileName
+				fd.writeFileSync(tmpPath, csv, "utf8")
+				uni.shareFileMessage({ filePath: tmpPath })
+			} catch (e) {
+				uni.setClipboardData({ data: csv, success: () => uni.showToast({ title: "CSV已复制", icon: "success" }) })
+			}
+			// #endif
+			// #ifndef MP-WEIXIN
+			uni.setClipboardData({ data: csv, success: () => uni.showToast({ title: "CSV已复制", icon: "success" }) })
+			// #endif
+		}
 					color: ['#07C160']
 				})
 				this.barRendered = true
@@ -514,7 +621,19 @@ export default {
 	}
 }
 
-/* uCharts Canvas */
+/* 导出按钮 */
+.nav-export {
+		display: flex;
+		align-items: center;
+		height: 100%;
+		padding: 0 8px;
+	}
+	.nav-export__text {
+		font-size: 14px;
+		color: #07C160;
+	}
+
+	/* uCharts Canvas */
 .chart-wrap {
 	display: flex;
 	justify-content: center;
