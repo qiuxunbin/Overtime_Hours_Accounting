@@ -1,0 +1,83 @@
+{
+  "bsonType": "object",
+  "required": ["user_id", "date", "start_time", "end_time", "duration", "overtime_type"],
+  "permission": {
+    "read": "auth.uid == doc.user_id",
+    "create": "auth.uid != null",
+    "update": "auth.uid == doc.user_id",
+    "delete": "auth.uid == doc.user_id"
+  },
+  "properties": {
+    "_id": {
+      "bsonType": "string",
+      "description": "记录ID，自动生成"
+    },
+    "user_id": {
+      "bsonType": "string",
+      "description": "关联 uni-id-users._id",
+      "forceDefaultValue": {
+        "$env": "uid"
+      }
+    },
+    "date": {
+      "bsonType": "string",
+      "description": "加班日期 YYYY-MM-DD",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "start_time": {
+      "bsonType": "string",
+      "description": "开始时间 HH:MM",
+      "pattern": "^\\d{2}:\\d{2}$"
+    },
+    "end_time": {
+      "bsonType": "string",
+      "description": "结束时间 HH:MM",
+      "pattern": "^\\d{2}:\\d{2}$"
+    },
+    "duration": {
+      "bsonType": "number",
+      "description": "加班时长（小时），如 3.5",
+      "minimum": 0,
+      "maximum": 24
+    },
+    "overtime_type": {
+      "bsonType": "string",
+      "description": "加班类型",
+      "enum": ["weekday", "weekend", "holiday"]
+    },
+    "rate": {
+      "bsonType": "number",
+      "description": "时薪（元/小时）",
+      "minimum": 0
+    },
+    "pay": {
+      "bsonType": "number",
+      "description": "预估加班费",
+      "minimum": 0
+    },
+    "remark": {
+      "bsonType": "string",
+      "description": "备注（选填）",
+      "maxLength": 200
+    },
+    "photos": {
+      "bsonType": "array",
+      "description": "照片云存储 URL 列表",
+      "maxLength": 3,
+      "items": {
+        "bsonType": "string"
+      }
+    },
+    "created_at": {
+      "bsonType": "timestamp",
+      "description": "创建时间",
+      "forceDefaultValue": {
+        "$env": "now"
+      }
+    },
+    "updated_at": {
+      "bsonType": "timestamp",
+      "description": "更新时间"
+    }
+  }
+}

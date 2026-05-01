@@ -1,0 +1,7 @@
+{
+  "name": "user-auth",
+  "version": "1.0.0",
+  "description": "用户认证云函数 - 微信登录/Token刷新/登出",
+  "main": "index.js",
+  "dependencies": {}
+}

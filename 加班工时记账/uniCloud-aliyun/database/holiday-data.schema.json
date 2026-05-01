@@ -1,0 +1,44 @@
+{
+  "bsonType": "object",
+  "required": ["year", "holidays"],
+  "permission": {
+    "read": true,
+    "create": "auth.uid != null",
+    "update": "auth.uid != null",
+    "delete": "auth.uid != null"
+  },
+  "properties": {
+    "_id": {
+      "bsonType": "string",
+      "description": "记录ID，自动生成"
+    },
+    "year": {
+      "bsonType": "int",
+      "description": "年份，如 2026",
+      "minimum": 2020
+    },
+    "holidays": {
+      "bsonType": "array",
+      "description": "法定节假日列表",
+      "items": {
+        "bsonType": "object",
+        "required": ["date", "name"],
+        "properties": {
+          "date": {
+            "bsonType": "string",
+            "description": "日期 YYYY-MM-DD",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "name": {
+            "bsonType": "string",
+            "description": "节日名称"
+          }
+        }
+      }
+    },
+    "updated_at": {
+      "bsonType": "timestamp",
+      "description": "更新时间"
+    }
+  }
+}

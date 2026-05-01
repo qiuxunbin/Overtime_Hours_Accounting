@@ -1,0 +1,90 @@
+{
+	"pages": [
+		{
+			"path": "pages/splash/splash",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/record/record",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/stats/stats",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/reconciliation/recon",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/salary/salary",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/profile/profile",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/clock/clock",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/feedback/feedback",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/login/login",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationStyle": "custom",
+		"backgroundColor": "#F7F7F7"
+	},
+	"tabBar": {
+		"color": "#999999",
+		"selectedColor": "#07C160",
+		"backgroundColor": "#FFFFFF",
+		"borderStyle": "white",
+		"height": "64px",
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"text": "记账"
+			},
+			{
+				"pagePath": "pages/stats/stats",
+				"text": "统计"
+			},
+			{
+				"pagePath": "pages/profile/profile",
+				"text": "我的"
+			}
+		]
+	},
+	"uniIdRouter": {}
+}

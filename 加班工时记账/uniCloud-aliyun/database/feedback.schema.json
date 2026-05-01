@@ -1,0 +1,54 @@
+{
+  "bsonType": "object",
+  "required": ["user_id", "title", "content"],
+  "permission": {
+    "read": "auth.uid == doc.user_id",
+    "create": "auth.uid != null",
+    "update": "auth.uid == doc.user_id",
+    "delete": "auth.uid == doc.user_id"
+  },
+  "properties": {
+    "_id": {
+      "bsonType": "string",
+      "description": "反馈ID，自动生成"
+    },
+    "user_id": {
+      "bsonType": "string",
+      "description": "提交用户ID",
+      "forceDefaultValue": {
+        "$env": "uid"
+      }
+    },
+    "title": {
+      "bsonType": "string",
+      "description": "反馈标题",
+      "maxLength": 100
+    },
+    "content": {
+      "bsonType": "string",
+      "description": "反馈内容",
+      "maxLength": 2000
+    },
+    "images": {
+      "bsonType": "array",
+      "description": "截图云存储 URL",
+      "maxLength": 9,
+      "items": {
+        "bsonType": "string"
+      }
+    },
+    "status": {
+      "bsonType": "string",
+      "description": "处理状态",
+      "enum": ["pending", "done"],
+      "defaultValue": "pending"
+    },
+    "created_at": {
+      "bsonType": "timestamp",
+      "description": "创建时间",
+      "forceDefaultValue": {
+        "$env": "now"
+      }
+    }
+  }
+}

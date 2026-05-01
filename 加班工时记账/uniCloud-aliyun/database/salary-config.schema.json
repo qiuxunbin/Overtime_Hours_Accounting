@@ -1,0 +1,45 @@
+{
+  "bsonType": "object",
+  "required": ["user_id"],
+  "permission": {
+    "read": "auth.uid == doc.user_id",
+    "create": "auth.uid != null",
+    "update": "auth.uid == doc.user_id",
+    "delete": "auth.uid == doc.user_id"
+  },
+  "properties": {
+    "_id": {
+      "bsonType": "string",
+      "description": "配置ID，自动生成"
+    },
+    "user_id": {
+      "bsonType": "string",
+      "description": "关联 uni-id-users._id",
+      "forceDefaultValue": {
+        "$env": "uid"
+      }
+    },
+    "weekday_rate": {
+      "bsonType": "number",
+      "description": "平日加班时薪（元/小时）",
+      "defaultValue": 0,
+      "minimum": 0
+    },
+    "weekend_rate": {
+      "bsonType": "number",
+      "description": "周末加班时薪（元/小时）",
+      "defaultValue": 0,
+      "minimum": 0
+    },
+    "holiday_rate": {
+      "bsonType": "number",
+      "description": "节假日加班时薪（元/小时）",
+      "defaultValue": 0,
+      "minimum": 0
+    },
+    "updated_at": {
+      "bsonType": "timestamp",
+      "description": "更新时间"
+    }
+  }
+}

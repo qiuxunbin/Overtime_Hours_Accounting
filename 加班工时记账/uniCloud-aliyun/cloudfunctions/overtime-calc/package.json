@@ -1,0 +1,7 @@
+{
+  "name": "overtime-calc",
+  "version": "1.0.0",
+  "description": "加班计算云函数 - 服务端批量计算与月汇总",
+  "main": "index.js",
+  "dependencies": {}
+}

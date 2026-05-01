@@ -1,0 +1,7 @@
+{
+  "name": "feedback",
+  "version": "1.0.0",
+  "description": "意见反馈服务 - 提交和查询反馈",
+  "main": "index.js",
+  "dependencies": {}
+}

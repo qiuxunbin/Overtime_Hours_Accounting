@@ -1,0 +1,96 @@
+/* ========================================
+   加班工时记账 — 全局样式变量
+   设计规范参照 prototyping/DESIGN.md
+   ======================================== */
+
+/* 颜色变量 — 基于原型设计系统 */
+$primary: #07C160;
+$primary-container: #07C160;
+$on-primary: #FFFFFF;
+$on-primary-container: #00471F;
+$primary-fixed: #66FF95;
+$primary-fixed-dim: #45E17C;
+
+$surface: #F9F9F9;
+$surface-dim: #DADADA;
+$surface-bright: #F9F9F9;
+$surface-container-lowest: #FFFFFF;
+$surface-container-low: #F3F3F3;
+$surface-container: #EEEEEE;
+$surface-container-high: #E8E8E8;
+$surface-container-highest: #E2E2E2;
+$surface-variant: #E2E2E2;
+
+$on-surface: #1A1C1C;
+$on-surface-variant: #3D4A3D;
+$on-background: #1A1C1C;
+$outline: #6C7B6C;
+$outline-variant: #BBCBBA;
+
+$background: #F9F9F9;
+
+$error: #BA1A1A;
+$on-error: #FFFFFF;
+$error-container: #FFDAD6;
+$on-error-container: #93000A;
+
+$tertiary: #A23D33;
+$on-tertiary: #FFFFFF;
+$tertiary-container: #FF8475;
+$on-tertiary-container: #741C16;
+
+$secondary: #006495;
+$on-secondary: #FFFFFF;
+$secondary-container: #05ACFD;
+$on-secondary-container: #003D5D;
+
+$inverse-primary: #45E17C;
+$inverse-surface: #2F3131;
+$inverse-on-surface: #F1F1F1;
+
+/* 文字尺寸 */
+$body-lg-size: 17px;
+$body-lg-height: 24px;
+$body-lg-weight: 400;
+
+$body-md-size: 15px;
+$body-md-height: 22px;
+$body-md-weight: 400;
+
+$label-md-size: 13px;
+$label-md-height: 18px;
+$label-md-weight: 500;
+$label-md-letter-spacing: 0.02em;
+
+$headline-lg-size: 24px;
+$headline-lg-height: 32px;
+$headline-lg-weight: 600;
+
+$headline-md-size: 20px;
+$headline-md-height: 28px;
+$headline-md-weight: 600;
+
+$caption-size: 12px;
+$caption-height: 16px;
+$caption-weight: 400;
+
+/* 间距 */
+$container-padding: 16px;
+$section-margin: 24px;
+$stack-gap: 8px;
+$gutter: 12px;
+
+/* 圆角 */
+$radius-sm: 2px;
+$radius-base: 4px;
+$radius-lg: 8px;
+$radius-xl: 12px;
+$radius-full: 999px;
+
+/* 阴影层级 */
+$shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+$shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
+$shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
+
+/* TabBar 高度 */
+$tabbar-height: 64px;
