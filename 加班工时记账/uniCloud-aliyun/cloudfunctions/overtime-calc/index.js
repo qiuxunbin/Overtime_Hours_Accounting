@@ -36,6 +36,7 @@ exports.main = async (event, context) => {
 
 	if (!uid) {
 		return { code: 401, message: '请先登录' }
+
 	}
 
 	switch (event.action) {
@@ -57,18 +58,18 @@ exports.main = async (event, context) => {
 			return await getSalaryConfig(uid)
 		case 'salarySet':
 			return await setSalaryConfig(uid, event.data)
-		
-			case 'projectList':
-				return await listProjects(uid)
-			case 'projectAdd':
-				return await addProject(uid, event.data)
-			case 'projectUpdate':
-				return await updateProject(uid, event.id, event.data)
-			case 'projectDelete':
-				return await deleteProject(uid, event.id)
-			case 'syncProjects':
-				return await syncProjects(uid, event)
-default:
+
+		case 'projectList':
+			return await listProjects(uid)
+		case 'projectAdd':
+			return await addProject(uid, event.data)
+		case 'projectUpdate':
+			return await updateProject(uid, event.id, event.data)
+		case 'projectDelete':
+			return await deleteProject(uid, event.id)
+		case 'syncProjects':
+			return await syncProjects(uid, event)
+		default:
 			return { code: 400, message: '未知动作' }
 	}
 }
@@ -92,16 +93,52 @@ async function getMonthlySummary(uid, year, month) {
 async function recalcMonth(uid, year, month) {
 	const prefix = `${year}-${String(month).padStart(2, '0')}`
 	const { data: configs } = await db.collection('salary-config').where({ user_id: uid }).limit(1).get()
-	const cfg = configs[0] || { weekday_rate: 0, weekend_rate: 0, holiday_rate: 0 }
+	const cfg = configs[0] || {}
 	const rateMap = { weekday: cfg.weekday_rate || 0, weekend: cfg.weekend_rate || 0, holiday: cfg.holiday_rate || 0 }
+
+	// 读取项目配置用于多模式费率
+	const { data: projects } = await db.collection('project-config').where({ user_id: uid }).limit(100).get()
+	const projMap = {}
+	projects.forEach(p => { projMap[p._id] = p })
+
 	const collection = db.collection('overtime-record')
 	const { data: records } = await collection.where({ user_id: uid, date: new RegExp(`^${prefix}`) }).limit(1000).get()
 	let updated = 0
 	for (const rec of records) {
-		const rate = rateMap[rec.overtime_type] || rec.rate || 0
-		const pay = Math.round((rec.duration || 0) * rate * 100) / 100
-		if (pay !== rec.pay || rate !== rec.rate) {
-			await collection.doc(rec._id).update({ rate, pay, updated_at: Date.now() })
+		const payMode = rec.pay_mode || 'hourly'
+		const project = rec.project_id ? projMap[rec.project_id] : null
+		let pay = 0, rate = 0
+
+		switch (payMode) {
+			case 'daily': {
+				rate = rec.daily_rate || project?.daily_rate || 0
+				pay = Math.round((rec.days || 1) * rate * 100) / 100
+				break
+			}
+			case 'piece': {
+				rate = rec.piece_rate || project?.piece_rate || 0
+				pay = Math.round((rec.quantity || 0) * rate * 100) / 100
+				break
+			}
+			case 'hourly':
+			default: {
+				rate = rateMap[rec.overtime_type] || rec.rate || 0
+				pay = Math.round((rec.duration || 0) * rate * 100) / 100
+				break
+			}
+		}
+
+		// 计算 net_pay（补贴嵌套结构 {night_shift, meal, transport} / 扣款嵌套结构 {amount, note}）
+		const subsidies = typeof rec.subsidies === 'object'
+			? ((rec.subsidies.night_shift || 0) + (rec.subsidies.meal || 0) + (rec.subsidies.transport || 0))
+			: (rec.subsidies || 0)
+		const deduction = typeof rec.deduction === 'object'
+			? (rec.deduction.amount || 0)
+			: (rec.deduction || 0)
+		const netPay = Math.round((pay + subsidies - deduction) * 100) / 100
+
+		if (pay !== rec.pay || rate !== rec.rate || netPay !== rec.net_pay) {
+			await collection.doc(rec._id).update({ rate, pay, net_pay: netPay, updated_at: Date.now() })
 			updated++
 		}
 	}
@@ -125,8 +162,39 @@ async function listRecords(uid) {
 	return { code: 0, data }
 }
 
+function validateRecord(record) {
+	const mode = record.pay_mode || 'hourly'
+	const errors = []
+	switch (mode) {
+		case 'hourly':
+			if (!record.duration || record.duration <= 0) errors.push('时薪模式必须填写加班时长')
+			if (!record.start_time) errors.push('时薪模式必须填写开始时间')
+			if (!record.end_time) errors.push('时薪模式必须填写结束时间')
+			if (!['weekday', 'weekend', 'holiday'].includes(record.overtime_type)) errors.push('时薪模式加班类型无效')
+			break
+		case 'daily':
+			if (!record.days || record.days < 1) errors.push('日薪模式必须填写天数')
+			break
+		case 'piece':
+			if (record.quantity === undefined || record.quantity < 0) errors.push('计件模式必须填写数量')
+			break
+	}
+	return errors
+}
+
 async function addRecord(uid, record) {
-	// 检测时间段重叠：同一天已存在 a—b，新加 x—y 满足 a<y 且 b>x 即重叠
+	const payMode = record.pay_mode || 'hourly'
+	const errors = validateRecord(record)
+	if (errors.length > 0) return { code: 400, message: errors.join('; ') }
+
+	// 非时薪模式不检测时间段重叠
+	if (payMode === 'daily' || payMode === 'piece') {
+		const data = { ...record, user_id: uid, created_at: Date.now() }
+		const res = await db.collection('overtime-record').add(data)
+		return { code: 0, id: res.id, data: { ...data, _id: res.id }, duplicated: false }
+	}
+
+	// 时薪模式检测时间段重叠
 	const dup = await db.collection('overtime-record')
 		.where({
 			user_id: uid,
@@ -144,6 +212,10 @@ async function addRecord(uid, record) {
 async function updateRecord(uid, id, record) {
 	const { data: exist } = await db.collection('overtime-record').where({ _id: id, user_id: uid }).limit(1).get()
 	if (!exist.length) return { code: 404, message: '记录不存在' }
+	// 验证模式相关字段
+	const merged = { ...exist[0], ...record }
+	const modeErrors = validateRecord(merged)
+	if (modeErrors.length > 0) return { code: 400, message: modeErrors.join('; ') }
 	// 改时间时也要检测重叠（排除自身）
 	if (record.date || record.start_time || record.end_time) {
 		const date = record.date || exist[0].date
@@ -216,6 +288,12 @@ async function syncRecords(uid, event) {
 					doc.created_at = doc.created_at || Date.now()
 					doc.updated_at = Date.now()
 
+					const vErrors = validateRecord(doc)
+					if (vErrors.length > 0) {
+						conflicts.push({ _id: op.id, reason: 'validation: ' + vErrors.join('; ') })
+						continue
+					}
+
 					const res = await collection.add(doc)
 					idMappings[op.id] = res.id
 					break
@@ -262,7 +340,7 @@ async function syncRecords(uid, event) {
 		conflicts: conflicts,
 		server_time: Date.now()
 	}
-
+}
 
 // ========== 项目管理 CRUD ==========
 
@@ -361,5 +439,4 @@ async function syncProjects(uid, event) {
 	}
 
 	return { code: 0, id_mappings: idMappings, conflicts: conflicts, server_time: Date.now() }
-}
 }

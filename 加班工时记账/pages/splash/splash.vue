@@ -49,8 +49,10 @@
 
 		<!-- 底部 -->
 		<view class="splash__footer">
-			<view class="splash__progress">
-				<view class="splash__progress-fill" :style="{ width: progress + '%' }"></view>
+			<view class="splash__dots">
+				<view class="splash__dot"></view>
+				<view class="splash__dot"></view>
+				<view class="splash__dot splash__dot--active"></view>
 			</view>
 			<text class="splash__hint">首次使用 · 了解功能</text>
 			<text class="splash__version">v1.0.0</text>
@@ -65,12 +67,10 @@ export default {
 	data() {
 		return {
 			visible: true,
-			progress: 0,
 			timer: null
 		}
 	},
 	onShow() {
-		// 第二次开始直接跳过
 		if (uni.getStorageSync(SPLASH_SHOWN_KEY)) {
 			this.goHome()
 			return
@@ -84,23 +84,21 @@ export default {
 	},
 	methods: {
 		animateProgress() {
-			const start = Date.now()
 			const duration = 1500
-			const step = () => {
-				const elapsed = Date.now() - start
-				this.progress = Math.min((elapsed / duration) * 100, 100)
-				if (elapsed < duration) {
-					this.timer = setTimeout(step, 30)
-				} else {
-					this.goHome()
-				}
-			}
-			step()
+			this.timer = setTimeout(() => {
+				this.goHome()
+			}, duration)
 		},
 		goHome() {
 			clearTimeout(this.timer)
 			this.visible = false
-			uni.switchTab({ url: '/pages/index/index' })
+			const token = uni.getStorageSync('uni_id_token')
+			const expired = uni.getStorageSync('uni_id_token_expired')
+			if (!token || (expired && Date.now() > expired)) {
+				uni.reLaunch({ url: '/pages/login/login' })
+			} else {
+				uni.reLaunch({ url: '/pages/index/index' })
+			}
 		}
 	}
 }
@@ -126,7 +124,7 @@ export default {
 	left: 0;
 	right: 0;
 	bottom: 0;
-	background: linear-gradient(160deg, #07C160 0%, #00A650 50%, #008A3D 100%);
+	background: linear-gradient(160deg, #1B8A5A 0%, #167A4E 50%, #15734B 100%);
 }
 
 .splash__skip {
@@ -246,19 +244,21 @@ export default {
 	align-items: center;
 }
 
-.splash__progress {
-	width: 160px;
-	height: 2px;
-	background: rgba(255, 255, 255, 0.15);
-	border-radius: 1px;
-	overflow: hidden;
-	margin-bottom: 8px;
+.splash__dots {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 12px;
 }
 
-.splash__progress-fill {
-	height: 100%;
-	background: rgba(255, 255, 255, 0.5);
-	border-radius: 1px;
+.splash__dot {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.3);
+
+	&--active {
+		background: var(--surface-card);
+	}
 }
 
 .splash__hint {

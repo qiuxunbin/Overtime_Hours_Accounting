@@ -1,75 +1,82 @@
 /* ========================================
-   加班工时记账 — 全局样式变量
-   设计规范参照 prototyping/DESIGN.md
+   加班工时记账 — 设计系统 Token（工装实用主义）
+   规范来源：DESIGN.md
    ======================================== */
 
-/* 颜色变量 — 基于原型设计系统 */
-$primary: #07C160;
-$primary-container: #07C160;
+/* ===== 色彩系统 ===== */
+$primary: #1B8A5A;           /* 沉绿 — 主色 */
+$primary-hover: #15734B;      /* 按钮按压态 */
+$primary-light: #E8F5EE;     /* 标签/成功提示背景 */
+$accent: #C4A46C;             /* 黄铜 — 强调色 */
+$accent-light: #F5EDE0;      /* 强调色背景 */
+$surface: #F8F6F2;            /* 页面底色 — 微暖米白 */
+$surface-card: #FFFFFF;       /* 卡片底色 */
+$surface-hover: #F0EDE6;     /* 点击/悬停反馈 */
+$text-primary: #1E1E1E;       /* 主文字 */
+$text-secondary: #5C5C5C;     /* 次要文字 */
+$text-muted: #9C9C9C;         /* 辅助/占位符 */
+$border: #E8E4DC;             /* 边框/分隔线 */
+$success: #1B8A5A;            /* 成功 */
+$warning: #C4A46C;            /* 警告 */
+$error: #B85C4A;              /* 错误/砖红 */
+$error-light: #FDF0ED;        /* 错误背景 */
+$info: #4A6B8A;               /* 信息 */
+$info-light: #EDF1F5;         /* 信息背景 */
+
+/* 兼容旧变量名（保持向后兼容） */
+$primary-container: $primary;
 $on-primary: #FFFFFF;
-$on-primary-container: #00471F;
-$primary-fixed: #66FF95;
-$primary-fixed-dim: #45E17C;
-
-$surface: #F9F9F9;
-$surface-dim: #DADADA;
-$surface-bright: #F9F9F9;
-$surface-container-lowest: #FFFFFF;
-$surface-container-low: #F3F3F3;
-$surface-container: #EEEEEE;
-$surface-container-high: #E8E8E8;
-$surface-container-highest: #E2E2E2;
-$surface-variant: #E2E2E2;
-
-$on-surface: #1A1C1C;
-$on-surface-variant: #3D4A3D;
-$on-background: #1A1C1C;
-$outline: #6C7B6C;
-$outline-variant: #BBCBBA;
-
-$background: #F9F9F9;
-
-$error: #BA1A1A;
+$surface-container-lowest: $surface-card;
+$on-surface: $text-primary;
+$background: $surface;
+$on-background: $text-primary;
+$error-container: $error-light;
 $on-error: #FFFFFF;
-$error-container: #FFDAD6;
-$on-error-container: #93000A;
-
+$on-error-container: $error;
 $tertiary: #A23D33;
-$on-tertiary: #FFFFFF;
-$tertiary-container: #FF8475;
-$on-tertiary-container: #741C16;
-
 $secondary: #006495;
-$on-secondary: #FFFFFF;
-$secondary-container: #05ACFD;
-$on-secondary-container: #003D5D;
+
+$surface-variant: $border;
+$outline: $text-muted;
+$outline-variant: $border;
 
 $inverse-primary: #45E17C;
 $inverse-surface: #2F3131;
 $inverse-on-surface: #F1F1F1;
 
+/* ===== 圆角体系 ===== */
+$radius-sm: 4px;              /* 标签 */
+$radius-md: 6px;              /* 小组件/输入框 */
+$radius-lg: 12px;             /* 卡片/容器 */
+$radius-full: 20px;           /* 按钮/pill */
+
+/* ===== 阴影体系 ===== */
+$shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+$shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
+$shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.08);
+
+/* ===== 字体 ===== */
+$font-display: 'Source Han Serif SC', 'Noto Serif SC', serif;
+$font-body: 'Noto Sans SC', -apple-system, sans-serif;
+$font-number: 'DM Sans', 'Noto Sans SC', sans-serif;
+
 /* 文字尺寸 */
 $body-lg-size: 17px;
 $body-lg-height: 24px;
 $body-lg-weight: 400;
-
 $body-md-size: 15px;
 $body-md-height: 22px;
 $body-md-weight: 400;
-
 $label-md-size: 13px;
 $label-md-height: 18px;
 $label-md-weight: 500;
 $label-md-letter-spacing: 0.02em;
-
 $headline-lg-size: 24px;
 $headline-lg-height: 32px;
 $headline-lg-weight: 600;
-
 $headline-md-size: 20px;
 $headline-md-height: 28px;
 $headline-md-weight: 600;
-
 $caption-size: 12px;
 $caption-height: 16px;
 $caption-weight: 400;
@@ -79,18 +86,6 @@ $container-padding: 16px;
 $section-margin: 24px;
 $stack-gap: 8px;
 $gutter: 12px;
-
-/* 圆角 */
-$radius-sm: 2px;
-$radius-base: 4px;
-$radius-lg: 8px;
-$radius-xl: 12px;
-$radius-full: 999px;
-
-/* 阴影层级 */
-$shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-$shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
-$shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
 
 /* TabBar 高度 */
 $tabbar-height: 64px;

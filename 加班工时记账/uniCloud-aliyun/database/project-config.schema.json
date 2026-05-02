@@ -27,7 +27,7 @@
     "color": {
       "bsonType": "string",
       "description": "显示色 #RRGGBB",
-      "defaultValue": "#07C160",
+      "defaultValue": "#1B8A5A",
       "pattern": "^#[0-9a-fA-F]{6}$"
     },
     "sort_order": {

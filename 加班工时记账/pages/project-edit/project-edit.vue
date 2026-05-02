@@ -3,21 +3,111 @@
 		<NavBar :title="editId ? '编辑项目' : '新建项目'" :showBack="true" />
 
 		<view class="page-project-edit__content">
-			<!-- 名称 -->
+			<!-- 项目名称 -->
 			<view class="field-row">
 				<text class="field-row__label">项目名称</text>
 				<input
 					class="field-row__input"
 					type="text"
 					v-model="form.name"
-					placeholder="例如：A项目"
+					placeholder="例如：xx工地"
 					maxlength="50"
 				/>
 			</view>
 
+			<!-- 计薪方式 -->
+			<view class="pay-mode-section">
+				<text class="section-label">计薪方式</text>
+
+				<!-- 三模式 Tab 切换 -->
+				<view class="pay-mode-tabs">
+					<view
+						v-for="m in payModeOptions"
+						:key="m.value"
+						class="pay-mode-tab"
+						:class="{ 'pay-mode-tab--active': form.pay_mode === m.value }"
+						@tap="form.pay_mode = m.value"
+					>
+						<text class="pay-mode-tab__icon">{{ m.icon }}</text>
+						<text class="pay-mode-tab__label">{{ m.label }}</text>
+					</view>
+				</view>
+
+				<!-- 时薪表单 -->
+				<view v-if="form.pay_mode === 'hourly'" class="rate-section">
+					<text class="rate-section__title">时薪标准</text>
+					<text class="rate-section__desc">留空或填 0 表示使用全局时薪设置</text>
+					<view class="rate-inputs">
+						<view class="rate-input">
+							<text class="rate-input__label">平日</text>
+							<view class="rate-input__right">
+								<text class="rate-input__prefix">¥</text>
+								<input class="rate-input__field" type="digit" v-model.number="form.weekday_rate" placeholder="0" />
+								<text class="rate-input__suffix">/h</text>
+							</view>
+						</view>
+						<view class="rate-input">
+							<text class="rate-input__label">周末</text>
+							<view class="rate-input__right">
+								<text class="rate-input__prefix">¥</text>
+								<input class="rate-input__field" type="digit" v-model.number="form.weekend_rate" placeholder="0" />
+								<text class="rate-input__suffix">/h</text>
+							</view>
+						</view>
+						<view class="rate-input rate-input--last">
+							<text class="rate-input__label">节假日</text>
+							<view class="rate-input__right">
+								<text class="rate-input__prefix">¥</text>
+								<input class="rate-input__field" type="digit" v-model.number="form.holiday_rate" placeholder="0" />
+								<text class="rate-input__suffix">/h</text>
+							</view>
+						</view>
+					</view>
+					<text class="rate-section__example">例：3.5h × ¥25/h = ¥87.5</text>
+				</view>
+
+				<!-- 日薪表单 -->
+				<view v-if="form.pay_mode === 'daily'" class="rate-section">
+					<text class="rate-section__title">日薪标准</text>
+					<text class="rate-section__desc">设置每天的工作报酬</text>
+					<view class="rate-inputs">
+						<view class="rate-input rate-input--last">
+							<text class="rate-input__label">日薪</text>
+							<view class="rate-input__right">
+								<text class="rate-input__prefix">¥</text>
+								<input class="rate-input__field" type="digit" v-model.number="form.daily_rate" placeholder="0" />
+								<text class="rate-input__suffix">/天</text>
+							</view>
+						</view>
+					</view>
+					<text class="rate-section__example">例：1天 × ¥300/天 = ¥300</text>
+				</view>
+
+				<!-- 计件表单 -->
+				<view v-if="form.pay_mode === 'piece'" class="rate-section">
+					<text class="rate-section__title">计件标准</text>
+					<text class="rate-section__desc">设置每件的计酬单价</text>
+					<view class="rate-inputs">
+						<view class="rate-input rate-input--last">
+							<text class="rate-input__label">单价</text>
+							<view class="rate-input__right">
+								<text class="rate-input__prefix">¥</text>
+								<input class="rate-input__field" type="digit" v-model.number="form.piece_rate" placeholder="0" />
+								<text class="rate-input__suffix">/</text>
+								<picker class="rate-input__picker" :value="pieceUnitIndex" :range="pieceUnitOptions" @change="onPieceUnitChange">
+									<text class="rate-input__picker-text">{{ form.piece_unit }}</text>
+									<text class="rate-input__picker-arrow">▼</text>
+								</picker>
+							</view>
+						</view>
+					</view>
+					<text class="rate-section__example">例：50件 × ¥6/件 = ¥300</text>
+				</view>
+			</view>
+
 			<!-- 颜色 -->
 			<view class="color-section">
-				<text class="color-section__label">颜色</text>
+				<text class="section-label">颜色</text>
 				<view class="color-section__options">
 					<view
 						v-for="(c, idx) in colorOptions"
@@ -27,50 +117,6 @@
 						:style="{ background: c.value }"
 						@tap="form.color = c.value"
 					></view>
-				</view>
-			</view>
-
-			<!-- 排序 -->
-			<view class="field-row">
-				<text class="field-row__label">排序</text>
-				<input
-					class="field-row__input field-row__input--number"
-					type="number"
-					v-model.number="form.sort_order"
-					placeholder="数字越小越靠前"
-				/>
-			</view>
-
-			<!-- 独立时薪 -->
-			<view class="rate-section">
-				<text class="rate-section__title">单独时薪（选填）</text>
-				<text class="rate-section__desc">留空或填 0 表示使用全局时薪设置</text>
-
-				<view class="rate-inputs">
-					<view class="rate-input">
-						<text class="rate-input__label">平日</text>
-						<view class="rate-input__right">
-							<text class="rate-input__prefix">¥</text>
-							<input class="rate-input__field" type="digit" v-model.number="form.weekday_rate" placeholder="0" />
-							<text class="rate-input__suffix">/h</text>
-						</view>
-					</view>
-					<view class="rate-input">
-						<text class="rate-input__label">周末</text>
-						<view class="rate-input__right">
-							<text class="rate-input__prefix">¥</text>
-							<input class="rate-input__field" type="digit" v-model.number="form.weekend_rate" placeholder="0" />
-							<text class="rate-input__suffix">/h</text>
-						</view>
-					</view>
-					<view class="rate-input rate-input--last">
-						<text class="rate-input__label">节假日</text>
-						<view class="rate-input__right">
-							<text class="rate-input__prefix">¥</text>
-							<input class="rate-input__field" type="digit" v-model.number="form.holiday_rate" placeholder="0" />
-							<text class="rate-input__suffix">/h</text>
-						</view>
-					</view>
 				</view>
 			</view>
 
@@ -98,7 +144,7 @@
 <script>
 import NavBar from '../../components/NavBar.vue'
 import { useProjectStore } from '../../stores/projectStore'
-import { PROJECT_COLORS } from '../../utils/constants'
+import { PROJECT_COLORS, PAY_MODES, PIECE_UNITS } from '../../utils/constants'
 
 export default {
 	components: { NavBar },
@@ -107,14 +153,25 @@ export default {
 			editId: null,
 			form: {
 				name: '',
-				color: '#07C160',
+				color: '#1B8A5A',
 				sort_order: 0,
+				pay_mode: 'hourly',
 				weekday_rate: 0,
 				weekend_rate: 0,
 				holiday_rate: 0,
+				daily_rate: 0,
+				piece_rate: 0,
+				piece_unit: '件',
 				is_archived: false
 			},
-			colorOptions: PROJECT_COLORS
+			colorOptions: PROJECT_COLORS,
+			payModeOptions: PAY_MODES,
+			pieceUnitOptions: PIECE_UNITS
+		}
+	},
+	computed: {
+		pieceUnitIndex() {
+			return Math.max(0, this.pieceUnitOptions.indexOf(this.form.piece_unit))
 		}
 	},
 	onLoad(options) {
@@ -125,17 +182,24 @@ export default {
 			if (proj) {
 				this.form = {
 					name: proj.name || '',
-					color: proj.color || '#07C160',
+					color: proj.color || '#1B8A5A',
 					sort_order: proj.sort_order || 0,
+					pay_mode: proj.pay_mode || 'hourly',
 					weekday_rate: proj.weekday_rate || 0,
 					weekend_rate: proj.weekend_rate || 0,
 					holiday_rate: proj.holiday_rate || 0,
+					daily_rate: proj.daily_rate || 0,
+					piece_rate: proj.piece_rate || 0,
+					piece_unit: proj.piece_unit || '件',
 					is_archived: proj.is_archived || false
 				}
 			}
 		}
 	},
 	methods: {
+		onPieceUnitChange(e) {
+			this.form.piece_unit = this.pieceUnitOptions[e.detail.value] || '件'
+		},
 		async handleSave() {
 			if (!this.form.name.trim()) {
 				uni.showToast({ title: '请输入项目名称', icon: 'none' })
@@ -147,9 +211,13 @@ export default {
 				name: this.form.name.trim(),
 				color: this.form.color,
 				sort_order: parseInt(this.form.sort_order) || 0,
+				pay_mode: this.form.pay_mode,
 				weekday_rate: parseFloat(this.form.weekday_rate) || 0,
 				weekend_rate: parseFloat(this.form.weekend_rate) || 0,
 				holiday_rate: parseFloat(this.form.holiday_rate) || 0,
+				daily_rate: parseFloat(this.form.daily_rate) || 0,
+				piece_rate: parseFloat(this.form.piece_rate) || 0,
+				piece_unit: this.form.piece_unit || '件',
 				is_archived: this.form.is_archived
 			}
 
@@ -170,7 +238,7 @@ export default {
 .page-project-edit {
 	padding-top: 56px;
 	min-height: 100vh;
-	background: #F7F7F7;
+	background: var(--surface);
 
 	&__content {
 		padding: 0 16px 100px;
@@ -184,14 +252,14 @@ export default {
 	align-items: center;
 	justify-content: space-between;
 	padding: 18px 20px;
-	background: #FFFFFF;
+	background: var(--surface-card);
 	border-radius: 12px;
-	border: 1px solid #E5E5E5;
+	border: 1px solid var(--border);
 	margin-top: 16px;
 
 	&__label {
 		font-size: 16px;
-		color: #1A1C1C;
+		color: var(--text-primary);
 		flex-shrink: 0;
 		margin-right: 12px;
 	}
@@ -200,7 +268,7 @@ export default {
 		flex: 1;
 		text-align: right;
 		font-size: 15px;
-		color: #666666;
+		color: var(--text-secondary);
 		border: none;
 		background: transparent;
 		padding: 0;
@@ -212,20 +280,164 @@ export default {
 	}
 }
 
+.section-label {
+	font-size: 15px;
+	font-weight: 600;
+	color: var(--text-primary);
+	display: block;
+	margin-bottom: 12px;
+}
+
+/* 计薪方式 */
+.pay-mode-section {
+	margin-top: 16px;
+	padding: 16px 20px;
+	background: var(--surface-card);
+	border-radius: 12px;
+	border: 1px solid var(--border);
+}
+
+.pay-mode-tabs {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 16px;
+}
+
+.pay-mode-tab {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 4px;
+	padding: 10px 0;
+	border-radius: 8px;
+	background: var(--surface);
+	border: 1.5px solid transparent;
+
+	&--active {
+		background: var(--primary-light);
+		border-color: var(--primary);
+	}
+
+	&__icon {
+		font-size: 16px;
+	}
+
+	&__label {
+		font-size: 14px;
+		font-weight: 500;
+		color: var(--text-muted);
+	}
+
+	&--active &__label {
+		color: var(--primary);
+	}
+}
+
+/* 费率输入 */
+.rate-section {
+	background: var(--surface);
+	border-radius: 8px;
+	padding: 14px;
+	margin-top: 4px;
+
+	&__title {
+		font-size: 14px;
+		font-weight: 500;
+		color: var(--text-primary);
+		display: block;
+	}
+
+	&__desc {
+		font-size: 12px;
+		color: var(--text-muted);
+		margin-top: 2px;
+		display: block;
+	}
+
+	&__example {
+		font-size: 12px;
+		color: var(--text-muted);
+		margin-top: 8px;
+		display: block;
+		font-style: italic;
+	}
+}
+
+.rate-inputs {
+	margin-top: 12px;
+}
+
+.rate-input {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 10px 0;
+	border-bottom: 1px solid var(--border);
+
+	&--last {
+		border-bottom: none;
+	}
+
+	&__label {
+		font-size: 14px;
+		color: var(--text-secondary);
+	}
+
+	&__right {
+		display: flex;
+		align-items: center;
+	}
+
+	&__prefix {
+		font-size: 14px;
+		color: var(--text-muted);
+	}
+
+	&__field {
+		width: 60px;
+		text-align: center;
+		font-size: 16px;
+		font-weight: 600;
+		color: var(--primary);
+		border: none;
+		background: transparent;
+		border-bottom: 1px solid var(--border);
+		padding: 2px 0;
+		margin: 0 4px;
+	}
+
+	&__suffix {
+		font-size: 12px;
+		color: var(--text-muted);
+		margin-right: 4px;
+	}
+
+	&__picker {
+		display: inline-flex;
+		align-items: center;
+	}
+
+	&__picker-text {
+		font-size: 14px;
+		font-weight: 500;
+		color: var(--primary);
+	}
+
+	&__picker-arrow {
+		font-size: 8px;
+		color: var(--text-muted);
+		margin-left: 2px;
+	}
+}
+
 /* 颜色选择 */
 .color-section {
 	margin-top: 16px;
 	padding: 16px 20px;
-	background: #FFFFFF;
+	background: var(--surface-card);
 	border-radius: 12px;
-	border: 1px solid #E5E5E5;
-
-	&__label {
-		font-size: 15px;
-		color: #1A1C1C;
-		display: block;
-		margin-bottom: 12px;
-	}
+	border: 1px solid var(--border);
 
 	&__options {
 		display: flex;
@@ -241,80 +453,8 @@ export default {
 	box-sizing: border-box;
 
 	&--active {
-		border-color: #1A1C1C;
-		box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 4px #1A1C1C;
-	}
-}
-
-/* 时薪 */
-.rate-section {
-	margin-top: 16px;
-	padding: 16px 20px;
-	background: #FFFFFF;
-	border-radius: 12px;
-	border: 1px solid #E5E5E5;
-
-	&__title {
-		font-size: 16px;
-		font-weight: 500;
-		color: #1A1C1C;
-		display: block;
-	}
-
-	&__desc {
-		font-size: 12px;
-		color: #999999;
-		margin-top: 4px;
-		display: block;
-	}
-}
-
-.rate-inputs {
-	margin-top: 16px;
-}
-
-.rate-input {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 10px 0;
-	border-bottom: 1px solid #F3F3F3;
-
-	&--last {
-		border-bottom: none;
-	}
-
-	&__label {
-		font-size: 14px;
-		color: #666666;
-	}
-
-	&__right {
-		display: flex;
-		align-items: center;
-	}
-
-	&__prefix {
-		font-size: 14px;
-		color: #999999;
-	}
-
-	&__field {
-		width: 60px;
-		text-align: center;
-		font-size: 16px;
-		font-weight: 600;
-		color: #07C160;
-		border: none;
-		background: transparent;
-		border-bottom: 1px solid #E5E5E5;
-		padding: 2px 0;
-		margin: 0 4px;
-	}
-
-	&__suffix {
-		font-size: 12px;
-		color: #999999;
+		border-color: var(--text-primary);
+		box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 4px #1E1E1E;
 	}
 }
 
@@ -324,33 +464,33 @@ export default {
 	align-items: center;
 	justify-content: space-between;
 	padding: 16px 20px;
-	background: #FFFFFF;
+	background: var(--surface-card);
 	border-radius: 12px;
-	border: 1px solid #E5E5E5;
+	border: 1px solid var(--border);
 	margin-top: 16px;
 
 	&__label {
 		font-size: 15px;
-		color: #1A1C1C;
+		color: var(--text-primary);
 	}
 
 	&__switch {
 		width: 44px;
 		height: 24px;
 		border-radius: 12px;
-		background: #DDDDDD;
+		background: #E8E4DC;
 		position: relative;
 
 		&--on {
-			background: #07C160;
+			background: var(--primary);
 		}
 	}
 
 	&__knob {
 		width: 20px;
 		height: 20px;
-		border-radius: 10px;
-		background: #FFFFFF;
+		border-radius: 20px;
+		background: var(--surface-card);
 		position: absolute;
 		top: 2px;
 		left: 2px;
@@ -367,8 +507,8 @@ export default {
 	bottom: 0;
 	left: 0;
 	right: 0;
-	background: #FFFFFF;
-	border-top: 1px solid #E5E5E5;
+	background: var(--surface-card);
+	border-top: 1px solid var(--border);
 	z-index: 100;
 
 	&__inner {
@@ -379,8 +519,8 @@ export default {
 
 	&__save {
 		height: 48px;
-		border-radius: 10px;
-		background: #07C160;
+		border-radius: 20px;
+		background: var(--primary);
 		display: flex;
 		align-items: center;
 		justify-content: center;

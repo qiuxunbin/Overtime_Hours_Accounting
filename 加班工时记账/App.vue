@@ -4,7 +4,36 @@
 	import { useSalaryStore } from './stores/salaryStore'
 	import { collection } from '@/utils/localStore'
 	import { DEFAULT_SALARY_CONFIG } from './utils/constants'
-import { useProjectStore } from './stores/projectStore'
+	import { useProjectStore } from './stores/projectStore'
+		import { fetchFromCloud } from './utils/holidays.js'
+	import { reactive } from 'vue'
+
+	// 全局主题状态（供所有页面访问）
+	export const themeState = reactive({
+		isDark: false
+	})
+
+	export function toggleTheme() {
+		themeState.isDark = !themeState.isDark
+		uni.setStorageSync('theme', themeState.isDark ? 'dark' : 'light')
+		applyThemeClass()
+	}
+
+	function applyThemeClass() {
+		// #ifdef APP-PLUS || H5
+		if (typeof document !== 'undefined') {
+			const cls = document.documentElement.classList
+			if (themeState.isDark) cls.add('dark-mode')
+			else cls.remove('dark-mode')
+		}
+		// #endif
+		// #ifdef MP-WEIXIN
+		uni.setNavigationBarColor({
+			frontColor: themeState.isDark ? '#ffffff' : '#000000',
+			backgroundColor: themeState.isDark ? '#1A1C1E' : '#F8F6F2'
+		})
+		// #endif
+	}
 
 	export default {
 		async onLaunch() {
@@ -17,8 +46,26 @@ import { useProjectStore } from './stores/projectStore'
 				uni.setStorageSync('uniIdToken', '')
 			}
 
+			// 恢复主题偏好
+			const savedTheme = uni.getStorageSync('theme')
+			if (savedTheme === 'dark') {
+				themeState.isDark = true
+				applyThemeClass()
+			}
+
 			// 预加载本地数据（在所有页面 onShow 之前）
 			this.preloadLocalData()
+
+			// 预加载节假日数据（异步，不阻塞）
+			fetchFromCloud()
+
+			// 首次安装 → 跳转启动页
+			const hasLaunched = uni.getStorageSync("has_launched")
+			if (!hasLaunched) {
+				uni.setStorageSync("has_launched", true)
+				uni.reLaunch({ url: "/pages/splash/splash" })
+				return
+			}
 
 			const userStore = useUserStore()
 			userStore.loadUser()
@@ -78,7 +125,6 @@ import { useProjectStore } from './stores/projectStore'
 						return
 					}
 					console.log('[silentLogin] 获取到 code:', loginRes.code)
-					// 加 6 秒超时，避免卡死
 					const result = await Promise.race([
 						uniCloud.callFunction({
 							name: 'user-auth',
@@ -151,11 +197,75 @@ import { useProjectStore } from './stores/projectStore'
 </script>
 
 <style>
+	/* 引入 Google Fonts — 仅在 App 端生效，小程序会 fallback 到系统字体 */
+	@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Noto+Sans+SC:wght@400;500;600;700&family=Source+Han+Serif+SC:wght@600;700&display=swap');
+
+	/* ===== 设计系统 CSS 变量（浅色模式） ===== */
+	page {
+		--primary: #1B8A5A;
+		--primary-hover: #15734B;
+		--primary-light: #E8F5EE;
+		--accent: #C4A46C;
+		--accent-light: #F5EDE0;
+		--surface: #F8F6F2;
+		--surface-card: #FFFFFF;
+		--surface-hover: #F0EDE6;
+		--text-primary: #1E1E1E;
+		--text-secondary: #5C5C5C;
+		--text-muted: #9C9C9C;
+		--border: #E8E4DC;
+		--success: #1B8A5A;
+		--warning: #C4A46C;
+		--error: #B85C4A;
+		--error-light: #FDF0ED;
+		--info: #4A6B8A;
+		--info-light: #EDF1F5;
+		--radius-sm: 4px;
+		--radius-md: 6px;
+		--radius-lg: 12px;
+		--radius-full: 20px;
+		--shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+		--shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+		--shadow-lg: 0 4px 16px rgba(0,0,0,0.08);
+	}
+
+	/* ===== 深色模式变量覆盖 ===== */
+	page.dark-mode,
+	.dark-mode page {
+		--primary: #2ECC71;
+		--primary-hover: #27AE60;
+		--primary-light: #1a3a2a;
+		--accent: #C4A46C;
+		--accent-light: #2a2418;
+		--surface: #1A1C1E;
+		--surface-card: #242628;
+		--surface-hover: #2F3133;
+		--text-primary: #E8E8E8;
+		--text-secondary: #A0A0A0;
+		--text-muted: #6C6C6C;
+		--border: #333538;
+		--error-light: #2a1a1a;
+		--info-light: #1a242a;
+	}
+
 	/* 全局样式 */
 	page {
-		background-color: #F7F7F7;
-		color: #1A1C1C;
-		font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif;
+		background-color: var(--surface);
+		color: var(--text-primary);
+		font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans SC', 'Helvetica Neue', sans-serif;
+	}
+
+	/* 数字/金额字体 — DM Sans + tabular-nums */
+	.number, .amount, [class*="__amount"], [class*="__hours"], [class*="__num"],
+	[class*="__value"], [class*="__pay"] {
+		font-family: 'DM Sans', 'Noto Sans SC', sans-serif;
+		font-variant-numeric: tabular-nums;
+	}
+
+	/* 展示性标题 — 思源宋体 */
+	.font-display, [class*="__title"]:not(.field-row__label):not(.section__title) {
+		font-family: 'Source Han Serif SC', 'Noto Serif SC', serif;
+		font-weight: 600;
 	}
 
 	/* iOS safe area 辅助 */

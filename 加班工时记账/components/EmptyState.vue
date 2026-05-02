@@ -1,8 +1,6 @@
 <template>
 	<view class="empty-state">
-		<view class="empty-state__icon-wrapper">
-			<text class="empty-state__icon">{{ icon }}</text>
-		</view>
+		<text class="empty-state__icon">{{ icon }}</text>
 		<text class="empty-state__title">{{ title }}</text>
 		<text v-if="description" class="empty-state__description">{{ description }}</text>
 		<view v-if="actionText" class="empty-state__action" @tap="handleAction">
@@ -14,27 +12,13 @@
 <script>
 export default {
 	props: {
-		icon: {
-			type: String,
-			default: '📋'
-		},
-		title: {
-			type: String,
-			default: '暂无数据'
-		},
-		description: {
-			type: String,
-			default: ''
-		},
-		actionText: {
-			type: String,
-			default: ''
-		}
+		icon: { type: String, default: '📋' },
+		title: { type: String, default: '暂无数据' },
+		description: { type: String, default: '' },
+		actionText: { type: String, default: '' }
 	},
 	methods: {
-		handleAction() {
-			this.$emit('action')
-		}
+		handleAction() { this.$emit('action') }
 	}
 }
 </script>
@@ -45,46 +29,38 @@ export default {
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	padding: 60px 32px;
+	padding: 40px 0;
 
-	&__icon-wrapper {
-		width: 80px;
-		height: 80px;
-		border-radius: 40px;
-		background: #F3F3F3;
-		display: flex;
-		align-items: center;
-		justify-content: center;
+	&__icon {
+		font-size: 48px;
+		line-height: 1;
 		margin-bottom: 16px;
 	}
 
-	&__icon {
-		font-size: 36px;
-	}
-
 	&__title {
-		font-size: 17px;
-		font-weight: 600;
-		color: #1A1C1C;
-		margin-bottom: 8px;
+		font-size: 14px;
+		font-weight: 400;
+		color: var(--text-muted);
+		margin-bottom: 4px;
 	}
 
 	&__description {
-		font-size: 14px;
-		color: #999999;
+		font-size: 13px;
+		color: var(--text-muted);
 		text-align: center;
-		line-height: 20px;
-		margin-bottom: 20px;
+		line-height: 18px;
+		margin-bottom: 16px;
+		opacity: 0.7;
 	}
 
 	&__action {
-		padding: 10px 24px;
-		background: #07C160;
-		border-radius: 12px;
+		padding: 8px 20px;
+		background: var(--primary);
+		border-radius: var(--radius-full);
 	}
 
 	&__action-text {
-		font-size: 15px;
+		font-size: 14px;
 		font-weight: 500;
 		color: #FFFFFF;
 	}

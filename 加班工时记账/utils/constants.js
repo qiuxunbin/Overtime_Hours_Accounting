@@ -2,6 +2,16 @@
  * 加班工时记账 — 全局常量
  */
 
+// 计薪方式枚举
+export const PAY_MODES = [
+	{ value: 'hourly', label: '时薪', icon: '⏱' },
+	{ value: 'daily', label: '日薪', icon: '📅' },
+	{ value: 'piece', label: '计件', icon: '📦' }
+]
+
+// 计件单位
+export const PIECE_UNITS = ['件', '㎡', 'm³', '吨']
+
 // 加班类型枚举
 export const OVERTIME_TYPES = [
 	{ value: 'weekday', label: '工作日加班' },
@@ -17,11 +27,15 @@ export const PRECISION_OPTIONS = [
 	{ value: 'exact', label: '精确计算', divisor: 0 }
 ]
 
-// 默认薪资配置（时薪模式，单位：元/小时）
+// 默认薪资配置（多模式）
 export const DEFAULT_SALARY_CONFIG = {
-	weekday_rate: 0,
-	weekend_rate: 0,
-	holiday_rate: 0,
+	pay_mode: 'hourly',
+	weekday_rate: 25,
+	weekend_rate: 32.5,
+	holiday_rate: 50,
+	daily_rate: 200,
+	piece_rate: 5,
+	piece_unit: '件',
 	precision: '15min'
 }
 
@@ -84,24 +98,24 @@ export const SUBSIDY_TYPES = [
 
 // 项目预设颜色
 export const PROJECT_COLORS = [
-	{ value: '#07C160', label: '绿' },
+	{ value: '#1B8A5A', label: '绿' },
 	{ value: '#006495', label: '蓝' },
 	{ value: '#FF8C00', label: '橙' },
-	{ value: '#BA1A1A', label: '红' },
-	{ value: '#9B59B6', label: '紫' },
-	{ value: '#00BCD4', label: '青' },
-	{ value: '#FF69B4', label: '粉' },
-	{ value: '#95A5A6', label: '灰' }
+	{ value: '#BA1A1A', label: '红' }
 ]
 
 // 默认项目配置
 export const DEFAULT_PROJECT_CONFIG = {
 	name: '',
-	color: '#07C160',
+	color: '#1B8A5A',
 	sort_order: 0,
+	pay_mode: 'hourly',
 	weekday_rate: 0,
 	weekend_rate: 0,
 	holiday_rate: 0,
+	daily_rate: 0,
+	piece_rate: 0,
+	piece_unit: '件',
 	is_archived: false
 }
 

@@ -5,11 +5,28 @@
 		<view class="page-salary__content">
 			<!-- 说明 -->
 			<view class="page-salary__intro">
-				<text class="page-salary__intro-text">设置每小时的加班费，按你实际拿到的填就行。</text>
+				<text class="page-salary__intro-text">设置默认计薪方式和费率，新建项目时会自动沿用。按你实际拿到手的填就行。</text>
 			</view>
 
-			<!-- 三个时薪输入 -->
-			<view class="rate-inputs">
+			<!-- 默认计薪方式 -->
+			<view class="mode-selector">
+				<text class="mode-selector__label">默认计薪方式</text>
+				<view class="mode-selector__tabs">
+					<view
+						v-for="m in payModes"
+						:key="m.value"
+						class="mode-selector__tab"
+						:class="{ 'mode-selector__tab--active': payMode === m.value }"
+						@tap="payMode = m.value"
+					>
+						<text class="mode-selector__tab-icon">{{ m.icon }}</text>
+						<text class="mode-selector__tab-label">{{ m.label }}</text>
+					</view>
+				</view>
+			</view>
+
+			<!-- 时薪模式费率 -->
+			<view class="rate-inputs" v-if="payMode === 'hourly'">
 				<view class="rate-input">
 					<view class="rate-input__left">
 						<text class="rate-input__type">平日加班</text>
@@ -60,48 +77,60 @@
 				</view>
 			</view>
 
-			<!-- 月薪换算工具 -->
-			<view class="helper-card">
-				<view class="helper-card__header" @tap="showHelper = !showHelper">
-					<view class="helper-card__header-left">
-						<text class="helper-card__icon">&#x1F4A1;</text>
-						<text class="helper-card__title">不确定时薪？用月薪帮你算</text>
+			<!-- 日薪模式费率 -->
+			<view class="rate-inputs" v-if="payMode === 'daily'">
+				<view class="rate-input rate-input--last">
+					<view class="rate-input__left">
+						<text class="rate-input__type">日薪</text>
+						<text class="rate-input__hint">按天计薪，适合建筑工、临时工等</text>
 					</view>
-					<text class="helper-card__arrow" :class="{ 'helper-card__arrow--open': showHelper }">&#x203A;</text>
-				</view>
-				<view class="helper-card__body" v-show="showHelper">
-					<view class="helper-card__input-row">
-						<text class="helper-card__prefix">¥</text>
+					<view class="rate-input__right">
+						<text class="rate-input__prefix">¥</text>
 						<input
-							class="helper-card__input"
+							class="rate-input__field"
 							type="digit"
-							v-model="helperSalary"
-							placeholder="输入月薪"
-							@input="onHelperInput"
+							v-model="dailyRate"
+							placeholder="0"
 						/>
-					</view>
-					<view class="helper-card__result" v-if="helperSalary > 0">
-						<text class="helper-card__result-label">按劳动法标准（月计薪 21.75 天）</text>
-						<view class="helper-card__rates">
-							<view class="helper-card__rate-item">
-								<text class="helper-card__rate-type">平日 × 1.5</text>
-								<text class="helper-card__rate-val">¥ {{ helperWeekday.toFixed(0) }}/h</text>
-							</view>
-							<view class="helper-card__rate-item">
-								<text class="helper-card__rate-type">周末 × 2.0</text>
-								<text class="helper-card__rate-val">¥ {{ helperWeekend.toFixed(0) }}/h</text>
-							</view>
-							<view class="helper-card__rate-item">
-								<text class="helper-card__rate-type">节假日 × 3.0</text>
-								<text class="helper-card__rate-val">¥ {{ helperHoliday.toFixed(0) }}/h</text>
-							</view>
-						</view>
-						<view class="helper-card__apply" @tap="applyHelper">
-							<text class="helper-card__apply-text">一键填入上方</text>
-						</view>
+						<text class="rate-input__suffix">/ 天</text>
 					</view>
 				</view>
 			</view>
+
+			<!-- 计件模式费率 -->
+			<view class="rate-inputs" v-if="payMode === 'piece'">
+				<view class="rate-input">
+					<view class="rate-input__left">
+						<text class="rate-input__type">计件单价</text>
+						<text class="rate-input__hint">每件或每单位的工价</text>
+					</view>
+					<view class="rate-input__right">
+						<text class="rate-input__prefix">¥</text>
+						<input
+							class="rate-input__field"
+							type="digit"
+							v-model="pieceRate"
+							placeholder="0"
+						/>
+						<text class="rate-input__suffix">/ {{ pieceUnit }}</text>
+					</view>
+				</view>
+				<view class="rate-input rate-input--last">
+					<view class="rate-input__left">
+						<text class="rate-input__type">计量单位</text>
+						<text class="rate-input__hint">按什么单位计件</text>
+					</view>
+					<view class="rate-input__right">
+						<picker @change="onPieceUnitChange" :value="pieceUnitIndex" :range="pieceUnitOptions">
+							<view class="rate-input__picker">
+								<text class="rate-input__value">{{ pieceUnit }}</text>
+								<text class="rate-input__arrow">›</text>
+							</view>
+						</picker>
+					</view>
+				</view>
+			</view>
+
 
 			<!-- 精度 -->
 			<view class="precision-row" @tap="showPrecision = !showPrecision">
@@ -124,39 +153,8 @@
 				</view>
 			</view>
 
-			<!-- 各项目时薪 -->
-			<view class="project-rates" v-if="projectList.length > 0">
-				<view class="project-rates__header">
-					<text class="project-rates__title">各项目时薪</text>
-					<text class="project-rates__hint">点击管理项目时薪</text>
-				</view>
-				<view
-					v-for="proj in projectList"
-					:key="proj._id"
-					class="project-rate-item"
-					
-				>
-					<view class="project-rate-item__left" @tap="editProject(proj)">
-						<view class="project-rate-item__color" :style="{ background: proj.color }"></view>
-						<text class="project-rate-item__name">{{ proj.name }}</text>
-					</view>
-					<view class="project-rate-item__rates">
-						<text class="project-rate-item__rate">平 ¥{{ proj.weekday_rate || '—' }}</text>
-						<text class="project-rate-item__rate">周 ¥{{ proj.weekend_rate || '—' }}</text>
-						<text class="project-rate-item__rate">节 ¥{{ proj.holiday_rate || '—' }}</text>
-					</view>
-					<view class="project-rate-item__action" @tap.stop="copyProjectToGlobal(proj)">
-						<text class="project-rate-item__copy-btn">设为全局</text>
-					</view>
-					<text class="project-rate-item__arrow" @tap="editProject(proj)">›</text>
-				</view>
-			</view>
+			<!-- 各项目设置 -->
 
-				<!-- 法律说明 -->
-			<view class="legal-note">
-				<text class="legal-note__icon">&#x26A0;</text>
-				<text class="legal-note__text">以上月薪换算依据《劳动法》第四十四条及劳社部发[2008]3号文件。本工具仅为加班费计算参考，不构成法律建议。</text>
-			</view>
 
 			<view class="page-salary__spacer"></view>
 		</view>
@@ -177,7 +175,7 @@
 import NavBar from '../../components/NavBar.vue'
 import { useSalaryStore } from '../../stores/salaryStore'
 import { useOvertimeStore } from '../../stores/overtimeStore'
-import { useProjectStore } from '../../stores/projectStore'
+import { PAY_MODES, PIECE_UNITS } from '../../utils/constants'
 
 const LEGAL_DAYS = 21.75
 const LEGAL_HOURS = 8
@@ -186,9 +184,16 @@ export default {
 	components: { NavBar },
 	data() {
 		return {
+			payMode: 'hourly',
 			weekdayRate: '',
 			weekendRate: '',
 			holidayRate: '',
+			dailyRate: '',
+			pieceRate: '',
+			pieceUnit: '件',
+			pieceUnitIndex: 0,
+			pieceUnitOptions: PIECE_UNITS,
+			payModes: PAY_MODES,
 			precisionOptions: [
 				{ label: '按 15 分钟', example: '1h10m → 1h15m' },
 				{ label: '按半小时', example: '1h10m → 1h30m' },
@@ -197,83 +202,46 @@ export default {
 			],
 			precisionIndex: 0,
 			showPrecision: false,
-			showHelper: false,
-			helperSalary: ''
 		}
 	},
 	computed: {
-		helperHourly() {
-			const s = parseFloat(this.helperSalary) || 0
-			if (s <= 0) return 0
-			return s / LEGAL_DAYS / LEGAL_HOURS
-		},
-		helperWeekday() {
-			return this.helperHourly * 1.5
-		},
-		helperWeekend() {
-			return this.helperHourly * 2.0
-		},
-		helperHoliday() {
-			return this.helperHourly * 3.0
-		},
-		projectList() {
-			const pStore = useProjectStore()
-			return pStore.activeProjects
-		}
 	},
 	onShow() {
 		this.loadConfig()
 	},
 	methods: {
-		onHelperInput() {
-			if (this.helperSalary.length > 6) {
-				this.helperSalary = this.helperSalary.slice(0, 6)
-			}
+		onPieceUnitChange(e) {
+			const idx = parseInt(e.detail.value) || 0
+			this.pieceUnitIndex = idx
+			this.pieceUnit = PIECE_UNITS[idx] || '件'
 		},
 		async loadConfig() {
 			const store = useSalaryStore()
 			await store.loadConfig()
 			const cfg = store.config
+			if (cfg.pay_mode) this.payMode = cfg.pay_mode
 			if (cfg.weekday_rate > 0) this.weekdayRate = String(cfg.weekday_rate)
 			if (cfg.weekend_rate > 0) this.weekendRate = String(cfg.weekend_rate)
 			if (cfg.holiday_rate > 0) this.holidayRate = String(cfg.holiday_rate)
+			if (cfg.daily_rate > 0) this.dailyRate = String(cfg.daily_rate)
+			if (cfg.piece_rate > 0) this.pieceRate = String(cfg.piece_rate)
+			this.pieceUnit = cfg.piece_unit || '件'
+			const unitIdx = PIECE_UNITS.indexOf(this.pieceUnit)
+			this.pieceUnitIndex = unitIdx >= 0 ? unitIdx : 0
 			const precMap = { '15min': 0, '30min': 1, '60min': 2, 'exact': 3 }
 			this.precisionIndex = precMap[cfg.precision] !== undefined ? precMap[cfg.precision] : 0
 		},
-		applyHelper() {
-			this.weekdayRate = String(Math.round(this.helperWeekday))
-			this.weekendRate = String(Math.round(this.helperWeekend))
-			this.holidayRate = String(Math.round(this.helperHoliday))
-		},
-		copyProjectToGlobal(proj) {
-			uni.showModal({
-				title: '复制到全局',
-				content: '将「' + proj.name + '」的时薪复制为全局默认时薪？',
-				success: async (res) => {
-					if (res.confirm) {
-						const s = useSalaryStore()
-						await s.updateConfig({
-							weekday_rate: proj.weekday_rate || s.config.weekday_rate,
-							weekend_rate: proj.weekend_rate || s.config.weekend_rate,
-							holiday_rate: proj.holiday_rate || s.config.holiday_rate
-						})
-						uni.showToast({ title: '已复制为全局时薪', icon: 'success' })
-					}
-				}
-			})
-		},
-
-			editProject(proj) {
-			uni.navigateTo({ url: '/pages/project-edit/project-edit?id=' + proj._id })
-		},
-
 		async handleSave() {
 			const store = useSalaryStore()
 			const precValues = ['15min', '30min', '60min', 'exact']
 			await store.updateConfig({
+				pay_mode: this.payMode,
 				weekday_rate: parseInt(this.weekdayRate) || 0,
 				weekend_rate: parseInt(this.weekendRate) || 0,
 				holiday_rate: parseInt(this.holidayRate) || 0,
+				daily_rate: parseInt(this.dailyRate) || 0,
+				piece_rate: parseInt(this.pieceRate) || 0,
+				piece_unit: this.pieceUnit,
 				precision: precValues[this.precisionIndex]
 			})
 
@@ -282,7 +250,7 @@ export default {
 			const now = new Date()
 			uni.showModal({
 				title: '应用到已有记录',
-				content: `是否用新费率重算 ${now.getFullYear()}年${now.getMonth() + 1}月 的加班费？`,
+				content: '是否用新费率重算 ' + now.getFullYear() + '年' + (now.getMonth() + 1) + '月 的加班费？',
 				confirmText: '重算',
 				success: async (res) => {
 					if (res.confirm) {
@@ -301,7 +269,7 @@ export default {
 							uni.hideLoading()
 							if (calcRes.result && calcRes.result.code === 0) {
 								const n = calcRes.result.data.updated
-								uni.showToast({ title: `已更新 ${n} 条记录`, icon: 'success' })
+								uni.showToast({ title: '已更新 ' + n + ' 条记录', icon: 'success' })
 								const overtimeStore = useOvertimeStore()
 								await overtimeStore.loadRecords()
 							} else {
@@ -324,7 +292,7 @@ export default {
 .page-salary {
 	padding-top: 56px;
 	min-height: 100vh;
-	background: #F7F7F7;
+	background: var(--surface);
 
 	&__content {
 		padding: 0 16px;
@@ -338,7 +306,7 @@ export default {
 
 	&__intro-text {
 		font-size: 14px;
-		color: #999999;
+		color: var(--text-muted);
 		line-height: 20px;
 	}
 
@@ -347,11 +315,59 @@ export default {
 	}
 }
 
+/* 默认计薪方式选择器 */
+.mode-selector {
+	background: var(--surface-card);
+	border-radius: 12px;
+	border: 1px solid var(--border);
+	padding: 16px 20px;
+	margin-bottom: 16px;
+
+	&__label {
+		font-size: 14px;
+		color: var(--text-secondary);
+		display: block;
+		margin-bottom: 12px;
+	}
+
+	&__tabs {
+		display: flex;
+		gap: 10px;
+	}
+
+	&__tab {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 12px 8px;
+		border-radius: 20px;
+		border: 1px solid var(--border);
+		background: var(--surface);
+
+		&--active {
+			border-color: var(--primary);
+			background: rgba(27, 138, 90, 0.06);
+		}
+	}
+
+	&__tab-icon {
+		font-size: 20px;
+		margin-bottom: 4px;
+	}
+
+	&__tab-label {
+		font-size: 13px;
+		color: var(--text-primary);
+		font-weight: 500;
+	}
+}
+
 /* 时薪输入 */
 .rate-inputs {
-	background: #FFFFFF;
+	background: var(--surface-card);
 	border-radius: 12px;
-	border: 1px solid #E5E5E5;
+	border: 1px solid var(--border);
 	overflow: hidden;
 	margin-bottom: 16px;
 }
@@ -361,7 +377,7 @@ export default {
 	align-items: center;
 	justify-content: space-between;
 	padding: 16px 20px;
-	border-bottom: 1px solid #F3F3F3;
+	border-bottom: 1px solid var(--border);
 
 	&--last {
 		border-bottom: none;
@@ -375,12 +391,12 @@ export default {
 	&__type {
 		font-size: 16px;
 		font-weight: 500;
-		color: #1A1C1C;
+		color: var(--text-primary);
 	}
 
 	&__hint {
 		font-size: 12px;
-		color: #999999;
+		color: var(--text-muted);
 		margin-top: 2px;
 	}
 
@@ -391,7 +407,7 @@ export default {
 
 	&__prefix {
 		font-size: 15px;
-		color: #999999;
+		color: var(--text-muted);
 	}
 
 	&__field {
@@ -399,297 +415,43 @@ export default {
 		text-align: center;
 		font-size: 24px;
 		font-weight: 700;
-		color: #07C160;
+		color: var(--primary);
 		background: transparent;
 		border: none;
-		border-bottom: 2px solid #07C160;
+		border-bottom: 2px solid var(--primary);
 		margin: 0 4px;
 		padding: 4px 0;
 	}
 
 	&__suffix {
 		font-size: 13px;
-		color: #999999;
-	}
-}
-
-/* 月薪换算 */
-.helper-card {
-	background: #FFFFFF;
-	border-radius: 12px;
-	border: 1px solid #E5E5E5;
-	margin-bottom: 16px;
-	overflow: hidden;
-
-	&__header {
-		padding: 14px 20px;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-	}
-
-	&__header-left {
-		display: flex;
-		align-items: center;
-	}
-
-	&__icon {
-		font-size: 16px;
-		margin-right: 6px;
-	}
-
-	&__title {
-		font-size: 14px;
-		color: #666666;
-	}
-
-	&__arrow {
-		font-size: 16px;
-		color: #CCCCCC;
-	}
-
-	&__arrow--open {
-		transform: rotate(90deg);
-	}
-
-	&__body {
-		padding: 0 20px 20px;
-		border-top: 1px solid #F3F3F3;
-		padding-top: 16px;
-	}
-
-	&__input-row {
-		display: flex;
-		align-items: center;
-		border-bottom: 2px solid #E5E5E5;
-		padding-bottom: 8px;
-	}
-
-	&__prefix {
-		font-size: 20px;
-		font-weight: 600;
-		color: #1A1C1C;
-		margin-right: 8px;
-	}
-
-	&__input {
-		flex: 1;
-		font-size: 20px;
-		font-weight: 600;
-		color: #1A1C1C;
-		background: transparent;
-		border: none;
-	}
-
-	&__result {
-		margin-top: 16px;
-		padding: 14px;
-		background: #F7FFF9;
-		border-radius: 8px;
-	}
-
-	&__result-label {
-		font-size: 12px;
-		color: #07C160;
-	}
-
-	&__rates {
-		margin-top: 10px;
-	}
-
-	&__rate-item {
-		display: flex;
-		justify-content: space-between;
-		padding: 6px 0;
-	}
-
-	&__rate-type {
-		font-size: 14px;
-		color: #666666;
-	}
-
-	&__rate-val {
-		font-size: 14px;
-		font-weight: 600;
-		color: #1A1C1C;
-	}
-
-	&__apply {
-		margin-top: 12px;
-		height: 36px;
-		border-radius: 18px;
-		background: #07C160;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	&__apply-text {
-		font-size: 13px;
-		font-weight: 500;
-		color: #FFFFFF;
-	}
-}
-
-/* 精度 */
-.precision-row {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 16px 0;
-	margin-bottom: 12px;
-
-	&__label {
-		font-size: 15px;
-		color: #1A1C1C;
-	}
-
-	&__right {
-		display: flex;
-		align-items: center;
+		color: var(--text-muted);
 	}
 
 	&__value {
-		font-size: 14px;
-		color: #999999;
+		font-size: 18px;
+		font-weight: 600;
+		color: var(--primary);
+		min-width: 40px;
+		text-align: center;
 	}
 
 	&__arrow {
-		font-size: 16px;
-		color: #CCCCCC;
+		font-size: 18px;
+		color: var(--text-muted);
 		margin-left: 4px;
 	}
-}
 
-.precision-detail {
-	background: #FFFFFF;
-	border-radius: 12px;
-	border: 1px solid #E5E5E5;
-	padding: 8px;
-	margin-bottom: 16px;
-	display: flex;
-	flex-wrap: wrap;
-}
-
-.precision-opt {
-	width: calc(50% - 8px);
-	margin: 4px;
-	padding: 10px 12px;
-	border-radius: 8px;
-	text-align: center;
-
-	&--active {
-		background: rgba(7, 193, 96, 0.06);
-	}
-
-	&__label {
-		font-size: 14px;
-		font-weight: 500;
-		color: #1A1C1C;
-		display: block;
-	}
-
-	&__eg {
-		font-size: 11px;
-		color: #999999;
-		display: block;
-		margin-top: 2px;
+	&__picker {
+		display: flex;
+		align-items: baseline;
+		padding: 4px 8px;
+		border-bottom: 2px solid var(--primary);
 	}
 }
 
-/* 各项目时薪 */
-.project-rates {
-		margin-top: 16px;
-		padding: 16px 20px;
-		background: #FFFFFF;
-		border-radius: 12px;
-		border: 1px solid #E5E5E5;
-	}
-	.project-rates__header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-bottom: 12px;
-	}
-	.project-rates__title {
-		font-size: 15px;
-		font-weight: 500;
-		color: #1A1C1C;
-	}
-	.project-rates__hint {
-		font-size: 12px;
-		color: #999999;
-	}
-	.project-rate-item {
-		display: flex;
-		align-items: center;
-		padding: 10px 0;
-		border-bottom: 1px solid #F3F3F3;
-	}
-	.project-rate-item:last-child {
-		border-bottom: none;
-	}
-	.project-rate-item__left {
-		display: flex;
-		align-items: center;
-		flex: 1;
-	}
-	.project-rate-item__color {
-		width: 10px;
-		height: 10px;
-		border-radius: 2px;
-		margin-right: 8px;
-	}
-	.project-rate-item__name {
-		font-size: 14px;
-		color: #1A1C1C;
-	}
-	.project-rate-item__rates {
-		display: flex;
-		gap: 8px;
-		margin: 0 8px;
-	}
-	.project-rate-item__rate {
-		font-size: 12px;
-		color: #999999;
-		background: #F7F7F7;
-		padding: 2px 6px;
-		border-radius: 4px;
-	}
-	.project-rate-item__action {
-		margin-left: 6px;
-	}
-	.project-rate-item__copy-btn {
-		font-size: 11px;
-		color: #07C160;
-		background: rgba(7, 193, 96, 0.1);
-		padding: 2px 6px;
-		border-radius: 6px;
-		white-space: nowrap;
-	}
 
-	.project-rate-item__arrow {
-		font-size: 16px;
-		color: #CCCCCC;
-	}
 
-	/* 法律说明 */
-.legal-note {
-	display: flex;
-	padding: 0 0 24px;
-
-	&__icon {
-		font-size: 13px;
-		margin-right: 4px;
-		flex-shrink: 0;
-	}
-
-	&__text {
-		font-size: 11px;
-		color: #BBBBBB;
-		line-height: 16px;
-	}
-}
 
 /* 底部 */
 .bottom-bar {
@@ -697,8 +459,8 @@ export default {
 	bottom: 0;
 	left: 0;
 	right: 0;
-	background: #FFFFFF;
-	border-top: 1px solid #E5E5E5;
+	background: var(--surface-card);
+	border-top: 1px solid var(--border);
 	z-index: 100;
 
 	&__inner {
@@ -709,8 +471,8 @@ export default {
 
 	&__save {
 		height: 48px;
-		border-radius: 10px;
-		background: #07C160;
+		border-radius: 20px;
+		background: var(--primary);
 		display: flex;
 		align-items: center;
 		justify-content: center;

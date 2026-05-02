@@ -1,6 +1,6 @@
 {
   "bsonType": "object",
-  "required": ["user_id", "date", "start_time", "end_time", "duration", "overtime_type"],
+  "required": ["user_id", "date", "overtime_type"],
   "permission": {
     "read": "auth.uid == doc.user_id",
     "create": "auth.uid != null",
@@ -26,12 +26,12 @@
     },
     "start_time": {
       "bsonType": "string",
-      "description": "开始时间 HH:MM",
+      "description": "开始时间 HH:MM（时薪模式必填）",
       "pattern": "^\\d{2}:\\d{2}$"
     },
     "end_time": {
       "bsonType": "string",
-      "description": "结束时间 HH:MM",
+      "description": "结束时间 HH:MM（时薪模式必填）",
       "pattern": "^\\d{2}:\\d{2}$"
     },
     "duration": {
@@ -45,14 +45,50 @@
       "description": "加班类型",
       "enum": ["weekday", "weekend", "holiday"]
     },
+    "pay_mode": {
+      "bsonType": "string",
+      "description": "计薪方式",
+      "enum": ["hourly", "daily", "piece"],
+      "defaultValue": "hourly"
+    },
     "rate": {
       "bsonType": "number",
-      "description": "时薪（元/小时）",
+      "description": "时薪（元/小时），时薪模式使用",
+      "minimum": 0
+    },
+    "daily_rate": {
+      "bsonType": "number",
+      "description": "日薪标准（元/天），日薪模式使用",
+      "minimum": 0
+    },
+    "piece_rate": {
+      "bsonType": "number",
+      "description": "单件工资（元），计件模式使用",
+      "minimum": 0
+    },
+    "piece_unit": {
+      "bsonType": "string",
+      "description": "计件单位，如 件/个/套",
+      "maxLength": 10
+    },
+    "days": {
+      "bsonType": "number",
+      "description": "加班天数（日薪模式）",
+      "minimum": 0
+    },
+    "quantity": {
+      "bsonType": "number",
+      "description": "完成件数（计件模式）",
       "minimum": 0
     },
     "pay": {
       "bsonType": "number",
       "description": "预估加班费",
+      "minimum": 0
+    },
+    "net_pay": {
+      "bsonType": "number",
+      "description": "净额 = 加班费 + 补贴 - 扣款",
       "minimum": 0
     },
     "remark": {
@@ -67,30 +103,6 @@
       "items": {
         "bsonType": "string"
       }
-    },
-    "created_at": {
-      "bsonType": "timestamp",
-      "description": "创建时间",
-      "forceDefaultValue": {
-        "$env": "now"
-      }
-    },
-    "updated_at": {
-      "bsonType": "timestamp",
-      "description": "更新时间"
-    },
-    "device_id": {
-      "bsonType": "string",
-      "description": "匿名设备标识，未登录时使用"
-    },
-    "project_name": {
-      "bsonType": "string",
-      "description": "所属项目名称",
-      "maxLength": 50
-    },
-    "project_id": {
-      "bsonType": "string",
-      "description": "关联 project-config._id"
     },
     "settled": {
       "bsonType": "bool",
@@ -113,6 +125,30 @@
         "amount": { "bsonType": "number", "description": "扣款金额" },
         "note": { "bsonType": "string", "description": "扣款原因" }
       }
+    },
+    "project_name": {
+      "bsonType": "string",
+      "description": "所属项目名称",
+      "maxLength": 50
+    },
+    "project_id": {
+      "bsonType": "string",
+      "description": "关联 project-config._id"
+    },
+    "device_id": {
+      "bsonType": "string",
+      "description": "匿名设备标识，未登录时使用"
+    },
+    "created_at": {
+      "bsonType": "timestamp",
+      "description": "创建时间",
+      "forceDefaultValue": {
+        "$env": "now"
+      }
+    },
+    "updated_at": {
+      "bsonType": "timestamp",
+      "description": "更新时间"
     }
   }
 }

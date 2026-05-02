@@ -1,8 +1,15 @@
 <template>
 	<view class="page-index">
-		<NavBar title="加班记账" />
+		<NavBar title="加班记账" green />
 
 		<view class="page-index__content">
+			<!-- 加班状态 -->
+			<view class="clock-status" @tap="toggleClock">
+				<view class="clock-status__dot" :class="{ 'clock-status__dot--active': isClockedIn }"></view>
+				<text class="clock-status__text" v-if="isClockedIn">当前加班 · 已计时 {{ clockElapsed }}</text>
+				<text class="clock-status__text clock-status__text--idle" v-else>未在加班，点击计时</text>
+			</view>
+
 			<!-- 月度摘要 -->
 			<view class="summary-card">
 				<view class="summary-card__top">
@@ -11,6 +18,10 @@
 						<text class="summary-card__hours">
 							{{ totalHours }}<text class="summary-card__unit"> 小时</text>
 						</text>
+						<view class="summary-card__sub-row" v-if="totalDays > 0 || totalQuantity > 0">
+							<text class="summary-card__sub-text" v-if="totalDays > 0">{{ totalDays }}天</text>
+							<text class="summary-card__sub-text" v-if="totalQuantity > 0">{{ totalQuantity }}件</text>
+						</view>
 					</view>
 					<view class="summary-card__right">
 						<text class="summary-card__pay-label">预计实付</text>
@@ -32,15 +43,6 @@
 						<text class="summary-card__breakdown-value">{{ holidayHours }}h</text>
 					</view>
 				</view>
-			</view>
-
-			<!-- 对账入口 -->
-			<view class="recon-entry" @tap="goRecon">
-				<view class="recon-entry__left">
-					<text class="recon-entry__icon">&#x2705;</text>
-					<text class="recon-entry__text">去对账，看看加班费少没少发</text>
-				</view>
-				<text class="recon-entry__arrow">&#x203A;</text>
 			</view>
 
 			<!-- 日历 -->
@@ -87,7 +89,7 @@
 					<text class="records-section__title">最近记录</text>
 					<view class="settle-filter">
 								<view class="project-filter" @tap="showProjectFilter">
-									<text class="project-filter__text" :style="{ color: selectedProjectFilter ? '#07C160' : '#999999' }">{{ selectedProjectFilter ? getProjectName(selectedProjectFilter) : '所有项目' }}</text>
+									<text class="project-filter__text" :style="{ color: selectedProjectFilter ? '#1B8A5A' : '#9C9C9C' }">{{ selectedProjectFilter ? getProjectName(selectedProjectFilter) : '所有项目' }}</text>
 									<text class="field-row__arrow">›</text>
 								</view>
 							</view>
@@ -95,7 +97,6 @@
 						<text class="settle-filter__item" :class="{ 'settle-filter__item--active': settleFilter === 'unsettled' }" @tap="settleFilter = 'unsettled'">未结算</text>
 						<text class="settle-filter__item" :class="{ 'settle-filter__item--active': settleFilter === 'settled' }" @tap="settleFilter = 'settled'">已结算</text>
 					</view>
-				</view>
 				<view class="records-section__list">
 					<view
 						v-for="(rec, idx) in recentRecords"
@@ -112,12 +113,13 @@
 						</view>
 						<view class="record-item__info">
 							<text class="record-item__type">{{ typeFull(rec.overtime_type) }}</text>
-							<text class="record-item__date">{{ rec.date }} {{ rec.start_time }}-{{ rec.end_time }}</text>
+							<text class="record-item__date">{{ rec.date }} {{ recordTimeStr(rec) }}</text>
 								<text class="record-item__project" v-if="rec.project_name">{{ rec.project_name }}</text>
 						</view>
 						<view class="record-item__right">
-							<text class="record-item__settle-badge" :class="rec.settled ? 'record-item__settle-badge--done' : 'record-item__settle-badge--pending'">{{ rec.settled ? '已结' : '未结' }}</text>
-							<text class="record-item__hours">{{ rec.duration }}h</text>
+							<text class="record-item__pay-mode-tag">{{ modeLabel(rec.pay_mode) }}</text>
+								<text class="record-item__settle-badge" :class="rec.settled ? 'record-item__settle-badge--done' : 'record-item__settle-badge--pending'">{{ rec.settled ? '已结' : '未结' }}</text>
+							<text class="record-item__hours">{{ recordQtyStr(rec) }}</text>
 							<text class="record-item__pay" v-if="rec.pay">¥{{ rec.pay.toFixed(0) }}</text>
 						</view>
 					</view>
@@ -137,7 +139,7 @@
 		<!-- 浮动按钮 -->
 		<view class="fab" @tap="goRecord">
 			<text class="fab__icon">+</text>
-	</view>
+		</view>
 
 		<!-- 当日汇总弹窗 -->
 		<view class="day-sheet" v-if="showDaySheet" @tap="showDaySheet = false">
@@ -156,11 +158,11 @@
 					>
 						<view class="day-sheet__item-left">
 							<text class="day-sheet__item-type">{{ typeFull(rec.overtime_type) }}</text>
-							<text class="day-sheet__item-time">{{ rec.start_time }}-{{ rec.end_time }}</text>
+							<text class="day-sheet__item-time">{{ recordTimeStr(rec) }}</text>
 							<text class="record-item__project" v-if="rec.project_name">{{ rec.project_name }}</text>
 						</view>
 						<view class="day-sheet__item-right">
-							<text class="day-sheet__item-hours">{{ rec.duration }}h</text>
+							<text class="day-sheet__item-hours">{{ recordQtyStr(rec) }}</text>
 							<text class="day-sheet__item-pay" v-if="rec.pay">¥{{ rec.pay.toFixed(0) }}</text>
 							<text class="record-item__settle-badge" :class="rec.settled ? 'record-item__settle-badge--done' : 'record-item__settle-badge--pending'">{{ rec.settled ? '已结' : '未结' }}</text>
 						</view>
@@ -171,6 +173,8 @@
 				</view>
 			</view>
 		</view>
+		<ThemeToggle />
+	
 	</view>
 </template>
 <script>
@@ -178,11 +182,12 @@ import NavBar from '../../components/NavBar.vue'
 import { useOvertimeStore } from '../../stores/overtimeStore'
 import { useSalaryStore } from '../../stores/salaryStore'
 import { useProjectStore } from '../../stores/projectStore'
+import ThemeToggle from '@/components/ThemeToggle.vue'
 
 function pad(n) { return String(n).padStart(2, '0') }
 
 export default {
-	components: { NavBar },
+	components: { NavBar, ThemeToggle },
 	data() {
 		const now = new Date()
 		return {
@@ -193,7 +198,10 @@ export default {
 			showDaySheet: false,
 			daySheetDate: '',
 			settleFilter: 'all',
-				selectedProjectFilter: null
+			selectedProjectFilter: null,
+			clockInTime: null,
+			clockElapsed: '0min',
+			clockTimer: null
 		}
 	},
 	computed: {
@@ -213,6 +221,12 @@ export default {
 		totalPay() {
 			return this.monthRecords.reduce((s, r) => s + (r.pay || 0), 0)
 		},
+			totalDays() {
+				return this.monthRecords.reduce((s, r) => s + (r.days || 0), 0)
+			},
+			totalQuantity() {
+				return this.monthRecords.reduce((s, r) => s + (r.quantity || 0), 0)
+			},
 		weekdayHours() {
 			return this.monthRecords.filter(r => r.overtime_type === 'weekday').reduce((s, r) => s + (r.duration || 0), 0)
 		},
@@ -243,6 +257,9 @@ export default {
 				list = list.filter(r => !r.settled)
 			} else if (this.settleFilter === 'settled') {
 				list = list.filter(r => r.settled)
+			}
+			if (this.selectedProjectFilter) {
+				list = list.filter(r => r.project_id === this.selectedProjectFilter)
 			}
 			return list.slice(0, 10)
 		},
@@ -275,6 +292,9 @@ export default {
 			}
 
 			return cells
+		},
+		isClockedIn() {
+			return this.clockInTime !== null
 		}
 	},
 	onShow() {
@@ -282,6 +302,13 @@ export default {
 		store.loadRecords()
 		const now = new Date()
 		this.todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+		this.restoreClock()
+	},
+	onHide() {
+		if (this.clockTimer) {
+			clearInterval(this.clockTimer)
+			this.clockTimer = null
+		}
 	},
 		methods: {
 			prevMonth() {
@@ -319,6 +346,44 @@ export default {
 			iconClass(type) {
 				return type === 'weekend' ? 'record-item__icon--weekend' : type === 'holiday' ? 'record-item__icon--holiday' : 'record-item__icon--weekday'
 			},
+			restoreClock() {
+				const saved = uni.getStorageSync('overtime_clock_in')
+				if (saved) {
+					this.clockInTime = saved
+					this.updateClockElapsed()
+					this.clockTimer = setInterval(() => { this.updateClockElapsed() }, 60000)
+				} else {
+					this.clockInTime = null
+					this.clockElapsed = '0min'
+				}
+			},
+			toggleClock() {
+				if (this.isClockedIn) {
+					this.clockInTime = null
+					this.clockElapsed = '0min'
+					uni.removeStorageSync('overtime_clock_in')
+					if (this.clockTimer) {
+						clearInterval(this.clockTimer)
+						this.clockTimer = null
+					}
+				} else {
+					this.clockInTime = Date.now()
+					uni.setStorageSync('overtime_clock_in', this.clockInTime)
+					this.updateClockElapsed()
+					this.clockTimer = setInterval(() => { this.updateClockElapsed() }, 60000)
+				}
+			},
+			updateClockElapsed() {
+				if (!this.clockInTime) { this.clockElapsed = '0min'; return }
+				const elapsed = Math.floor((Date.now() - this.clockInTime) / 60000)
+				if (elapsed < 60) {
+					this.clockElapsed = elapsed + 'min'
+				} else {
+					const h = Math.floor(elapsed / 60)
+					const m = elapsed % 60
+					this.clockElapsed = h + 'h ' + m + 'min'
+				}
+			},
 			goRecord() {
 				uni.navigateTo({ url: '/pages/record/record' })
 			},
@@ -327,6 +392,41 @@ export default {
 			},
 			goRecon() {
 				uni.navigateTo({ url: '/pages/reconciliation/recon' })
+			},
+			recordTimeStr(rec) {
+				if (rec.pay_mode === 'daily') return rec.days + '天'
+				if (rec.pay_mode === 'piece') return rec.quantity + (rec.piece_unit || '件')
+				return (rec.start_time || '') + '-' + (rec.end_time || '')
+			},
+			recordQtyStr(rec) {
+				if (rec.pay_mode === 'daily') return (rec.days || 1) + '天'
+				if (rec.pay_mode === 'piece') return (rec.quantity || 0) + (rec.piece_unit || '件')
+				return (rec.duration || 0) + 'h'
+			},
+			modeLabel(mode) {
+				const m = { hourly: '时薪', daily: '日薪', piece: '计件' }
+				return m[mode] || '时薪'
+			},
+			getProjectName(id) {
+				if (!id) return '无项目'
+				const pStore = useProjectStore()
+				const proj = pStore.getProjectById(id)
+				return proj ? proj.name : '无项目'
+			},
+			showProjectFilter() {
+				const pStore = useProjectStore()
+				pStore.loadProjects()
+				setTimeout(() => {
+					const items = [{ text: '所有项目', value: null },
+						...pStore.activeProjects.map(p => ({ text: p.name, value: p._id }))
+					]
+					uni.showActionSheet({
+						itemList: items.map(i => i.text),
+						success: (res) => {
+							this.selectedProjectFilter = items[res.tapIndex].value
+						}
+					})
+				}, 100)
 			},
 			goRecordDate() {
 				this.showDaySheet = false
@@ -340,7 +440,7 @@ export default {
 .page-index {
 	padding-top: 56px;
 	min-height: 100vh;
-	background: #F7F7F7;
+	background: var(--surface);
 
 	&__content {
 		padding: 16px 16px 100px;
@@ -349,10 +449,42 @@ export default {
 	}
 }
 
+/* 加班状态 */
+.clock-status {
+	display: flex;
+	align-items: center;
+	padding: 8px 12px;
+	background: var(--primary-light);
+	border-radius: 20px;
+	margin-bottom: 10px;
+	cursor: pointer;
+}
+.clock-status__dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: #9C9C9C;
+	margin-right: 8px;
+	flex-shrink: 0;
+}
+.clock-status__dot--active {
+	background: var(--primary);
+}
+.clock-status__text {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--primary);
+}
+.clock-status__text--idle {
+	color: var(--text-muted);
+	font-weight: 400;
+	font-size: 12px;
+}
+
 /* 摘要卡片 */
 .summary-card {
-	background: #FFFFFF;
-	border: 1px solid #E5E5E5;
+	background: var(--surface-card);
+	border: 1px solid var(--border);
 	border-radius: 12px;
 	padding: 20px;
 	margin-bottom: 16px;
@@ -369,13 +501,13 @@ export default {
 
 	&__label {
 		font-size: 14px;
-		color: #999999;
+		color: var(--text-muted);
 	}
 
 	&__hours {
 		font-size: 28px;
 		font-weight: 700;
-		color: #07C160;
+		color: var(--primary);
 		margin-top: 4px;
 		display: block;
 	}
@@ -383,7 +515,7 @@ export default {
 	&__unit {
 		font-size: 15px;
 		font-weight: 400;
-		color: #999999;
+		color: var(--text-muted);
 	}
 
 	&__right {
@@ -392,21 +524,21 @@ export default {
 
 	&__pay-label {
 		font-size: 12px;
-		color: #999999;
+		color: var(--text-muted);
 		display: block;
 	}
 
 	&__pay {
 		font-size: 20px;
 		font-weight: 700;
-		color: #1A1C1C;
+		color: var(--text-primary);
 		margin-top: 4px;
 		display: block;
 	}
 
 	&__divider {
 		height: 1px;
-		background: #E5E5E5;
+		background: #E8E4DC;
 		margin: 16px 0;
 	}
 
@@ -421,14 +553,14 @@ export default {
 
 	&__breakdown-label {
 		font-size: 12px;
-		color: #999999;
+		color: var(--text-muted);
 		display: block;
 	}
 
 	&__breakdown-value {
 		font-size: 16px;
 		font-weight: 600;
-		color: #1A1C1C;
+		color: var(--text-primary);
 		margin-top: 2px;
 		display: block;
 	}
@@ -436,9 +568,9 @@ export default {
 
 /* 日历 */
 .calendar {
-	background: #FFFFFF;
+	background: var(--surface-card);
 	border-radius: 12px;
-	border: 1px solid #E5E5E5;
+	border: 1px solid var(--border);
 	overflow: hidden;
 	margin-bottom: 16px;
 
@@ -452,7 +584,7 @@ export default {
 	&__title {
 		font-size: 17px;
 		font-weight: 600;
-		color: #1A1C1C;
+		color: var(--text-primary);
 	}
 
 	&__nav {
@@ -466,12 +598,12 @@ export default {
 
 	&__nav-icon {
 		font-size: 22px;
-		color: #999999;
+		color: var(--text-muted);
 	}
 
 	&__weekdays {
 		display: flex;
-		background: #F7F7F7;
+		background: var(--surface);
 	}
 
 	&__weekday {
@@ -480,7 +612,7 @@ export default {
 		padding: 8px 0;
 		font-size: 12px;
 		font-weight: 500;
-		color: #999999;
+		color: var(--text-muted);
 
 		&--weekend {
 			color: #E53935;
@@ -500,8 +632,8 @@ export default {
 		align-items: center;
 		justify-content: center;
 		padding: 4px 0;
-		border-right: 1px solid #F3F3F3;
-		border-bottom: 1px solid #F3F3F3;
+		border-right: 1px solid #E8E4DC;
+		border-bottom: 1px solid var(--border);
 		box-sizing: border-box;
 
 		&:nth-child(7n) {
@@ -509,24 +641,24 @@ export default {
 		}
 
 		&--empty {
-			background: #FAFAFA;
+			background: var(--surface);
 		}
 
 		&--today {
-			background: rgba(7, 193, 96, 0.06);
+			background: rgba(27, 138, 90, 0.06);
 		}
 	}
 
 	&__day {
 		font-size: 14px;
-		color: #1A1C1C;
+		color: var(--text-primary);
 
 		.calendar__cell--weekend & {
 			color: #E53935;
 		}
 
 		.calendar__cell--today & {
-			color: #07C160;
+			color: var(--primary);
 			font-weight: 700;
 		}
 	}
@@ -535,7 +667,7 @@ export default {
 		width: 4px;
 		height: 4px;
 		border-radius: 50%;
-		background: #07C160;
+		background: var(--primary);
 		margin-top: 3px;
 	}
 }
@@ -556,13 +688,13 @@ export default {
 	&__title {
 		font-size: 17px;
 		font-weight: 600;
-		color: #1A1C1C;
+		color: var(--text-primary);
 		display: block;
 	}
 
 	&__desc {
 		font-size: 14px;
-		color: #999999;
+		color: var(--text-muted);
 		display: block;
 		margin-top: 6px;
 	}
@@ -579,13 +711,13 @@ export default {
 	&__title {
 		font-size: 17px;
 		font-weight: 600;
-		color: #1A1C1C;
+		color: var(--text-primary);
 	}
 
 	&__list {
-		background: #FFFFFF;
+		background: var(--surface-card);
 		border-radius: 12px;
-		border: 1px solid #E5E5E5;
+		border: 1px solid var(--border);
 		overflow: hidden;
 	}
 }
@@ -594,7 +726,7 @@ export default {
 	display: flex;
 	align-items: center;
 	padding: 14px 16px;
-	border-bottom: 1px solid #F3F3F3;
+	border-bottom: 1px solid var(--border);
 
 	&--last {
 		border-bottom: none;
@@ -603,7 +735,7 @@ export default {
 	&__icon {
 		width: 36px;
 		height: 36px;
-		border-radius: 10px;
+		border-radius: 20px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -611,7 +743,7 @@ export default {
 		margin-right: 12px;
 
 		&--weekday {
-			background: rgba(7, 193, 96, 0.12);
+			background: rgba(27, 138, 90, 0.12);
 		}
 
 		&--weekend {
@@ -626,7 +758,7 @@ export default {
 	&__icon-text {
 		font-size: 13px;
 		font-weight: 600;
-		color: #07C160;
+		color: var(--primary);
 
 		.record-item__icon--weekend & {
 			color: #006495;
@@ -646,18 +778,18 @@ export default {
 	&__type {
 		font-size: 15px;
 		font-weight: 500;
-		color: #1A1C1C;
+		color: var(--text-primary);
 	}
 
 	&__date {
 		font-size: 12px;
-		color: #999999;
+		color: var(--text-muted);
 		margin-top: 2px;
 	}
 
 &__project {
 font-size: 11px;
-color: #07C160;
+color: var(--primary);
 margin-top: 1px;
 }
 
@@ -668,13 +800,13 @@ margin-top: 1px;
 	&__hours {
 		font-size: 16px;
 		font-weight: 600;
-		color: #07C160;
+		color: var(--primary);
 		display: block;
 	}
 
 	&__pay {
 		font-size: 12px;
-		color: #999999;
+		color: var(--text-muted);
 		display: block;
 		margin-top: 1px;
 	}
@@ -696,7 +828,7 @@ margin-top: 1px;
 .day-sheet__panel {
 	width: 100%;
 	max-width: 640px;
-	background: #FFFFFF;
+	background: var(--surface-card);
 	border-radius: 20px 20px 0 0;
 	padding: 24px 20px 32px;
 }
@@ -709,16 +841,16 @@ margin-top: 1px;
 .day-sheet__title {
 	font-size: 18px;
 	font-weight: 700;
-	color: #1A1C1C;
+	color: var(--text-primary);
 }
 .day-sheet__total {
 	font-size: 15px;
 	font-weight: 600;
-	color: #07C160;
+	color: var(--primary);
 }
 .day-sheet__list {
-	background: #F7F7F7;
-	border-radius: 10px;
+	background: var(--surface);
+	border-radius: 20px;
 	overflow: hidden;
 }
 .day-sheet__item {
@@ -726,7 +858,7 @@ margin-top: 1px;
 	align-items: center;
 	justify-content: space-between;
 	padding: 14px 16px;
-	border-bottom: 1px solid #E5E5E5;
+	border-bottom: 1px solid var(--border);
 }
 .day-sheet__item--last {
 	border-bottom: none;
@@ -738,11 +870,11 @@ margin-top: 1px;
 .day-sheet__item-type {
 	font-size: 14px;
 	font-weight: 500;
-	color: #1A1C1C;
+	color: var(--text-primary);
 }
 .day-sheet__item-time {
 	font-size: 12px;
-	color: #999999;
+	color: var(--text-muted);
 	margin-top: 2px;
 }
 .day-sheet__item-right {
@@ -751,20 +883,20 @@ margin-top: 1px;
 .day-sheet__item-hours {
 	font-size: 16px;
 	font-weight: 600;
-	color: #07C160;
+	color: var(--primary);
 	display: block;
 }
 .day-sheet__item-pay {
 	font-size: 12px;
-	color: #999999;
+	color: var(--text-muted);
 	display: block;
 	margin-top: 1px;
 }
 .day-sheet__action {
 	margin-top: 16px;
 	height: 44px;
-	border-radius: 10px;
-	background: #07C160;
+	border-radius: 20px;
+	background: var(--primary);
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -783,11 +915,11 @@ margin-top: 1px;
 	width: 56px;
 	height: 56px;
 	border-radius: 50%;
-	background: #07C160;
+	background: var(--primary);
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	box-shadow: 0 4px 16px rgba(7, 193, 96, 0.35);
+	box-shadow: 0 4px 16px rgba(27, 138, 90, 0.35);
 	z-index: 50;
 
 	&__icon {
@@ -804,28 +936,39 @@ margin-top: 1px;
 }
 .settle-filter__item {
 	padding: 2px 8px;
-	border-radius: 10px;
+	border-radius: 20px;
 	font-size: 11px;
-	color: #999999;
-	background: #F0F0F0;
+	color: var(--text-muted);
+	background: var(--surface-hover);
 }
 .project-filter {
 		display: flex;
 		align-items: center;
 		margin-left: 8px;
 		padding: 2px 8px;
-		border-radius: 10px;
-		background: #F0F0F0;
+		border-radius: 20px;
+		background: var(--surface-hover);
 	}
 	.project-filter__text {
 		font-size: 11px;
-		color: #999999;
+		color: var(--text-muted);
 		margin-right: 2px;
 	}
 
 	.settle-filter__item--active {
-	color: #07C160;
-	background: rgba(7, 193, 96, 0.1);
+	color: var(--primary);
+	background: rgba(27, 138, 90, 0.1);
+}
+
+/* 计薪模式标签 */
+.record-item__pay-mode-tag {
+	font-size: 10px;
+	color: var(--primary);
+	background: var(--primary-light);
+	padding: 1px 5px;
+	border-radius: 4px;
+	display: inline-block;
+	margin-bottom: 2px;
 }
 
 /* 结算标签 */
@@ -841,7 +984,7 @@ margin-top: 1px;
 	background: #FFF8E6;
 }
 .record-item__settle-badge--done {
-	color: #07C160;
+	color: var(--primary);
 	background: #E6FFF0;
 }
 }

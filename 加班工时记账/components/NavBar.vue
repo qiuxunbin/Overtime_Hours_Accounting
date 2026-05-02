@@ -1,10 +1,10 @@
 <template>
-	<view class="nav-bar">
+	<view class="nav-bar" :style="{ background: bgColor, borderBottom: borderColor ? '1px solid ' + borderColor : 'none' }">
 		<view class="nav-bar__inner">
 			<view class="nav-bar__left" @tap="handleBack">
-				<text v-if="showBack" class="nav-bar__back-icon">&#x2039;</text>
+				<text v-if="showBack" class="nav-bar__back-icon" :style="{ color: iconColor }">←</text>
 			</view>
-			<text class="nav-bar__title">{{ title }}</text>
+			<text class="nav-bar__title" :style="{ color: titleColor }">{{ title }}</text>
 			<view class="nav-bar__right">
 				<SyncStatus />
 				<slot name="right" />
@@ -20,7 +20,22 @@ export default {
 	components: { SyncStatus },
 	props: {
 		title: { type: String, default: '' },
-		showBack: { type: Boolean, default: false }
+		showBack: { type: Boolean, default: false },
+		green: { type: Boolean, default: false }
+	},
+	computed: {
+		bgColor() {
+			return this.green ? '#1B8A5A' : 'var(--surface-card)'
+		},
+		titleColor() {
+			return this.green ? '#FFFFFF' : 'var(--text-primary)'
+		},
+		iconColor() {
+			return this.green ? '#FFFFFF' : 'var(--primary)'
+		},
+		borderColor() {
+			return this.green ? null : 'var(--border)'
+		}
 	},
 	methods: {
 		handleBack() {
@@ -40,14 +55,12 @@ export default {
 	left: 0;
 	right: 0;
 	z-index: 1000;
-	background: #FFFFFF;
-	border-bottom: 1px solid #E5E5E5;
 	padding-top: var(--status-bar-height);
 
 	&__inner {
 		display: flex;
 		align-items: center;
-		height: 56px;
+		height: 44px;
 		padding: 0 16px;
 		max-width: 640px;
 		margin: 0 auto;
@@ -60,15 +73,14 @@ export default {
 	}
 
 	&__right {
-		width: 40px;
+		min-width: 40px;
 		display: flex;
 		align-items: center;
 		justify-content: flex-end;
 	}
 
 	&__back-icon {
-		font-size: 28px;
-		color: #07C160;
+		font-size: 22px;
 		line-height: 1;
 		font-weight: 300;
 	}
@@ -78,8 +90,6 @@ export default {
 		text-align: center;
 		font-size: 17px;
 		font-weight: 600;
-		color: #1A1C1C;
-		letter-spacing: -0.02em;
 	}
 }
 </style>

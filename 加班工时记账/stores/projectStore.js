@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { collection } from '@/utils/localStore'
 import { getDeviceId, getOwner } from '@/utils/device'
-import { DEFAULT_PROJECT_CONFIG } from '@/utils/constants'
+import { DEFAULT_PROJECT_CONFIG, PAY_MODES } from '@/utils/constants'
 
 const col = collection('projects')
 
@@ -55,7 +55,11 @@ export const useProjectStore = defineStore('project', {
 		async loadProjects() {
 			// 1. 从本地加载
 			const localDocs = col.getAll()
-			this.projects = localDocs.map(p => ({ ...p, id: p._id }))
+			this.projects = localDocs.map(p => ({
+					...DEFAULT_PROJECT_CONFIG,
+					...p,
+					id: p._id
+				}))
 
 			// 2. 后台尝试云同步
 			if (hasToken()) {
@@ -195,7 +199,11 @@ export const useProjectStore = defineStore('project', {
 						}
 					}
 
-					this.projects = col.getAll().map(p => ({ ...p, id: p._id }))
+					this.projects = col.getAll().map(p => ({
+							...DEFAULT_PROJECT_CONFIG,
+							...p,
+							id: p._id
+						}))
 				}
 			} catch (e) {
 				// 静默
@@ -220,7 +228,11 @@ export const useProjectStore = defineStore('project', {
 			}
 
 			if (changed) {
-				this.projects = col.getAll().map(p => ({ ...p, id: p._id }))
+				this.projects = col.getAll().map(p => ({
+							...DEFAULT_PROJECT_CONFIG,
+							...p,
+							id: p._id
+						}))
 			}
 
 			try {

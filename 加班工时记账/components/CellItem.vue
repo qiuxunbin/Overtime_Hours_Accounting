@@ -1,17 +1,14 @@
 <template>
 	<view class="cell-item" :class="{ 'cell-item--disabled': disabled }" @tap="handleTap">
-		<!-- 左侧图标 -->
 		<view v-if="icon" class="cell-item__icon">
 			<text class="cell-item__icon-text">{{ icon }}</text>
 		</view>
-		<!-- 内容 -->
 		<view class="cell-item__content">
-			<text class="cell-item__label" :style="{ color: labelColor }">{{ label }}</text>
+			<text class="cell-item__label">{{ label }}</text>
 			<text v-if="note" class="cell-item__note">{{ note }}</text>
 		</view>
-		<!-- 右侧 -->
 		<view class="cell-item__right">
-			<text v-if="value" class="cell-item__value" :style="{ color: valueColor }">{{ value }}</text>
+			<text v-if="value" class="cell-item__value">{{ value }}</text>
 			<slot name="right"></slot>
 			<text v-if="showArrow" class="cell-item__arrow">›</text>
 		</view>
@@ -21,44 +18,16 @@
 <script>
 export default {
 	props: {
-		label: {
-			type: String,
-			default: ''
-		},
-		note: {
-			type: String,
-			default: ''
-		},
-		value: {
-			type: String,
-			default: ''
-		},
-		icon: {
-			type: String,
-			default: ''
-		},
-		showArrow: {
-			type: Boolean,
-			default: true
-		},
-		disabled: {
-			type: Boolean,
-			default: false
-		},
-		labelColor: {
-			type: String,
-			default: '#1A1C1C'
-		},
-		valueColor: {
-			type: String,
-			default: '#999999'
-		}
+		label: { type: String, default: '' },
+		note: { type: String, default: '' },
+		value: { type: String, default: '' },
+		icon: { type: String, default: '' },
+		showArrow: { type: Boolean, default: true },
+		disabled: { type: Boolean, default: false }
 	},
 	methods: {
 		handleTap() {
-			if (!this.disabled) {
-				this.$emit('tap')
-			}
+			if (!this.disabled) { this.$emit('tap') }
 		}
 	}
 }
@@ -68,17 +37,18 @@ export default {
 .cell-item {
 	display: flex;
 	align-items: center;
-	padding: 16px;
-	background: #FFFFFF;
-	min-height: 56px;
+	padding: 0 16px;
+	background: var(--surface-card);
+	height: 48px;
+	border-bottom: 1px solid var(--border);
 
 	&--disabled {
 		opacity: 0.5;
 	}
 
 	&__icon {
-		width: 24px;
-		height: 24px;
+		width: 20px;
+		height: 20px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -99,13 +69,13 @@ export default {
 	&__label {
 		font-size: 15px;
 		line-height: 22px;
-		font-weight: 400;
+		color: var(--text-primary);
 	}
 
 	&__note {
 		font-size: 12px;
 		line-height: 16px;
-		color: #999999;
+		color: var(--text-muted);
 	}
 
 	&__right {
@@ -117,12 +87,12 @@ export default {
 
 	&__value {
 		font-size: 15px;
-		line-height: 22px;
+		color: var(--text-muted);
 	}
 
 	&__arrow {
-		font-size: 20px;
-		color: #CCCCCC;
+		font-size: 18px;
+		color: var(--text-muted);
 		line-height: 1;
 	}
 }

@@ -11,14 +11,13 @@
 					class="project-card"
 					@tap="editProject(project)"
 				>
-					<view class="project-card__color" :style="{ background: project.color || '#07C160' }"></view>
+					<view class="project-card__bar" :style="{ background: project.color || '#1B8A5A' }"></view>
 					<view class="project-card__info">
 						<text class="project-card__name">{{ project.name }}</text>
 						<text class="project-card__rate">{{ rateSummary(project) }}</text>
+						<text class="project-card__stats" v-if="projectStats(project)">{{ projectStats(project) }}</text>
 					</view>
-					<view class="project-card__action" @tap.stop="confirmDelete(project)">
-						<text class="project-card__delete">删除</text>
-					</view>
+					<text class="project-card__arrow">›</text>
 				</view>
 			</view>
 
@@ -38,23 +37,20 @@
 					class="project-card project-card--archived"
 					@tap="editProject(project)"
 				>
-					<view class="project-card__color" :style="{ background: project.color || '#07C160' }"></view>
+					<view class="project-card__bar" :style="{ background: project.color || '#1B8A5A' }"></view>
 					<view class="project-card__info">
 						<text class="project-card__name">{{ project.name }}</text>
 						<text class="project-card__rate">{{ rateSummary(project) }}</text>
+						<text class="project-card__stats" v-if="projectStats(project)">{{ projectStats(project) }}</text>
 					</view>
+					<text class="project-card__arrow">›</text>
 				</view>
 			</view>
-		</view>
 
-		<!-- 底部新建按钮 -->
-		<view class="bottom-bar">
-			<view class="bottom-bar__inner">
-				<view class="bottom-bar__save" @tap="createProject">
-					<text class="bottom-bar__save-text">+ 新建项目</text>
-				</view>
+			<!-- 新建按钮（内联） -->
+			<view class="create-btn" @tap="createProject">
+				<text class="create-btn__text">+ 新建项目</text>
 			</view>
-			<view class="bottom-bar__safe"></view>
 		</view>
 	</view>
 </template>
@@ -63,6 +59,7 @@
 import NavBar from '../../components/NavBar.vue'
 import { useProjectStore } from '../../stores/projectStore'
 import { useSalaryStore } from '../../stores/salaryStore'
+import { useOvertimeStore } from '../../stores/overtimeStore'
 
 export default {
 	components: { NavBar },
@@ -74,14 +71,39 @@ export default {
 	onShow() {
 		this.store = useProjectStore()
 		this.store.loadProjects()
+		const oStore = useOvertimeStore()
+		oStore.loadRecords()
 	},
 	methods: {
 		rateSummary(project) {
+			const mode = project.pay_mode || "hourly"
+			const icons = { hourly: "⏱", daily: "📅", piece: "📦" }
+			const icon = icons[mode] || "⏱"
+			if (mode === "daily") {
+				return icon + " 日薪 ¥" + (project.daily_rate || 0)
+			}
+			if (mode === "piece") {
+				return icon + " 计件 ¥" + (project.piece_rate || 0) + "/" + (project.piece_unit || "件")
+			}
 			const salaryStore = useSalaryStore()
 			const wd = project.weekday_rate || salaryStore.weekdayRate
 			const we = project.weekend_rate || salaryStore.weekendRate
 			const hd = project.holiday_rate || salaryStore.holidayRate
-			return `平日 ¥${wd} · 周末 ¥${we} · 假日 ¥${hd}`
+			return icon + " 平¥" + wd + " 周¥" + we + " 节¥" + hd
+		},
+		projectStats(project) {
+			if (!project._id) return ""
+			const oStore = useOvertimeStore()
+			const records = oStore.records.filter(r => r.project_id === project._id)
+			const totalHours = records.reduce((s, r) => s + (r.duration || 0), 0)
+			const totalPay = records.reduce((s, r) => s + (r.pay || 0), 0)
+			const totalDays = records.reduce((s, r) => s + (r.days || 0), 0)
+			const totalQty = records.reduce((s, r) => s + (r.quantity || 0), 0)
+			if (totalPay === 0) return ""
+			const mode = project.pay_mode || "hourly"
+			if (mode === "daily") return "共" + totalDays + "天 · ¥" + totalPay.toFixed(0)
+			if (mode === "piece") return "共" + totalQty + (project.piece_unit || "件") + " · ¥" + totalPay.toFixed(0)
+			return "共" + totalHours + "h · ¥" + totalPay.toFixed(0)
 		},
 		editProject(project) {
 			uni.navigateTo({ url: `/pages/project-edit/project-edit?id=${project._id}` })
@@ -94,7 +116,7 @@ export default {
 				title: '确认删除',
 				content: `删除项目「${project.name}」不会删除加班记录，但记录将不再关联该项目。`,
 				confirmText: '删除',
-				confirmColor: '#BA1A1A',
+				confirmColor: '#B85C4A',
 				success: (res) => {
 					if (res.confirm) {
 						this.store.deleteProject(project._id)
@@ -111,7 +133,7 @@ export default {
 .page-projects {
 	padding-top: 56px;
 	min-height: 100vh;
-	background: #F7F7F7;
+	background: var(--surface);
 
 	&__content {
 		padding: 0 16px 100px;
@@ -127,21 +149,22 @@ export default {
 .project-card {
 	display: flex;
 	align-items: center;
-	padding: 14px 16px;
-	background: #FFFFFF;
-	border-radius: 12px;
-	border: 1px solid #E5E5E5;
-	margin-bottom: 10px;
+	padding: 12px 14px;
+	background: var(--surface);
+	border-radius: 8px;
+	border: 1px solid var(--border);
+	margin-bottom: 8px;
+	cursor: pointer;
 
 	&--archived {
 		opacity: 0.6;
 	}
 
-	&__color {
-		width: 12px;
-		height: 12px;
-		border-radius: 3px;
-		margin-right: 12px;
+	&__bar {
+		width: 4px;
+		height: 36px;
+		border-radius: 2px;
+		margin-right: 10px;
 		flex-shrink: 0;
 	}
 
@@ -150,27 +173,30 @@ export default {
 	}
 
 	&__name {
-		font-size: 16px;
+		font-size: 14px;
 		font-weight: 500;
-		color: #1A1C1C;
+		color: var(--text-primary);
 		display: block;
 	}
 
 	&__rate {
-		font-size: 12px;
-		color: #999999;
+		font-size: 11px;
+		color: var(--text-muted);
 		margin-top: 2px;
 		display: block;
 	}
 
-	&__action {
-		margin-left: 8px;
+	&__stats {
+		font-size: 11px;
+		color: var(--primary);
+		margin-top: 1px;
+		display: block;
 	}
 
-	&__delete {
-		font-size: 13px;
-		color: #BA1A1A;
-		padding: 4px 8px;
+	&__arrow {
+		font-size: 16px;
+		color: var(--text-muted);
+		margin-left: 8px;
 	}
 }
 
@@ -178,20 +204,18 @@ export default {
 	text-align: center;
 	padding: 80px 0;
 
-	&__icon {
-		font-size: 48px;
-	}
+	&__icon { font-size: 48px; }
 
 	&__text {
 		font-size: 16px;
-		color: #999999;
+		color: var(--text-muted);
 		display: block;
 		margin-top: 12px;
 	}
 
 	&__hint {
 		font-size: 13px;
-		color: #CCCCCC;
+		color: var(--text-muted);
 		display: block;
 		margin-top: 6px;
 	}
@@ -202,46 +226,26 @@ export default {
 
 	&__title {
 		font-size: 14px;
-		color: #999999;
+		color: var(--text-muted);
 		margin-bottom: 10px;
 		display: block;
 	}
 }
 
-/* 底部 */
-.bottom-bar {
-	position: fixed;
-	bottom: 0;
-	left: 0;
-	right: 0;
-	background: #FFFFFF;
-	border-top: 1px solid #E5E5E5;
-	z-index: 100;
+.create-btn {
+	display: block;
+	text-align: center;
+	padding: 12px;
+	margin-top: 16px;
+	border-radius: 20px;
+	background: var(--primary);
+	color: #FFFFFF;
+	font-weight: 600;
+	font-size: 14px;
+	cursor: pointer;
 
-	&__inner {
-		max-width: 640px;
-		margin: 0 auto;
-		padding: 12px 16px;
-	}
-
-	&__save {
-		height: 48px;
-		border-radius: 10px;
-		background: #07C160;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	&__save-text {
-		font-size: 17px;
-		font-weight: 600;
+	&__text {
 		color: #FFFFFF;
-	}
-
-	&__safe {
-		height: constant(safe-area-inset-bottom);
-		height: env(safe-area-inset-bottom);
 	}
 }
 </style>

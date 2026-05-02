@@ -161,7 +161,7 @@ export default {
 .page-feedback {
 	padding-top: 56px;
 	min-height: 100vh;
-	background: #F7F7F7;
+	background: var(--surface);
 
 	&__content {
 		padding: 16px;
@@ -169,9 +169,9 @@ export default {
 }
 
 .form-card {
-	background: #FFFFFF;
+	background: var(--surface-card);
 	border-radius: 12px;
-	border: 1px solid #E5E5E5;
+	border: 1px solid var(--border);
 	overflow: hidden;
 }
 
@@ -181,37 +181,37 @@ export default {
 	flex-direction: column;
 
 	&:not(:last-child) {
-		border-bottom: 1px solid #F0F0F0;
+		border-bottom: 1px solid #F0EDE6;
 	}
 
 	&__label {
 		font-size: 15px;
 		font-weight: 500;
-		color: #1A1C1C;
+		color: var(--text-primary);
 		margin-bottom: 10px;
 	}
 
 	&__input {
 		height: 44px;
-		background: #F7F7F7;
+		background: var(--surface);
 		border-radius: 8px;
 		padding: 0 12px;
 		font-size: 15px;
-		color: #1A1C1C;
+		color: var(--text-primary);
 	}
 
 	&__textarea {
 		height: 160px;
-		background: #F7F7F7;
+		background: var(--surface);
 		border-radius: 8px;
 		padding: 12px;
 		font-size: 15px;
-		color: #1A1C1C;
+		color: var(--text-primary);
 		line-height: 22px;
 	}
 
 	&__placeholder {
-		color: #CCCCCC;
+		color: var(--text-muted);
 		font-size: 15px;
 	}
 }
@@ -219,7 +219,7 @@ export default {
 .form-submit {
 	margin-top: 24px;
 	height: 48px;
-	background: #07C160;
+	background: var(--primary);
 	border-radius: 12px;
 	display: flex;
 	align-items: center;
@@ -237,22 +237,22 @@ export default {
 	&__title {
 		font-size: 16px;
 		font-weight: 600;
-		color: #1A1C1C;
+		color: var(--text-primary);
 		display: block;
 		margin-bottom: 10px;
 	}
 }
 
 .history-list {
-	background: #FFFFFF;
+	background: var(--surface-card);
 	border-radius: 12px;
-	border: 1px solid #E5E5E5;
+	border: 1px solid var(--border);
 	overflow: hidden;
 }
 
 .history-item {
 	padding: 16px;
-	border-bottom: 1px solid #F3F3F3;
+	border-bottom: 1px solid var(--border);
 
 	&:last-child {
 		border-bottom: none;
@@ -268,19 +268,19 @@ export default {
 	&__title {
 		font-size: 15px;
 		font-weight: 500;
-		color: #1A1C1C;
+		color: var(--text-primary);
 	}
 
 	&__time {
 		font-size: 12px;
-		color: #BBBBBB;
+		color: var(--text-muted);
 		flex-shrink: 0;
 		margin-left: 12px;
 	}
 
 	&__content {
 		font-size: 14px;
-		color: #666666;
+		color: var(--text-secondary);
 		line-height: 21px;
 		display: block;
 	}

@@ -1,40 +1,90 @@
 // ========== 中国法定节假日数据 ==========
-// 来源：国务院办公厅 2025年11月4日发布
+// 本地静态数据为兜底，云端数据通过 mergeCloudData() 动态合并
 
-const HOLIDAYS = {
-	// 元旦：1月1日-1月3日
+const STATIC_HOLIDAYS = {
 	'2026-01-01': '元旦', '2026-01-02': '元旦', '2026-01-03': '元旦',
-	// 春节：2月15日-2月23日（腊月廿八至正月初七）
 	'2026-02-15': '春节', '2026-02-16': '春节', '2026-02-17': '春节',
 	'2026-02-18': '春节', '2026-02-19': '春节', '2026-02-20': '春节',
 	'2026-02-21': '春节', '2026-02-22': '春节', '2026-02-23': '春节',
-	// 清明节：4月4日-4月6日
 	'2026-04-04': '清明节', '2026-04-05': '清明节', '2026-04-06': '清明节',
-	// 劳动节：5月1日-5月5日
 	'2026-05-01': '劳动节', '2026-05-02': '劳动节', '2026-05-03': '劳动节',
 	'2026-05-04': '劳动节', '2026-05-05': '劳动节',
-	// 端午节：6月19日-6月21日
 	'2026-06-19': '端午节', '2026-06-20': '端午节', '2026-06-21': '端午节',
-	// 中秋节：9月25日-9月27日
 	'2026-09-25': '中秋节', '2026-09-26': '中秋节', '2026-09-27': '中秋节',
-	// 国庆节：10月1日-10月7日
 	'2026-10-01': '国庆节', '2026-10-02': '国庆节', '2026-10-03': '国庆节',
 	'2026-10-04': '国庆节', '2026-10-05': '国庆节', '2026-10-06': '国庆节',
 	'2026-10-07': '国庆节',
 }
 
-// 调休上班日（周末上班）
-const MAKEUP_DAYS = {
-	'2026-01-04': true,  // 元旦调休
-	'2026-02-14': true, '2026-02-28': true, // 春节调休
-	'2026-05-09': true,  // 劳动节调休
-	'2026-09-20': true, '2026-10-10': true, // 国庆节调休
+const STATIC_MAKEUP_DAYS = {
+	'2026-01-04': true,
+	'2026-02-14': true, '2026-02-28': true,
+	'2026-05-09': true,
+	'2026-09-20': true, '2026-10-10': true,
+}
+
+// 可变数据 — mergeCloudData() 会写入
+const HOLIDAYS = { ...STATIC_HOLIDAYS }
+const MAKEUP_DAYS = { ...STATIC_MAKEUP_DAYS }
+
+const CACHE_KEY = 'holiday_data'
+const CACHE_YEAR_KEY = 'holiday_data_year'
+
+/**
+ * 合并云端节假日数据
+ * @param {string[]} holidays 日期数组 ['2026-01-01', ...]
+ * @param {string[]} makeupDays 调休上班日数组
+ */
+export function mergeCloudData(holidays, makeupDays) {
+	if (holidays) holidays.forEach(d => { if (!HOLIDAYS[d]) HOLIDAYS[d] = '法定节假日' })
+	if (makeupDays) makeupDays.forEach(d => { MAKEUP_DAYS[d] = true })
+}
+
+/**
+ * 从云端拉取节假日并合并
+ * 调用时机：App.vue onLaunch
+ */
+export async function fetchFromCloud() {
+	const year = new Date().getFullYear()
+
+	// 先读缓存
+	try {
+		const cachedYear = uni.getStorageSync(CACHE_YEAR_KEY)
+		if (cachedYear === year) {
+			const raw = uni.getStorageSync(CACHE_KEY)
+			if (raw) {
+				const data = JSON.parse(raw)
+				mergeCloudData(data.holidays, data.makeupDays)
+				console.log('[holidays] 从缓存加载, 共', Object.keys(HOLIDAYS).length, '条')
+				return
+			}
+		}
+	} catch { /* ignore */ }
+
+	// 云端拉取
+	try {
+		const result = await uniCloud.callFunction({
+			name: 'holiday-data',
+			data: { action: 'query', year }
+		})
+		if (result.result && result.result.code === 0) {
+			const data = result.result.data
+			mergeCloudData(data.holidays, data.makeupDays)
+			// 写缓存
+			uni.setStorageSync(CACHE_KEY, JSON.stringify({
+				holidays: data.holidays || [],
+				makeupDays: data.makeupDays || []
+			}))
+			uni.setStorageSync(CACHE_YEAR_KEY, year)
+			console.log('[holidays] 云端拉取成功, 共', Object.keys(HOLIDAYS).length, '条')
+		}
+	} catch (e) {
+		console.log('[holidays] 云端拉取失败，使用本地数据:', e.message)
+	}
 }
 
 /**
  * 判断日期是否为法定节假日
- * @param {string} dateStr YYYY-MM-DD
- * @returns {{ isHoliday: boolean, name: string }}
  */
 export function checkHoliday(dateStr) {
 	const name = HOLIDAYS[dateStr]
@@ -42,7 +92,7 @@ export function checkHoliday(dateStr) {
 }
 
 /**
- * 判断日期是否为调休上班日（周末上班）
+ * 判断日期是否为调休上班日
  */
 export function isMakeupDay(dateStr) {
 	return !!MAKEUP_DAYS[dateStr]
@@ -54,11 +104,8 @@ export function isMakeupDay(dateStr) {
  * @returns {'weekday'|'weekend'|'holiday'}
  */
 export function getOvertimeType(dateStr) {
-	// 法定节假日
 	if (checkHoliday(dateStr).isHoliday) return 'holiday'
-	// 调休上班日（周末上班 → 按工作日算）
 	if (isMakeupDay(dateStr)) return 'weekday'
-	// 周末
 	const d = new Date(dateStr)
 	const day = d.getDay()
 	return (day === 0 || day === 6) ? 'weekend' : 'weekday'
@@ -66,8 +113,6 @@ export function getOvertimeType(dateStr) {
 
 /**
  * 按月薪计算各加班费率
- * @param {number} monthlySalary 月薪
- * @returns {{ weekday_rate: number, weekend_rate: number, holiday_rate: number }}
  */
 export function calcRatesFromSalary(monthlySalary) {
 	const hourly = monthlySalary / 21.75 / 8
@@ -78,9 +123,6 @@ export function calcRatesFromSalary(monthlySalary) {
 	}
 }
 
-/**
- * 劳动法规定倍数
- */
 export const LEGAL_MULTIPLIERS = {
 	weekday: 1.5,
 	weekend: 2.0,

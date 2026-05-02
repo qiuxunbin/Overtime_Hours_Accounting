@@ -1,19 +1,7 @@
 {
 	"pages": [
 		{
-			"path": "pages/splash/splash",
-			"style": {
-				"navigationStyle": "custom"
-			}
-		},
-		{
 			"path": "pages/index/index",
-			"style": {
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/record/record",
 			"style": {
 				"navigationStyle": "custom"
 			}
@@ -25,55 +13,7 @@
 			}
 		},
 		{
-			"path": "pages/reconciliation/recon",
-			"style": {
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/salary/salary",
-			"style": {
-				"navigationStyle": "custom"
-			}
-		},
-		{
 			"path": "pages/profile/profile",
-			"style": {
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/clock/clock",
-			"style": {
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/feedback/feedback",
-			"style": {
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/login/login",
-			"style": {
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/projects/projects",
-			"style": {
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/project-edit/project-edit",
-			"style": {
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/batch-record/batch-record",
 			"style": {
 				"navigationStyle": "custom"
 			}
@@ -81,11 +21,11 @@
 	],
 	"globalStyle": {
 		"navigationStyle": "custom",
-		"backgroundColor": "#F7F7F7"
+		"backgroundColor": "#F8F6F2"
 	},
 	"tabBar": {
-		"color": "#999999",
-		"selectedColor": "#07C160",
+		"color": "#9C9C9C",
+		"selectedColor": "#1B8A5A",
 		"backgroundColor": "#FFFFFF",
 		"borderStyle": "white",
 		"height": "64px",
@@ -104,5 +44,117 @@
 			}
 		]
 	},
-	"uniIdRouter": {}
+	"uniIdRouter": {},
+	"subPackages": [
+		{
+			"root": "pages/splash",
+			"pages": [
+				{
+					"path": "splash",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		},
+		{
+			"root": "pages/record",
+			"pages": [
+				{
+					"path": "record",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		},
+		{
+			"root": "pages/reconciliation",
+			"pages": [
+				{
+					"path": "recon",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		},
+		{
+			"root": "pages/salary",
+			"pages": [
+				{
+					"path": "salary",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		},
+		{
+			"root": "pages/clock",
+			"pages": [
+				{
+					"path": "clock",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		},
+		{
+			"root": "pages/feedback",
+			"pages": [
+				{
+					"path": "feedback",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		},
+		{
+			"root": "pages/login",
+			"pages": [
+				{
+					"path": "login",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		},
+		{
+			"root": "pages/projects",
+			"pages": [
+				{
+					"path": "projects",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		},
+		{
+			"root": "pages/project-edit",
+			"pages": [
+				{
+					"path": "project-edit",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		},
+		{
+			"root": "pages/batch-record",
+			"pages": [
+				{
+					"path": "batch-record",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		}
+	]
 }

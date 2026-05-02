@@ -43,24 +43,45 @@
 				</view>
 			</view>
 
-			<!-- 明细列表 -->
+			<!-- 明细列表（按项目分组） -->
 			<view class="detail-section" v-if="monthRecords.length > 0">
 				<text class="detail-section__title">本月记录</text>
-				<view class="detail-section__list">
-					<view
-						v-for="rec in monthRecords"
-						:key="rec.id"
-						class="detail-item"
-					>
-						<view class="detail-item__left">
-							<text class="detail-item__date">{{ shortDate(rec.date) }}</text>
-							<text class="detail-item__type">{{ typeLabel(rec.overtime_type) }}</text>
+				<view
+					v-for="(group, gidx) in projectGroups"
+					:key="gidx"
+					class="project-group"
+				>
+					<view class="project-group__header">
+						<view class="project-group__color" :style="{ background: group.color }"></view>
+						<text class="project-group__name">{{ group.name }}</text>
+						<text class="project-group__rate">{{ group.rateSummary }}</text>
+						<view class="project-group__settle-toggle" @tap="handleSettlementToggle(group)">
+							<text class="project-group__settle-icon">{{ group.allSettled ? '✅' : '⏳' }}</text>
 						</view>
-						<view class="detail-item__mid">
-							<text class="detail-item__time">{{ rec.start_time }}-{{ rec.end_time }}</text>
-							<text class="detail-item__formula">{{ rec.duration }}h × ¥{{ rec.rate }}/h</text>
+					</view>
+					<view class="project-group__settle-stats" v-if="group.settledQty || group.unsettledQty">
+						<text class="project-group__settle-stat" v-if="group.settledQty">✅ 已结算 {{ group.settledQty }}</text>
+						<text class="project-group__settle-stat unsettled" v-if="group.unsettledQty">⏳ 未结算 {{ group.unsettledQty }}</text>
+					</view>
+					<view class="detail-section__list">
+						<view
+							v-for="rec in group.records"
+							:key="rec.id"
+							class="detail-item"
+						>
+							<view class="detail-item__left">
+								<text class="detail-item__date">{{ shortDate(rec.date) }}</text>
+								<text class="detail-item__mode">{{ modeLabel(rec.pay_mode) }}</text>
+							</view>
+							<view class="detail-item__mid">
+								<text class="detail-item__time">{{ recordDetailStr(rec) }}</text>
+								<text class="detail-item__formula">{{ recordFormulaStr(rec) }}</text>
+							</view>
+							<text class="detail-item__pay">¥{{ (rec.pay || 0).toFixed(0) }}</text>
 						</view>
-						<text class="detail-item__pay">¥{{ (rec.pay || 0).toFixed(0) }}</text>
+					</view>
+					<view class="project-group__footer">
+						<text class="project-group__subtotal">小计：{{ group.subtotalQty }} · ¥{{ group.subtotalPay.toFixed(0) }}</text>
 					</view>
 				</view>
 			</view>
@@ -77,6 +98,10 @@
 		<!-- 底部操作 -->
 		<view class="bottom-bar">
 			<view class="bottom-bar__inner">
+				<view class="bottom-bar__unsettled" v-if="unsettledSum > 0">
+					<text class="bottom-bar__unsettled-label">未结算合计</text>
+					<text class="bottom-bar__unsettled-amount">¥ {{ unsettledSum.toFixed(0) }}</text>
+				</view>
 				<view class="bottom-bar__btn" @tap="handleCopy">
 					<text class="bottom-bar__btn-text">复制本月数据</text>
 				</view>
@@ -122,6 +147,7 @@
 <script>
 import NavBar from '../../components/NavBar.vue'
 import { useOvertimeStore } from '../../stores/overtimeStore'
+import { useProjectStore } from '../../stores/projectStore'
 
 function pad(n) { return String(n).padStart(2, '0') }
 
@@ -153,6 +179,68 @@ export default {
 			return store.records
 				.filter(r => r.date && r.date.startsWith(this.monthPrefix))
 				.sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+		},
+		projectGroups() {
+			const pStore = useProjectStore()
+			const projMap = new Map()
+			pStore.projects.forEach(p => projMap.set(p._id, p))
+			const groups = {}
+			this.monthRecords.forEach(r => {
+				const key = r.project_id || '__none__'
+				if (!groups[key]) groups[key] = {
+					name: key === '__none__' ? '无项目' : (projMap.get(key)?.name || '未知项目'),
+					color: key === '__none__' ? '#9C9C9C' : (projMap.get(key)?.color || '#9C9C9C'),
+					payMode: r.pay_mode || 'hourly',
+					rateSummary: '',
+					subtotalPay: 0,
+					subtotalHours: 0,
+					subtotalDays: 0,
+					subtotalQty: 0,
+					isHourly: true,
+					records: [],
+					settledQty: '',
+					unsettledQty: ''
+				}
+				const g = groups[key]
+				g.records.push(r)
+				g.subtotalPay += r.pay || 0
+				g.subtotalHours += r.duration || 0
+				g.subtotalDays += r.days || 0
+				g.subtotalQty += r.quantity || 0
+				if (r.pay_mode && r.pay_mode !== 'hourly') g.isHourly = false
+					if (r.settled) g.settledCount = (g.settledCount || 0) + 1
+					else g.unsettledCount = (g.unsettledCount || 0) + 1
+			})
+			// Compute rate summary and final qty display per group
+			Object.values(groups).forEach(g => {
+				const mode = g.records[0]?.pay_mode || 'hourly'
+				const proj = g.records[0]?.project_id ? projMap.get(g.records[0].project_id) : null
+				if (mode === 'daily') {
+					g.rateSummary = '日薪 ¥' + (proj?.daily_rate || g.records[0]?.daily_rate || 0)
+					g.subtotalQty = g.subtotalDays + '天'
+					const sd = g.records.filter(r => r.settled).reduce((s,r) => s+(r.days||0), 0)
+					const ud = g.records.filter(r => !r.settled).reduce((s,r) => s+(r.days||0), 0)
+					g.settledQty = sd > 0 ? sd + '天' : ''
+					g.unsettledQty = ud > 0 ? ud + '天' : ''
+				} else if (mode === 'piece') {
+					g.rateSummary = '计件 ¥' + (proj?.piece_rate || g.records[0]?.piece_rate || 0) + '/' + (proj?.piece_unit || g.records[0]?.piece_unit || '件')
+					g.subtotalQty = g.subtotalQty + (proj?.piece_unit || g.records[0]?.piece_unit || '件')
+					const sq = g.records.filter(r => r.settled).reduce((s,r) => s+(r.quantity||0), 0)
+					const uq = g.records.filter(r => !r.settled).reduce((s,r) => s+(r.quantity||0), 0)
+					const pu = proj?.piece_unit || g.records[0]?.piece_unit || '件'
+					g.settledQty = sq > 0 ? sq + pu : ''
+					g.unsettledQty = uq > 0 ? uq + pu : ''
+				} else {
+					g.rateSummary = '时薪 ¥' + (proj?.weekday_rate || 0) + '/h'
+					g.subtotalQty = g.subtotalHours + 'h'
+					const sh = g.records.filter(r => r.settled).reduce((s,r) => s+(r.duration||0), 0)
+					const uh = g.records.filter(r => !r.settled).reduce((s,r) => s+(r.duration||0), 0)
+					g.settledQty = sh > 0 ? sh + 'h' : ''
+					g.unsettledQty = uh > 0 ? uh + 'h' : ''
+				}
+			})
+			Object.values(groups).forEach(g => { g.allSettled = g.records.length > 0 && g.records.every(r => r.settled) })
+			return Object.values(groups)
 		},
 		estimatedTotal() {
 			return this.monthRecords.reduce((s, r) => s + (r.pay || 0), 0)
@@ -198,29 +286,75 @@ export default {
 			const parts = dateStr.split('-')
 			return parts.length === 3 ? `${parseInt(parts[1])}/${parseInt(parts[2])}` : dateStr
 		},
+		modeLabel(mode) {
+			const m = { hourly: '时薪', daily: '日薪', piece: '计件' }
+			return m[mode] || '时薪'
+		},
+		recordDetailStr(rec) {
+			if (rec.pay_mode === 'daily') return (rec.days || 1) + '天'
+			if (rec.pay_mode === 'piece') return (rec.quantity || 0) + (rec.piece_unit || '件')
+			return (rec.start_time || '') + '-' + (rec.end_time || '')
+		},
+		recordFormulaStr(rec) {
+			if (rec.pay_mode === 'daily') {
+				const rate = rec.daily_rate || 0
+				return (rec.days || 1) + '天 x ' + rate + '/天'
+			}
+			if (rec.pay_mode === 'piece') {
+				const rate = rec.piece_rate || 0
+				return (rec.quantity || 0) + ' x ' + rate
+			}
+			return (rec.duration || 0) + 'h x ' + (rec.rate || 0) + '/h'
+		},
 		typeLabel(type) {
 			const m = { weekday: '平日', weekend: '周末', holiday: '节假日' }
 			return m[type] || '平日'
 		},
+		async handleSettlementToggle(group) {
+			const allSettled = group.records.every(r => r.settled)
+			const newSettled = !allSettled
+			uni.showActionSheet({
+				itemList: [newSettled ? '全部标记已结算' : '全部标记未结算'],
+				success: async (res) => {
+					if (res.tapIndex === 0) {
+						const store = useOvertimeStore()
+						for (const rec of group.records) {
+							await store.updateRecord(rec.id || rec._id, { settled: newSettled })
+						}
+						uni.showToast({ title: newSettled ? '已标记结算' : '已取消结算', icon: 'success' })
+						store.loadRecords()
+					}
+				}
+			})
+		},
 		handleCopy() {
 			const list = this.monthRecords
 			if (list.length === 0) {
-				uni.showToast({ title: '本月无记录', icon: 'none' })
-				return
+			uni.showToast({ title: '本月无记录', icon: 'none' })
+			return
 			}
 			let text = this.monthLabel + ' 加班对账\n'
 			text += '─'.repeat(20) + '\n'
 			text += '预估加班费：¥' + this.estimatedTotal.toFixed(0) + '\n'
 			if (this.actualPay > 0) {
-				text += '实发加班费：¥' + parseFloat(this.actualPay).toFixed(0) + '\n'
-				text += '差额：' + this.diffDisplay + '\n'
+			text += '实发加班费：¥' + parseFloat(this.actualPay).toFixed(0) + '\n'
+			text += '差额：' + this.diffDisplay + '\n'
 			}
 			text += '─'.repeat(20) + '\n'
 			list.forEach(r => {
-				text += this.shortDate(r.date) + ' ' + this.typeLabel(r.overtime_type) + ' ' + r.start_time + '-' + r.end_time + ' ' + r.duration + 'h × ¥' + r.rate + '/h = ¥' + (r.pay || 0).toFixed(0) + '\n'
+				const detail = this.recordDetailStr(r)
+				const formula = this.recordFormulaStr(r)
+				text += this.shortDate(r.date) + ' ' + this.modeLabel(r.pay_mode) + ' ' + detail + ' ' + formula + ' = ¥' + (r.pay || 0).toFixed(0) + '\n'
 			})
 			text += '─'.repeat(20) + '\n'
-			text += '合计：' + this.monthRecords.reduce((s,r) => s + (r.duration || 0), 0) + '小时，¥' + this.estimatedTotal.toFixed(0)
+			const _h = this.monthRecords.reduce((s,r) => s + (r.duration || 0), 0)
+			const _d = this.monthRecords.reduce((s,r) => s + (r.days || 0), 0)
+			const _q = this.monthRecords.reduce((s,r) => s + (r.quantity || 0), 0)
+			let totalStr = '合计：¥' + this.estimatedTotal.toFixed(0)
+			if (_h > 0) totalStr += '，' + _h + '小时'
+			if (_d > 0) totalStr += '，' + _d + '天'
+			if (_q > 0) totalStr += '，' + _q + '件'
+			text += totalStr
 			uni.setClipboardData({
 				data: text,
 				success: () => {
@@ -232,8 +366,8 @@ export default {
 			if (this.drawing) return
 			const list = this.monthRecords
 			if (list.length === 0) {
-				uni.showToast({ title: '本月无记录', icon: 'none' })
-				return
+			uni.showToast({ title: '本月无记录', icon: 'none' })
+			return
 			}
 			this.drawing = true
 			this.drawCanvas(list)
@@ -241,60 +375,74 @@ export default {
 		handleExportCSV() {
 			const list = this.monthRecords
 			if (list.length === 0) {
-				uni.showToast({ title: '本月无记录', icon: 'none' })
-				return
+			uni.showToast({ title: '本月无记录', icon: 'none' })
+			return
 			}
-			// Build CSV with BOM for Excel compat
-			let csv = '\uFEFF日期,类型,开始,结束,时长(h),时薪,加班费,项目,备注,补贴,扣款' + '\n'
+			// Build CSV with BOM for Excel compat — 15 columns matching import COLUMN_MAP
+			const header = '﻿日期,项目,计薪方式,类型,开始时间,结束时间,时长,天数,件数,单价,加班费,备注,是否结算,补贴,扣款'
+			let csv = header + '
+'
 			list.forEach(r => {
-				const subsidies = r.subsidies ? ((r.subsidies.night_shift||0)+(r.subsidies.meal||0)+(r.subsidies.transport||0)) : 0
-				const deduction = r.deduction ? (r.deduction.amount||0) : 0
-				const row = [
-					r.date,
-					this.typeLabel(r.overtime_type),
-					r.start_time,
-					r.end_time,
-					r.duration,
-					r.rate,
-					r.pay || 0,
-					(r.project_name || ''),
-					(r.project_id || ''),
-					(r.remark || '').replace(/,/g, ';'),
-					subsidies,
-					deduction
+			const subsidies = r.subsidies ? ((r.subsidies.night_shift || 0) + (r.subsidies.meal || 0) + (r.subsidies.transport || 0)) : 0
+			const deduction = r.deduction ? (r.deduction.amount || 0) : 0
+			const settledStr = r.settled ? '已结算' : '未结算'
+			const durationStr = r.pay_mode === 'hourly' ? (r.duration || 0) + 'h' : ''
+			const daysStr = r.pay_mode === 'daily' ? (r.days || 1) : ''
+			const qtyStr = r.pay_mode === 'piece' ? (r.quantity || 0) : ''
+			let rate = r.rate || 0
+			if (r.pay_mode === 'daily') rate = r.daily_rate || 0
+			if (r.pay_mode === 'piece') rate = r.piece_rate || 0
+			const remark = (r.remark || '').replace(/,/g, ';')
+			const row = [
+				r.date,
+				r.project_name || '',
+				this.modeLabel(r.pay_mode),
+				this.typeLabel(r.overtime_type),
+				r.start_time || '',
+				r.end_time || '',
+				durationStr,
+				daysStr,
+				qtyStr,
+				rate,
+				r.pay || 0,
+				remark,
+				settledStr,
+				subsidies,
+				deduction
 				].join(',')
-				csv += row + '\n'
-			}
+			csv += row + '
+'
+			})
 
 			// WeChat: save file and share
 			// #ifdef MP-WEIXIN
 			try {
-				const fileName = '加班对账_' + this.viewYear + '-' + String(this.viewMonth).padStart(2, '0') + '.csv'
-				const fs = wx.getFileSystemManager()
-				const tempPath = wx.env.USER_DATA_PATH + '/' + fileName
-				fs.writeFileSync(tempPath, csv, 'utf8')
-				uni.showModal({
-					title: '导出成功',
-					content: 'CSV 文件已生成，可分享给微信好友',
-					confirmText: '分享文件',
-					cancelText: '知道了',
-					success: (res) => {
-						if (res.confirm) {
-							wx.shareFileMessage({ filePath: tempPath, fileName: fileName })
-						}
-					}
-				})
+			const fileName = '加班对账_' + this.viewYear + '-' + String(this.viewMonth).padStart(2, '0') + '.csv'
+			const fs = wx.getFileSystemManager()
+			const tempPath = wx.env.USER_DATA_PATH + '/' + fileName
+			fs.writeFileSync(tempPath, csv, 'utf8')
+			uni.showModal({
+			title: '导出成功',
+			content: 'CSV 文件已生成，可分享给微信好友',
+			confirmText: '分享文件',
+			cancelText: '知道了',
+			success: (res) => {
+			if (res.confirm) {
+			wx.shareFileMessage({ filePath: tempPath, fileName: fileName })
+			}
+			}
+			})
 			} catch (e) {
-				uni.setClipboardData({
-					data: csv,
-					success: () => uni.showToast({ title: 'CSV 已复制', icon: 'success' })
-				})
+			uni.setClipboardData({
+			data: csv,
+			success: () => uni.showToast({ title: 'CSV 已复制', icon: 'success' })
+			})
 			}
 			// #endif
 			// #ifndef MP-WEIXIN
 			uni.setClipboardData({
-				data: csv,
-				success: () => uni.showToast({ title: 'CSV 已复制到剪贴板', icon: 'success' })
+			data: csv,
+			success: () => uni.showToast({ title: 'CSV 已复制到剪贴板', icon: 'success' })
 			})
 			// #endif
 		},
@@ -309,163 +457,165 @@ export default {
 			this.canvasStyle = `width: ${w}px; height: ${h}px;`
 
 			setTimeout(() => {
-				const ctx = uni.createCanvasContext('shareCanvas', this)
-				const bg = '#F7F7F7'
-				const cardBg = '#FFFFFF'
-				const green = '#07C160'
-				const red = '#BA1A1A'
-				const textMain = '#1A1C1C'
-				const textSub = '#666666'
-				const textLight = '#999999'
-				const border = '#E5E5E5'
-				const px = 16
+			const ctx = uni.createCanvasContext('shareCanvas', this)
+			const bg = '#F8F6F2'
+			const cardBg = '#FFFFFF'
+			const green = '#1B8A5A'
+			const red = '#B85C4A'
+			const textMain = '#1E1E1E'
+			const textSub = '#5C5C5C'
+			const textLight = '#9C9C9C'
+			const border = '#E8E4DC'
+			const px = 16
 
-				ctx.setFillStyle(bg)
-				ctx.fillRect(0, 0, w, h)
+			ctx.setFillStyle(bg)
+			ctx.fillRect(0, 0, w, h)
 
-				const titleY = 28
-				ctx.setFillStyle(textMain)
-				ctx.setFontSize(18)
-				ctx.setTextAlign('center')
-				ctx.fillText(this.monthLabel + ' 加班对账', w / 2, titleY)
+			const titleY = 28
+			ctx.setFillStyle(textMain)
+			ctx.setFontSize(18)
+			ctx.setTextAlign('center')
+			ctx.fillText(this.monthLabel + ' 加班对账', w / 2, titleY)
 
-				const cardX = px
-				const cardW = w - px * 2
-				let cardY = 48
-				const cardPad = 14
-				const cardRadius = 8
+			const cardX = px
+			const cardW = w - px * 2
+			let cardY = 48
+			const cardPad = 14
+			const cardRadius = 8
 
-				this.drawRoundRect(ctx, cardX, cardY, cardW, 84, cardRadius, cardBg)
-				this.drawRoundRect(ctx, cardX, cardY, cardW, 84, cardRadius, border, true)
+			this.drawRoundRect(ctx, cardX, cardY, cardW, 84, cardRadius, cardBg)
+			this.drawRoundRect(ctx, cardX, cardY, cardW, 84, cardRadius, border, true)
 
-				let rowY = cardY + cardPad + 8
-				ctx.setFillStyle(textSub)
-				ctx.setFontSize(13)
-				ctx.setTextAlign('left')
-				ctx.fillText('预估加班费', cardX + cardPad, rowY + 5)
+			let rowY = cardY + cardPad + 8
+			ctx.setFillStyle(textSub)
+			ctx.setFontSize(13)
+			ctx.setTextAlign('left')
+			ctx.fillText('预估加班费', cardX + cardPad, rowY + 5)
 
-				ctx.setFillStyle(green)
-				ctx.setFontSize(18)
-				ctx.setTextAlign('right')
-				ctx.fillText('¥ ' + this.estimatedTotal.toFixed(0), cardX + cardW - cardPad, rowY + 5)
+			ctx.setFillStyle(green)
+			ctx.setFontSize(18)
+			ctx.setTextAlign('right')
+			ctx.fillText('¥ ' + this.estimatedTotal.toFixed(0), cardX + cardW - cardPad, rowY + 5)
 
-				rowY += 24
-				ctx.setFillStyle(textSub)
-				ctx.setFontSize(13)
-				ctx.setTextAlign('left')
-				ctx.fillText('实发加班费', cardX + cardPad, rowY + 5)
+			rowY += 24
+			ctx.setFillStyle(textSub)
+			ctx.setFontSize(13)
+			ctx.setTextAlign('left')
+			ctx.fillText('实发加班费', cardX + cardPad, rowY + 5)
 
-				ctx.setFillStyle(textMain)
-				ctx.setFontSize(18)
-				ctx.setTextAlign('right')
-				ctx.fillText(actual > 0 ? ('¥ ' + actual.toFixed(0)) : '——', cardX + cardW - cardPad, rowY + 5)
+			ctx.setFillStyle(textMain)
+			ctx.setFontSize(18)
+			ctx.setTextAlign('right')
+			ctx.fillText(actual > 0 ? ('¥ ' + actual.toFixed(0)) : '——', cardX + cardW - cardPad, rowY + 5)
 
-				rowY += 28
-				ctx.setStrokeStyle(border)
-				ctx.setLineWidth(0.5)
-				ctx.beginPath()
-				ctx.moveTo(cardX + cardPad, rowY)
-				ctx.lineTo(cardX + cardW - cardPad, rowY)
-				ctx.stroke()
+			rowY += 28
+			ctx.setStrokeStyle(border)
+			ctx.setLineWidth(0.5)
+			ctx.beginPath()
+			ctx.moveTo(cardX + cardPad, rowY)
+			ctx.lineTo(cardX + cardW - cardPad, rowY)
+			ctx.stroke()
 
-				rowY += 4
-				if (actual > 0) {
-					const diffColor = diffAmount >= 0 ? green : red
-					const diffText = diffAmount > 0 ? ('+¥' + diffAmount.toFixed(0)) : (diffAmount < 0 ? ('-¥' + Math.abs(diffAmount).toFixed(0)) : '¥0')
-					ctx.setFillStyle(textSub)
-					ctx.setFontSize(13)
-					ctx.setTextAlign('left')
-					ctx.fillText('差额', cardX + cardPad, rowY + 6)
+			rowY += 4
+			if (actual > 0) {
+			const diffColor = diffAmount >= 0 ? green : red
+			const diffText = diffAmount > 0 ? ('+¥' + diffAmount.toFixed(0)) : (diffAmount < 0 ? ('-¥' + Math.abs(diffAmount).toFixed(0)) : '¥0')
+			ctx.setFillStyle(textSub)
+			ctx.setFontSize(13)
+			ctx.setTextAlign('left')
+			ctx.fillText('差额', cardX + cardPad, rowY + 6)
 
-					ctx.setFillStyle(diffColor)
-					ctx.setFontSize(18)
-					ctx.setTextAlign('right')
-					ctx.fillText(diffText, cardX + cardW - cardPad, rowY + 6)
-				} else {
-					ctx.setFillStyle('#CCCCCC')
-					ctx.setFontSize(11)
-					ctx.setTextAlign('left')
-					ctx.fillText('填写实发金额后自动计算差额', cardX + cardPad, rowY + 6)
-				}
+			ctx.setFillStyle(diffColor)
+			ctx.setFontSize(18)
+			ctx.setTextAlign('right')
+			ctx.fillText(diffText, cardX + cardW - cardPad, rowY + 6)
+			} else {
+			ctx.setFillStyle('#9C9C9C')
+			ctx.setFontSize(11)
+			ctx.setTextAlign('left')
+			ctx.fillText('填写实发金额后自动计算差额', cardX + cardPad, rowY + 6)
+			}
 
-				let listY = cardY + 84 + 20
-				ctx.setFillStyle(textMain)
-				ctx.setFontSize(15)
-				ctx.setTextAlign('left')
-				ctx.fillText('本月记录', cardX + 4, listY)
+			let listY = cardY + 84 + 20
+			ctx.setFillStyle(textMain)
+			ctx.setFontSize(15)
+			ctx.setTextAlign('left')
+			ctx.fillText('本月记录', cardX + 4, listY)
 
-				const listCardTop = listY + 8
-				const listCardH = itemCount * 44 + 4
+			const listCardTop = listY + 8
+			const listCardH = itemCount * 44 + 4
 
-				this.drawRoundRect(ctx, cardX, listCardTop, cardW, listCardH, cardRadius, cardBg)
-				this.drawRoundRect(ctx, cardX, listCardTop, cardW, listCardH, cardRadius, border, true)
+			this.drawRoundRect(ctx, cardX, listCardTop, cardW, listCardH, cardRadius, cardBg)
+			this.drawRoundRect(ctx, cardX, listCardTop, cardW, listCardH, cardRadius, border, true)
 
-				let itemY = listCardTop + 12
-				list.forEach((r, i) => {
-					const leftX = cardX + 12
-					ctx.setFillStyle(textMain)
-					ctx.setFontSize(13)
-					ctx.setTextAlign('left')
-					ctx.fillText(this.shortDate(r.date), leftX, itemY + 5)
+			let itemY = listCardTop + 12
+			list.forEach((r, i) => {
+			const leftX = cardX + 12
+			ctx.setFillStyle(textMain)
+			ctx.setFontSize(13)
+			ctx.setTextAlign('left')
+			ctx.fillText(this.shortDate(r.date), leftX, itemY + 5)
 
-					ctx.setFillStyle(textLight)
-					ctx.setFontSize(10)
-					ctx.fillText(this.typeLabel(r.overtime_type), leftX + 48, itemY + 5)
+			ctx.setFillStyle(textLight)
+			ctx.setFontSize(10)
+			ctx.fillText(this.typeLabel(r.overtime_type), leftX + 48, itemY + 5)
 
-					ctx.setFillStyle(textMain)
-					ctx.setFontSize(12)
-					ctx.fillText(r.start_time + '-' + r.end_time, leftX + 90, itemY + 2)
+			ctx.setFillStyle(textMain)
+			ctx.setFontSize(12)
+				const _detail = this.recordDetailStr(r)
+				ctx.fillText(_detail, leftX + 90, itemY + 2)
 
-					ctx.setFillStyle('#BBBBBB')
-					ctx.setFontSize(10)
-					ctx.fillText(r.duration + 'h × ¥' + r.rate + '/h', leftX + 90, itemY + 16)
+			ctx.setFillStyle('#9C9C9C')
+			ctx.setFontSize(10)
+				const _formula = this.recordFormulaStr(r)
+				ctx.fillText(_formula, leftX + 90, itemY + 16)
 
-					ctx.setFillStyle(green)
-					ctx.setFontSize(14)
-					ctx.setTextAlign('right')
-					ctx.fillText('¥' + (r.pay || 0).toFixed(0), cardX + cardW - 12, itemY + 8)
+			ctx.setFillStyle(green)
+			ctx.setFontSize(14)
+			ctx.setTextAlign('right')
+			ctx.fillText('¥' + (r.pay || 0).toFixed(0), cardX + cardW - 12, itemY + 8)
 
-					if (i < itemCount - 1) {
-						ctx.setStrokeStyle('#F3F3F3')
-						ctx.setLineWidth(0.5)
-						ctx.beginPath()
-						ctx.moveTo(leftX, itemY + 28)
-						ctx.lineTo(cardX + cardW - 12, itemY + 28)
-						ctx.stroke()
-					}
-					itemY += 44
-				})
+			if (i < itemCount - 1) {
+			ctx.setStrokeStyle('#E8E4DC')
+			ctx.setLineWidth(0.5)
+			ctx.beginPath()
+			ctx.moveTo(leftX, itemY + 28)
+			ctx.lineTo(cardX + cardW - 12, itemY + 28)
+			ctx.stroke()
+			}
+			itemY += 44
+			})
 
-				const totalHours = list.reduce((s, r) => s + (r.duration || 0), 0)
-				const listCardBottom = listCardTop + listCardH
-				const bottomY = listCardBottom + 18
-				ctx.setFillStyle(textLight)
-				ctx.setFontSize(12)
-				ctx.setTextAlign('center')
-				ctx.fillText('合计：' + totalHours + ' 小时 · ¥' + this.estimatedTotal.toFixed(0), w / 2, bottomY + 4)
+			const totalHours = list.reduce((s, r) => s + (r.duration || 0), 0)
+			const listCardBottom = listCardTop + listCardH
+			const bottomY = listCardBottom + 18
+			ctx.setFillStyle(textLight)
+			ctx.setFontSize(12)
+			ctx.setTextAlign('center')
+			ctx.fillText('合计：' + totalHours + ' 小时 · ¥' + this.estimatedTotal.toFixed(0), w / 2, bottomY + 4)
 
-				ctx.setFillStyle('#CCCCCC')
-				ctx.setFontSize(10)
-				ctx.fillText('加班工时记账', w / 2, bottomY + 20)
+			ctx.setFillStyle('#9C9C9C')
+			ctx.setFontSize(10)
+			ctx.fillText('加班工时记账', w / 2, bottomY + 20)
 
-				ctx.draw(false, () => {
-					setTimeout(() => {
-						uni.canvasToTempFilePath({
-							canvasId: 'shareCanvas',
-							destWidth: w * 2,
-							destHeight: h * 2,
-							success: (res) => {
-								this.previewImage = res.tempFilePath
-								this.showPreview = true
-								this.drawing = false
-							},
-							fail: () => {
-								uni.showToast({ title: '生成失败，请重试', icon: 'none' })
-								this.drawing = false
-							}
-						}, this)
-					}, 300)
-				})
+			ctx.draw(false, () => {
+			setTimeout(() => {
+			uni.canvasToTempFilePath({
+			canvasId: 'shareCanvas',
+			destWidth: w * 2,
+			destHeight: h * 2,
+			success: (res) => {
+			this.previewImage = res.tempFilePath
+			this.showPreview = true
+			this.drawing = false
+			},
+			fail: () => {
+			uni.showToast({ title: '生成失败，请重试', icon: 'none' })
+			this.drawing = false
+			}
+			}, this)
+			}, 300)
+			})
 			}, 150)
 		},
 		drawRoundRect(ctx, x, y, w, h, r, color, strokeOnly) {
@@ -481,37 +631,37 @@ export default {
 			ctx.arc(x + r, y + r, r, Math.PI, -Math.PI / 2)
 			ctx.closePath()
 			if (strokeOnly) {
-				ctx.setStrokeStyle(color)
-				ctx.setLineWidth(0.5)
-				ctx.stroke()
+			ctx.setStrokeStyle(color)
+			ctx.setLineWidth(0.5)
+			ctx.stroke()
 			} else {
-				ctx.setFillStyle(color)
-				ctx.fill()
+			ctx.setFillStyle(color)
+			ctx.fill()
 			}
 		},
 		saveImage() {
 			uni.saveImageToPhotosAlbum({
-				filePath: this.previewImage,
-				success: () => {
-					uni.showToast({ title: '已保存到相册', icon: 'success' })
-					this.showPreview = false
-				},
-				fail: (err) => {
-					if (err.errMsg.indexOf('auth deny') > -1 || err.errMsg.indexOf('authorize') > -1) {
-						uni.showModal({
-							title: '需要相册权限',
-							content: '请在设置中允许小程序保存图片到相册',
-							confirmText: '去设置',
-							success: (res) => {
-								if (res.confirm) {
-									uni.openSetting({})
-								}
-							}
-						})
-					} else {
-						uni.showToast({ title: '保存失败', icon: 'none' })
-					}
-				}
+			filePath: this.previewImage,
+			success: () => {
+			uni.showToast({ title: '已保存到相册', icon: 'success' })
+			this.showPreview = false
+			},
+			fail: (err) => {
+			if (err.errMsg.indexOf('auth deny') > -1 || err.errMsg.indexOf('authorize') > -1) {
+			uni.showModal({
+			title: '需要相册权限',
+			content: '请在设置中允许小程序保存图片到相册',
+			confirmText: '去设置',
+			success: (res) => {
+			if (res.confirm) {
+			uni.openSetting({})
+			}
+			}
+			})
+			} else {
+			uni.showToast({ title: '保存失败', icon: 'none' })
+			}
+			}
 			})
 		}
 	}
@@ -522,7 +672,7 @@ export default {
 .page-recon {
 	padding-top: 56px;
 	min-height: 100vh;
-	background: #F7F7F7;
+	background: var(--surface);
 
 	&__content {
 		padding: 0 16px;
@@ -544,7 +694,7 @@ export default {
 	&__title {
 		font-size: 17px;
 		font-weight: 600;
-		color: #1A1C1C;
+		color: var(--text-primary);
 	}
 
 	&__btn {
@@ -558,13 +708,13 @@ export default {
 
 	&__icon {
 		font-size: 22px;
-		color: #999999;
+		color: var(--text-muted);
 	}
 }
 
 .compare-card {
-	background: #FFFFFF;
-	border: 1px solid #E5E5E5;
+	background: var(--surface-card);
+	border: 1px solid var(--border);
 	border-radius: 12px;
 	padding: 20px;
 	margin-bottom: 20px;
@@ -586,34 +736,34 @@ export default {
 
 	&__label {
 		font-size: 15px;
-		color: #666666;
+		color: var(--text-secondary);
 	}
 
 	&__value {
 		font-size: 20px;
 		font-weight: 700;
-		color: #1A1C1C;
+		color: var(--text-primary);
 
 		&--green {
-			color: #07C160;
+			color: var(--primary);
 		}
 
 		&--red {
-			color: #BA1A1A;
+			color: var(--error);
 		}
 	}
 
 	&__input-wrap {
 		display: flex;
 		align-items: baseline;
-		border-bottom: 2px solid #07C160;
+		border-bottom: 2px solid var(--primary);
 		padding-bottom: 4px;
 	}
 
 	&__prefix {
 		font-size: 18px;
 		font-weight: 600;
-		color: #1A1C1C;
+		color: var(--text-primary);
 		margin-right: 6px;
 	}
 
@@ -622,20 +772,20 @@ export default {
 		text-align: right;
 		font-size: 24px;
 		font-weight: 700;
-		color: #1A1C1C;
+		color: var(--text-primary);
 		background: transparent;
 		border: none;
 	}
 
 	&__divider {
 		height: 1px;
-		background: #E5E5E5;
+		background: #E8E4DC;
 		margin: 8px 0;
 	}
 
 	&__hint {
 		font-size: 13px;
-		color: #CCCCCC;
+		color: var(--text-muted);
 	}
 }
 
@@ -645,15 +795,15 @@ export default {
 	&__title {
 		font-size: 16px;
 		font-weight: 600;
-		color: #1A1C1C;
+		color: var(--text-primary);
 		display: block;
 		margin-bottom: 10px;
 	}
 
 	&__list {
-		background: #FFFFFF;
+		background: var(--surface-card);
 		border-radius: 12px;
-		border: 1px solid #E5E5E5;
+		border: 1px solid var(--border);
 		overflow: hidden;
 	}
 }
@@ -662,7 +812,7 @@ export default {
 	display: flex;
 	align-items: center;
 	padding: 14px 16px;
-	border-bottom: 1px solid #F3F3F3;
+	border-bottom: 1px solid var(--border);
 
 	&:last-child {
 		border-bottom: none;
@@ -676,13 +826,13 @@ export default {
 	&__date {
 		font-size: 14px;
 		font-weight: 600;
-		color: #1A1C1C;
+		color: var(--text-primary);
 		display: block;
 	}
 
 	&__type {
 		font-size: 11px;
-		color: #999999;
+		color: var(--text-muted);
 		display: block;
 		margin-top: 2px;
 	}
@@ -694,13 +844,13 @@ export default {
 
 	&__time {
 		font-size: 14px;
-		color: #1A1C1C;
+		color: var(--text-primary);
 		display: block;
 	}
 
 	&__formula {
 		font-size: 11px;
-		color: #BBBBBB;
+		color: var(--text-muted);
 		display: block;
 		margin-top: 2px;
 	}
@@ -708,7 +858,7 @@ export default {
 	&__pay {
 		font-size: 16px;
 		font-weight: 600;
-		color: #07C160;
+		color: var(--primary);
 	}
 }
 
@@ -722,7 +872,7 @@ export default {
 
 	&__text {
 		font-size: 14px;
-		color: #999999;
+		color: var(--text-muted);
 		display: block;
 		margin-top: 10px;
 	}
@@ -733,8 +883,8 @@ export default {
 	bottom: 0;
 	left: 0;
 	right: 0;
-	background: #FFFFFF;
-	border-top: 1px solid #E5E5E5;
+	background: var(--surface-card);
+	border-top: 1px solid var(--border);
 	z-index: 100;
 
 	&__inner {
@@ -745,8 +895,8 @@ export default {
 
 	&__btn {
 		height: 48px;
-		border-radius: 10px;
-		background: #07C160;
+		border-radius: 20px;
+		background: var(--primary);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -761,12 +911,12 @@ export default {
 	&__btn-text2 {
 		font-size: 15px;
 		font-weight: 500;
-		color: #07C160;
+		color: var(--primary);
 	}
 
 	&__btn--outline {
-		background: #FFFFFF;
-		border: 1px solid #07C160;
+		background: var(--surface-card);
+		border: 1px solid #1B8A5A;
 		margin-top: 10px;
 	}
 
@@ -782,6 +932,63 @@ export default {
 	opacity: 0;
 	pointer-events: none;
 	z-index: -1;
+}
+
+/* 项目分组 */
+.project-group {
+	margin-bottom: 20px;
+}
+.project-group__header {
+	display: flex;
+	align-items: center;
+	padding: 0 0 10px;
+}
+.project-group__color {
+	width: 10px;
+	height: 10px;
+	border-radius: 2px;
+	margin-right: 8px;
+}
+.project-group__name {
+	font-size: 15px;
+	font-weight: 600;
+	color: var(--text-primary);
+	flex: 1;
+}
+.project-group__rate {
+	font-size: 12px;
+	color: var(--text-muted);
+}
+.project-group__footer {
+	padding: 10px 16px;
+	background: var(--surface);
+	border-radius: 0 0 12px 12px;
+	border: 1px solid var(--border);
+	border-top: none;
+}
+.project-group__subtotal {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--text-secondary);
+}
+.project-group__settle-toggle {
+	padding: 2px 6px;
+	margin-left: 8px;
+}
+.project-group__settle-icon {
+	font-size: 16px;
+}
+.project-group__settle-stats {
+	display: flex;
+	gap: 12px;
+	padding: 0 0 10px 18px;
+}
+.project-group__settle-stat {
+	font-size: 12px;
+	color: var(--text-secondary);
+}
+.project-group__settle-stat.unsettled {
+	color: var(--error);
 }
 
 .preview-mask {
@@ -825,7 +1032,7 @@ export default {
 	&__btn {
 		flex: 1;
 		height: 44px;
-		border-radius: 10px;
+		border-radius: 20px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -839,7 +1046,7 @@ export default {
 		}
 
 		&--save {
-			background: #07C160;
+			background: var(--primary);
 			color: #FFFFFF;
 			font-weight: 600;
 		}

@@ -18,26 +18,26 @@
 				</view>
 			</view>
 
-			<!-- 月汇总 -->
-			<view class="summary-card">
-				<view class="summary-card__item">
-					<text class="summary-card__value">{{ totalHours }}h</text>
-					<text class="summary-card__label">总工时</text>
+			<!-- 月汇总 — 3列：总工时/加班费/记录数 -->
+				<view class="summary-card">
+					<view class="summary-card__item">
+						<text class="summary-card__value">{{ totalHours }}h</text>
+						<text class="summary-card__label">总工时</text>
+					</view>
+					<view class="summary-card__item">
+						<text class="summary-card__value">¥{{ totalPay.toFixed(0) }}</text>
+						<text class="summary-card__label">加班费</text>
+					</view>
+					<view class="summary-card__item">
+						<text class="summary-card__value">{{ recordCount }}</text>
+						<text class="summary-card__label">记录数</text>
+					</view>
 				</view>
-				<view class="summary-card__item">
-					<text class="summary-card__value">¥{{ totalPay.toFixed(0) }}</text>
-					<text class="summary-card__label">加班费</text>
-				</view>
-				<view class="summary-card__item">
-					<text class="summary-card__value">{{ recordCount }}</text>
-					<text class="summary-card__label">记录数</text>
-				</view>
-			</view>
 
-			<!-- 类型分布 - uCharts 环形图 -->
-			<view class="card" v-if="totalHours > 0">
+				<!-- 类型分布 - uCharts 环形图 -->
+			<view class="card" v-if="recordCount > 0">
 				<text class="card__title">加班类型分布</text>
-				<view class="chart-wrap chart-wrap--ring">
+				<view class="chart-wrap chart-wrap--ring" v-if="totalHours > 0">
 					<canvas
 						canvas-id="ringChart"
 						id="ringChart"
@@ -48,17 +48,17 @@
 					<view class="breakdown__row">
 						<view class="breakdown__dot breakdown__dot--weekday"></view>
 						<text class="breakdown__name">平日</text>
-						<text class="breakdown__val">{{ weekdayHours }}h · ¥{{ weekdayPay.toFixed(0) }}</text>
+						<text class="breakdown__val">{{ weekdayHours > 0 ? weekdayHours + 'h · ' : '' }}¥{{ weekdayPay.toFixed(0) }}</text>
 					</view>
 					<view class="breakdown__row">
 						<view class="breakdown__dot breakdown__dot--weekend"></view>
 						<text class="breakdown__name">周末</text>
-						<text class="breakdown__val">{{ weekendHours }}h · ¥{{ weekendPay.toFixed(0) }}</text>
+						<text class="breakdown__val">{{ weekendHours > 0 ? weekendHours + 'h · ' : '' }}¥{{ weekendPay.toFixed(0) }}</text>
 					</view>
 					<view class="breakdown__row">
 						<view class="breakdown__dot breakdown__dot--holiday"></view>
 						<text class="breakdown__name">节假日</text>
-						<text class="breakdown__val">{{ holidayHours }}h · ¥{{ holidayPay.toFixed(0) }}</text>
+						<text class="breakdown__val">{{ holidayHours > 0 ? holidayHours + 'h · ' : '' }}¥{{ holidayPay.toFixed(0) }}</text>
 					</view>
 				</view>
 			</view>
@@ -88,24 +88,31 @@
 			</view>
 
 				<!-- 年度累计 -->
-			<view class="card">
-				<text class="card__title">年度累计</text>
-				<view class="year-summary">
-					<view class="year-summary__item">
-						<text class="year-summary__num">{{ yearHours }}h</text>
-						<text class="year-summary__lbl">总工时</text>
-					</view>
-					<view class="year-summary__item">
-						<text class="year-summary__num">¥{{ yearPay.toFixed(0) }}</text>
-						<text class="year-summary__lbl">总加班费</text>
-					</view>
-					<view class="year-summary__item">
-						<text class="year-summary__num">{{ yearMonths }}</text>
-						<text class="year-summary__lbl">有加班月份</text>
+				<view class="card">
+					<text class="card__title">年度累计</text>
+					<view class="year-summary">
+						<view class="year-summary__item">
+							<text class="year-summary__num">{{ yearHours }}h</text>
+							<text class="year-summary__lbl">总工时</text>
+						</view>
+						<view class="year-summary__item">
+							<text class="year-summary__num">¥{{ yearPay.toFixed(0) }}</text>
+							<text class="year-summary__lbl">总加班费</text>
+						</view>
+						<view class="year-summary__item">
+							<text class="year-summary__num">{{ yearMonths }}</text>
+							<text class="year-summary__lbl">有加班月份</text>
+						</view>
+						<view class="year-summary__item" v-if="yearDays > 0">
+							<text class="year-summary__num">{{ yearDays }}天</text>
+							<text class="year-summary__lbl">总天数</text>
+						</view>
+						<view class="year-summary__item" v-if="yearQuantity > 0">
+							<text class="year-summary__num">{{ yearQuantity }}</text>
+							<text class="year-summary__lbl">总件数</text>
+						</view>
 					</view>
 				</view>
-			</view>
-
 			<!-- 项目收入对比 -->
 			<view class="card" v-if="projectStats.length > 0">
 				<text class="card__title">项目收入对比</text>
@@ -125,7 +132,7 @@
 			</view>
 
 				<!-- 空状态 -->
-			<view class="empty-wrap" v-if="totalHours === 0">
+			<view class="empty-wrap" v-if="recordCount === 0">
 				<text class="empty-wrap__icon">&#x1F4CA;</text>
 				<text class="empty-wrap__text">本月没有加班记录</text>
 				<text class="empty-wrap__hint">开始记录后这里会显示统计图表</text>
@@ -133,11 +140,14 @@
 
 			<view class="page-stats__spacer"></view>
 		</view>
+		<ThemeToggle />
+	
 	</view>
 </template>
 
 <script>
 import NavBar from '../../components/NavBar.vue'
+import ThemeToggle from '@/components/ThemeToggle.vue'
 import { useOvertimeStore } from '../../stores/overtimeStore'
 import { useProjectStore } from '../../stores/projectStore'
 import uCharts from '@qiun/ucharts'
@@ -146,11 +156,10 @@ function pad(n) { return String(n).padStart(2, '0') }
 
 let ringInstance = null
 let barInstance = null
-			lineInstance = null
 let lineInstance = null
 
 export default {
-	components: { NavBar },
+	components: { NavBar, ThemeToggle },
 	data() {
 		const now = new Date()
 		return {
@@ -183,6 +192,12 @@ export default {
 		},
 		totalPay() {
 			return this.monthRecords.reduce((s, r) => s + (r.pay || 0), 0)
+		},
+		totalDays() {
+			return this.monthRecords.reduce((s, r) => s + (r.days || 0), 0)
+		},
+		totalQuantity() {
+			return this.monthRecords.reduce((s, r) => s + (r.quantity || 0), 0)
 		},
 		weekdayRecords() {
 			return this.monthRecords.filter(r => r.overtime_type === 'weekday')
@@ -256,7 +271,7 @@ export default {
 					const proj = id !== '__none__' ? projMap.get(id) : null
 					return {
 						name: proj ? proj.name : '无项目',
-						color: proj ? proj.color : '#CCCCCC',
+						color: proj ? proj.color : '#9C9C9C',
 						hours: Math.round(stats.hours * 10) / 10,
 						pay: stats.pay,
 						pct: 0
@@ -291,6 +306,18 @@ export default {
 				}
 			})
 			return months.size
+		},
+		yearDays() {
+			const year = String(this.viewYear)
+			return this.allRecords
+				.filter(r => r.date && r.date.startsWith(year))
+				.reduce((s, r) => s + (r.days || 0), 0)
+		},
+		yearQuantity() {
+			const year = String(this.viewYear)
+			return this.allRecords
+				.filter(r => r.date && r.date.startsWith(year))
+				.reduce((s, r) => s + (r.quantity || 0), 0)
 		}
 	},
 	watch: {
@@ -341,7 +368,9 @@ export default {
 		renderCharts() {
 			this.renderRingChart()
 			this.renderBarChart()
-			this.renderLineChart() {
+			this.renderLineChart()
+		},
+		renderLineChart() {
 				if (this.trendMonths.length < 2) return
 				const pr = this.pixelRatio
 				const w = 345 * pr
@@ -351,7 +380,7 @@ export default {
 				try {
 					const ctx = uni.createCanvasContext("lineChart", this)
 					lineInstance = new uCharts({
-						: this,
+						$this: this,
 						canvasId: "lineChart",
 						type: "line",
 						context: ctx,
@@ -362,18 +391,18 @@ export default {
 						fontSize: 10,
 						categories: categories,
 						series: [{ name: "加班费", data: data }],
-						yAxis: { min: 0, gridColor: "#F0F0F0", fontSize: 9, splitNumber: 3 },
-						xAxis: { fontSize: 9, axisLineColor: "#E5E5E5", disableGrid: true },
+						yAxis: { min: 0, gridColor: "#F0EDE6", fontSize: 9, splitNumber: 3 },
+						xAxis: { fontSize: 9, axisLineColor: "#E8E4DC", disableGrid: true },
 						legend: { show: false },
 						extra: { line: { type: "curve", width: 2 * pr } },
 						dataLabel: true,
-						color: ["#07C160"]
+						color: ["#1B8A5A"]
 					})
 				} catch (e) {
 					console.log("lineChart error:", e)
 				}
 			},
-		renderRingChart() {
+			renderRingChart() {
 			if (this.totalHours <= 0) {
 				this.ringRendered = false
 				return
@@ -419,7 +448,7 @@ export default {
 							borderColor: '#FFFFFF'
 						}
 					},
-					color: ['#07C160', '#006495', '#A23D33']
+					color: ['#1B8A5A', '#C4A46C', '#B85C4A']
 				})
 				this.ringRendered = true
 			} catch (e) {
@@ -464,13 +493,13 @@ export default {
 						titleOffsetY: -8,
 						titleOffsetX: 4,
 						splitNumber: 4,
-						gridColor: '#F0F0F0',
+						gridColor: '#F0EDE6',
 						fontSize: 9
 					},
 					xAxis: {
 						disableGrid: true,
 						fontSize: 10,
-						axisLineColor: '#E5E5E5',
+						axisLineColor: '#E8E4DC',
 						boundaryGap: 'center'
 					},
 					legend: { show: false },
@@ -485,6 +514,13 @@ export default {
 							seriesGap: 2
 						}
 					},
+					color: ['#1B8A5A']
+					})
+					this.barRendered = true
+				} catch (e) {
+					this.barRendered = false
+				}
+			},
 
 		typeLabel(type) {
 			const m = { weekday: "平日", weekend: "周末", holiday: "节假日" }
@@ -497,14 +533,14 @@ export default {
 				uni.showToast({ title: "无数据", icon: "none" })
 				return
 			}
-			let csv = "﻿日期,类型,时长(h),加班费,项目,备注,补贴,扣款
-"
+			let csv = "﻿日期,类型,计薪方式,时长/天数/件数,加班费,项目,备注,补贴,扣款\n"
 			records.forEach(r => {
 				const subsidies = r.subsidies ? ((r.subsidies.night_shift||0)+(r.subsidies.meal||0)+(r.subsidies.transport||0)) : 0
 				const deduction = r.deduction ? (r.deduction.amount||0) : 0
-				const row = [r.date, this.typeLabel(r.overtime_type), r.duration || 0, r.pay || 0, r.project_name || "", (r.remark || "").replace(/,/g, ";"), subsidies, deduction].join(",")
-				csv += row + "
-"
+				const payMode = r.pay_mode || "hourly"
+					const qty = payMode === "daily" ? (r.days || 0) + "天" : payMode === "piece" ? (r.quantity || 0) : (r.duration || 0) + "h"
+					const row = [r.date, this.typeLabel(r.overtime_type), payMode, qty, r.pay || 0, r.project_name || "", (r.remark || "").replace(/,/g, ";"), subsidies, deduction].join(",")
+				csv += row + "\n"
 			})
 			const now = new Date()
 			const fileName = "加班统计_" + now.getFullYear() + "-" + pad(now.getMonth()+1) + "-" + pad(now.getDate()) + ".csv"
@@ -522,13 +558,6 @@ export default {
 			uni.setClipboardData({ data: csv, success: () => uni.showToast({ title: "CSV已复制", icon: "success" }) })
 			// #endif
 		}
-					color: ['#07C160']
-				})
-				this.barRendered = true
-			} catch (e) {
-				this.barRendered = false
-			}
-		}
 	}
 }
 </script>
@@ -537,7 +566,7 @@ export default {
 .page-stats {
 	padding-top: 56px;
 	min-height: 100vh;
-	background: #F7F7F7;
+	background: var(--surface);
 
 	&__content {
 		padding: 0 16px;
@@ -559,7 +588,7 @@ export default {
 	&__title {
 		font-size: 17px;
 		font-weight: 600;
-		color: #1A1C1C;
+		color: var(--text-primary);
 	}
 
 	&__btn {
@@ -573,41 +602,30 @@ export default {
 
 	&__icon {
 		font-size: 22px;
-		color: #999999;
+		color: var(--text-muted);
 	}
 }
 
-.summary-card {
-	background: #FFFFFF;
-	border: 1px solid #E5E5E5;
-	border-radius: 12px;
-	padding: 20px;
-	margin-bottom: 16px;
-	display: flex;
-	justify-content: space-around;
 
-	&__item {
-		text-align: center;
-	}
 
 	&__value {
 		font-size: 22px;
 		font-weight: 700;
-		color: #07C160;
+		color: var(--primary);
 		display: block;
 	}
 
 	&__label {
 		font-size: 12px;
-		color: #999999;
+		color: var(--text-muted);
 		margin-top: 4px;
 		display: block;
 	}
 }
 
 .card {
-	background: #FFFFFF;
-	border: 1px solid #E5E5E5;
+	background: var(--surface-card);
+	border: 1px solid var(--border);
 	border-radius: 12px;
 	padding: 20px;
 	margin-bottom: 16px;
@@ -615,7 +633,7 @@ export default {
 	&__title {
 		font-size: 16px;
 		font-weight: 600;
-		color: #1A1C1C;
+		color: var(--text-primary);
 		display: block;
 		margin-bottom: 16px;
 	}
@@ -630,7 +648,7 @@ export default {
 	}
 	.nav-export__text {
 		font-size: 14px;
-		color: #07C160;
+		color: var(--primary);
 	}
 
 	/* uCharts Canvas */
@@ -679,14 +697,14 @@ export default {
 	border-radius: 50%;
 	margin-right: 8px;
 
-	&--weekday { background: #07C160; }
-	&--weekend { background: #006495; }
-	&--holiday { background: #A23D33; }
+	&--weekday { background: var(--primary); }
+	&--weekend { background: #C4A46C; }
+	&--holiday { background: #B85C4A; }
 }
 
 .breakdown__name {
 	font-size: 14px;
-	color: #666666;
+	color: var(--text-secondary);
 	width: 48px;
 }
 
@@ -695,7 +713,7 @@ export default {
 	text-align: right;
 	font-size: 14px;
 	font-weight: 500;
-	color: #1A1C1C;
+	color: var(--text-primary);
 }
 
 /* 年度累计 */
@@ -710,13 +728,13 @@ export default {
 	&__num {
 		font-size: 20px;
 		font-weight: 700;
-		color: #1A1C1C;
+		color: var(--text-primary);
 		display: block;
 	}
 
 	&__lbl {
 		font-size: 12px;
-		color: #999999;
+		color: var(--text-muted);
 		margin-top: 4px;
 		display: block;
 	}
@@ -741,24 +759,24 @@ export default {
 	}
 	.project-stat__name {
 		font-size: 14px;
-		color: #666666;
+		color: var(--text-secondary);
 		flex: 1;
 	}
 	.project-stat__hours {
 		font-size: 13px;
-		color: #999999;
+		color: var(--text-muted);
 		margin-right: 12px;
 	}
 	.project-stat__pay {
 		font-size: 14px;
 		font-weight: 600;
-		color: #1A1C1C;
+		color: var(--text-primary);
 		min-width: 60px;
 		text-align: right;
 	}
 	.project-stat__bar {
 		height: 6px;
-		background: #F0F0F0;
+		background: var(--surface-hover);
 		border-radius: 3px;
 		overflow: hidden;
 	}
@@ -779,14 +797,14 @@ export default {
 
 	&__text {
 		font-size: 15px;
-		color: #999999;
+		color: var(--text-muted);
 		display: block;
 		margin-top: 10px;
 	}
 
 	&__hint {
 		font-size: 12px;
-		color: #CCCCCC;
+		color: var(--text-muted);
 		display: block;
 		margin-top: 6px;
 	}

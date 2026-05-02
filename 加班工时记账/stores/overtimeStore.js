@@ -50,7 +50,7 @@ export const useOvertimeStore = defineStore('overtime', {
 
 		monthTotalHours: (state) => {
 			return state.records
-				.filter(r => r.date?.startsWith(state.currentMonth))
+				.filter(r => r.date?.startsWith(state.currentMonth) && r.pay_mode === 'hourly')
 				.reduce((sum, r) => sum + (r.duration || 0), 0)
 		},
 
@@ -60,6 +60,45 @@ export const useOvertimeStore = defineStore('overtime', {
 	},
 
 	actions: {
+		/**
+		 * 确保旧记录有多模式字段默认值
+		 */
+		_ensureRecordDefaults(r) {
+			return {
+				pay_mode: 'hourly',
+				days: 1,
+				quantity: 0,
+				piece_rate: 0,
+				daily_rate: 0,
+				subsidies: { night_shift: 0, meal: 0, transport: 0 },
+				deduction: { amount: 0, note: '' },
+				...r,
+				id: r._id
+			}
+		},
+
+		/**
+		 * 多模式加班费计算
+		 */
+		calculatePay(record, project, salaryConfig) {
+			const payMode = record.pay_mode || project?.pay_mode || 'hourly'
+			switch (payMode) {
+				case 'daily': {
+					const rate = record.daily_rate || project?.daily_rate || salaryConfig?.daily_rate || 0
+					return (record.days || 1) * rate
+				}
+				case 'piece': {
+					const rate = record.piece_rate || project?.piece_rate || salaryConfig?.piece_rate || 0
+					return (record.quantity || 0) * rate
+				}
+				case 'hourly':
+				default: {
+					const rate = record.rate || 0
+					return (record.duration || 0) * rate
+				}
+			}
+		},
+
 		// ========== 加载 ==========
 
 		async loadRecords() {
@@ -67,7 +106,7 @@ export const useOvertimeStore = defineStore('overtime', {
 
 			// 1. 从本地加载（瞬间完成）
 			const localDocs = col.getAll()
-			this.records = localDocs.map(r => ({ ...r, id: r._id }))
+			this.records = localDocs.map(r => this._ensureRecordDefaults(r))
 
 			// 2. 后台尝试云同步
 			if (hasToken()) {
@@ -90,13 +129,20 @@ export const useOvertimeStore = defineStore('overtime', {
 
 		async addRecord(record) {
 			const owner = getOwner()
+			const payMode = record.pay_mode || 'hourly'
 			const doc = {
+				pay_mode: payMode,
+				days: payMode === 'daily' ? (record.days || 1) : 1,
+				quantity: payMode === 'piece' ? (record.quantity || 0) : 0,
+				piece_rate: record.piece_rate || 0,
+				daily_rate: record.daily_rate || 0,
 				...record,
+				pay_mode: payMode,
 				user_id: owner.type === 'user' ? owner.id : null,
 				device_id: owner.type === 'device' ? owner.id : null,
 				created_at: record.created_at || Date.now(),
 				settled: record.settled || false,
-					project_id: record.project_id || null,
+				project_id: record.project_id || null,
 				subsidies: record.subsidies || { night_shift: 0, meal: 0, transport: 0 },
 				deduction: record.deduction || { amount: 0, note: '' }
 			}
@@ -225,7 +271,7 @@ export const useOvertimeStore = defineStore('overtime', {
 					}
 
 					// 重新加载到 Pinia state
-					this.records = col.getAll().map(r => ({ ...r, id: r._id }))
+					this.records = col.getAll().map(r => this._ensureRecordDefaults(r))
 				}
 			} catch (e) {
 				// 静默失败，本地数据完好
@@ -252,7 +298,7 @@ export const useOvertimeStore = defineStore('overtime', {
 			}
 
 			if (changed) {
-				this.records = col.getAll().map(r => ({ ...r, id: r._id }))
+				this.records = col.getAll().map(r => this._ensureRecordDefaults(r))
 			}
 
 			// 拉取云端数据合并，再推送本地变更

@@ -317,7 +317,7 @@ export default {
 <style lang="scss" scoped>
 .page-login {
 	min-height: 100vh;
-	background: #FFFFFF;
+	background: var(--surface-card);
 	padding: 0 28px;
 }
 
@@ -332,7 +332,7 @@ export default {
 		width: 64px;
 		height: 64px;
 		border-radius: 16px;
-		background: #F0FFF4;
+		background: #E8F5ED;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -346,19 +346,19 @@ export default {
 	&__title {
 		font-size: 22px;
 		font-weight: 700;
-		color: #1A1C1C;
+		color: var(--text-primary);
 	}
 
 	&__desc {
 		font-size: 14px;
-		color: #999999;
+		color: var(--text-muted);
 		margin-top: 8px;
 	}
 }
 
 .login-tabs {
 	display: flex;
-	border-bottom: 1px solid #F0F0F0;
+	border-bottom: 1px solid #F0EDE6;
 	margin-bottom: 32px;
 
 	&__item {
@@ -366,13 +366,13 @@ export default {
 		text-align: center;
 		padding: 14px 0;
 		font-size: 15px;
-		color: #999999;
+		color: var(--text-muted);
 		border-bottom: 2px solid transparent;
 		transition: all 0.2s;
 
 		&--active {
-			color: #07C160;
-			border-bottom-color: #07C160;
+			color: var(--primary);
+			border-bottom-color: var(--primary);
 			font-weight: 600;
 		}
 	}
@@ -382,7 +382,7 @@ export default {
 	margin: 0 0 20px;
 	height: 50px;
 	border-radius: 25px;
-	background: linear-gradient(135deg, #07C160, #05A050);
+	background: linear-gradient(135deg, #1B8A5A, #15734B);
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -402,12 +402,12 @@ export default {
 	&__line {
 		flex: 1;
 		height: 1px;
-		background: #F0F0F0;
+		background: var(--surface-hover);
 	}
 
 	&__text {
 		font-size: 13px;
-		color: #CCCCCC;
+		color: var(--text-muted);
 		padding: 0 16px;
 	}
 }
@@ -420,29 +420,29 @@ export default {
 	display: flex;
 	align-items: center;
 	height: 52px;
-	border-bottom: 1px solid #F0F0F0;
+	border-bottom: 1px solid #F0EDE6;
 	margin-bottom: 20px;
 
 	&__prefix {
 		font-size: 16px;
-		color: #1A1C1C;
+		color: var(--text-primary);
 		font-weight: 500;
 		margin-right: 12px;
 		padding-right: 12px;
-		border-right: 1px solid #E5E5E5;
+		border-right: 1px solid #E8E4DC;
 	}
 
 	&__field {
 		flex: 1;
 		font-size: 16px;
-		color: #1A1C1C;
+		color: var(--text-primary);
 	}
 
 	&__sms-btn {
 		flex-shrink: 0;
 		height: 32px;
 		border-radius: 16px;
-		background: #F0FFF4;
+		background: #E8F5ED;
 		padding: 0 14px;
 		display: flex;
 		align-items: center;
@@ -451,15 +451,15 @@ export default {
 
 		text {
 			font-size: 13px;
-			color: #07C160;
+			color: var(--primary);
 			white-space: nowrap;
 		}
 
 		&--disabled {
-			background: #F7F7F7;
+			background: var(--surface);
 
 			text {
-				color: #CCCCCC;
+				color: var(--text-muted);
 			}
 		}
 	}
@@ -467,8 +467,8 @@ export default {
 
 .login-btn {
 	height: 50px;
-	border-radius: 12px;
-	background: #07C160;
+	border-radius: 20px;
+	background: var(--primary);
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -487,7 +487,7 @@ export default {
 
 	&__text {
 		font-size: 14px;
-		color: #07C160;
+		color: var(--primary);
 	}
 }
 
@@ -497,7 +497,7 @@ export default {
 
 	&__text {
 		font-size: 14px;
-		color: #999999;
+		color: var(--text-muted);
 	}
 }
 
@@ -507,7 +507,7 @@ export default {
 
 	&__text {
 		font-size: 12px;
-		color: #CCCCCC;
+		color: var(--text-muted);
 	}
 }
 </style>

@@ -23,7 +23,7 @@
 				</view>
 			</view>
 
-			<!-- 起止时间 -->
+			<!-- 统一时间 -->
 			<view class="section">
 				<text class="section__title">统一时间</text>
 				<view class="time-range">
@@ -44,11 +44,11 @@
 				<text class="section__hint">每天 {{ duration }} 小时</text>
 			</view>
 
-			<!-- 项目选择 -->
+			<!-- 项目选择（仅时薪项目） -->
 			<view class="section">
 				<text class="section__title">项目</text>
 				<view class="field-row" @tap="showProjectPicker">
-					<text class="field-row__value" :style="{ color: selectedProject ? '#1A1C1C' : '#CCCCCC' }">{{ selectedProject ? selectedProject.name : '选项目（选填）' }}</text>
+					<text class="field-row__value" :style="{ color: selectedProject ? '#1E1E1E' : '#9C9C9C' }">{{ selectedProject ? selectedProject.name : '选项目（选填）' }}</text>
 					<text class="field-row__arrow">›</text>
 				</view>
 			</view>
@@ -162,8 +162,9 @@ export default {
 			const pStore = useProjectStore()
 			pStore.loadProjects()
 			setTimeout(() => {
+				const hourlyProjects = pStore.activeProjects.filter(p => p.pay_mode === 'hourly')
 				const items = [{ text: '无项目', value: null },
-					...pStore.activeProjects.map(p => ({ text: p.name, value: p._id }))
+					...hourlyProjects.map(p => ({ text: p.name, value: p._id }))
 				]
 				uni.showActionSheet({
 					itemList: items.map(i => i.text),
@@ -176,6 +177,7 @@ export default {
 
 		async handleBatchSave() {
 			if (this.saving || this.previewDates.length === 0) return
+
 			const h = parseFloat(this.duration) || 0
 			if (h <= 0) {
 				uni.showToast({ title: '请设置有效时间', icon: 'none' })
@@ -189,23 +191,24 @@ export default {
 			let success = 0
 			let fail = 0
 
-			// 按日期分批创建（模拟串行，避免并发问题）
 			for (const item of this.previewDates) {
 				try {
 					const record = {
 						date: item.date,
-						start_time: this.startTime,
-						end_time: this.endTime,
-						duration: h,
-						overtime_type: item.type,
+						pay_mode: 'hourly',
 						remark: this.remark,
 						project_id: this.selectedProjectId,
 						project_name: proj ? proj.name : '',
 						photos: [],
 						settled: false,
 						subsidies: { night_shift: 0, meal: 0, transport: 0 },
-						deduction: { amount: 0, note: '' }
+						deduction: { amount: 0, note: '' },
+						start_time: this.startTime,
+						end_time: this.endTime,
+						duration: parseFloat(this.duration) || 0,
+						overtime_type: item.type
 					}
+
 					const res = await store.addRecord(record)
 					if (res && !res.duplicated) success++
 					else fail++
@@ -226,7 +229,7 @@ export default {
 .page-batch {
 	padding-top: 56px;
 	min-height: 100vh;
-	background: #F7F7F7;
+	background: var(--surface);
 
 	&__content {
 		padding: 0 16px 100px;
@@ -245,14 +248,14 @@ export default {
 	&__title {
 		font-size: 14px;
 		font-weight: 500;
-		color: #1A1C1C;
+		color: var(--text-primary);
 		margin-bottom: 10px;
 		display: block;
 	}
 
 	&__hint {
 		font-size: 12px;
-		color: #999999;
+		color: var(--text-muted);
 		margin-top: 8px;
 		display: block;
 		text-align: center;
@@ -262,9 +265,9 @@ export default {
 .date-range {
 	display: flex;
 	align-items: center;
-	background: #FFFFFF;
+	background: var(--surface-card);
 	border-radius: 12px;
-	border: 1px solid #E5E5E5;
+	border: 1px solid var(--border);
 	padding: 12px 16px;
 
 	&__picker {
@@ -275,19 +278,19 @@ export default {
 
 	&__label {
 		font-size: 14px;
-		color: #999999;
+		color: var(--text-muted);
 		margin-right: 8px;
 	}
 
 	&__value {
 		font-size: 15px;
 		font-weight: 500;
-		color: #1A1C1C;
+		color: var(--text-primary);
 	}
 
 	&__sep {
 		font-size: 14px;
-		color: #CCCCCC;
+		color: var(--text-muted);
 		margin: 0 12px;
 	}
 }
@@ -295,14 +298,14 @@ export default {
 .time-range {
 	display: flex;
 	align-items: center;
-	background: #FFFFFF;
+	background: var(--surface-card);
 	border-radius: 12px;
-	border: 1px solid #E5E5E5;
+	border: 1px solid var(--border);
 	padding: 16px;
 
 	&__sep {
 		font-size: 16px;
-		color: #CCCCCC;
+		color: var(--text-muted);
 		margin: 0 20px;
 	}
 }
@@ -316,7 +319,7 @@ export default {
 
 	&__label {
 		font-size: 13px;
-		color: #999999;
+		color: var(--text-muted);
 		display: block;
 		margin-bottom: 4px;
 	}
@@ -324,7 +327,7 @@ export default {
 	&__value {
 		font-size: 24px;
 		font-weight: 700;
-		color: #1A1C1C;
+		color: var(--text-primary);
 	}
 }
 
@@ -333,18 +336,18 @@ export default {
 	align-items: center;
 	justify-content: space-between;
 	padding: 14px 16px;
-	background: #FFFFFF;
+	background: var(--surface-card);
 	border-radius: 12px;
-	border: 1px solid #E5E5E5;
+	border: 1px solid var(--border);
 
 	&__value {
 		font-size: 15px;
-		color: #1A1C1C;
+		color: var(--text-primary);
 	}
 
 	&__arrow {
 		font-size: 18px;
-		color: #CCCCCC;
+		color: var(--text-muted);
 		margin-left: 4px;
 	}
 }
@@ -352,18 +355,18 @@ export default {
 .batch-remark {
 	width: 100%;
 	padding: 14px 16px;
-	background: #FFFFFF;
+	background: var(--surface-card);
 	border-radius: 12px;
-	border: 1px solid #E5E5E5;
+	border: 1px solid var(--border);
 	font-size: 14px;
-	color: #1A1C1C;
+	color: var(--text-primary);
 	box-sizing: border-box;
 }
 
 .preview-list {
-	background: #FFFFFF;
+	background: var(--surface-card);
 	border-radius: 12px;
-	border: 1px solid #E5E5E5;
+	border: 1px solid var(--border);
 	max-height: 300px;
 	overflow-y: auto;
 }
@@ -372,19 +375,19 @@ export default {
 	display: flex;
 	align-items: center;
 	padding: 10px 16px;
-	border-bottom: 1px solid #F3F3F3;
+	border-bottom: 1px solid var(--border);
 
 	&:last-child { border-bottom: none; }
 
 	&__date {
 		font-size: 14px;
-		color: #1A1C1C;
+		color: var(--text-primary);
 		flex: 2;
 	}
 
 	&__type {
 		font-size: 12px;
-		color: #999999;
+		color: var(--text-muted);
 		flex: 1;
 		text-align: center;
 	}
@@ -392,7 +395,7 @@ export default {
 	&__hours {
 		font-size: 14px;
 		font-weight: 500;
-		color: #07C160;
+		color: var(--primary);
 		flex: 1;
 		text-align: right;
 	}
@@ -403,8 +406,8 @@ export default {
 	bottom: 0;
 	left: 0;
 	right: 0;
-	background: #FFFFFF;
-	border-top: 1px solid #E5E5E5;
+	background: var(--surface-card);
+	border-top: 1px solid var(--border);
 	z-index: 100;
 
 	&__inner {
@@ -415,8 +418,8 @@ export default {
 
 	&__save {
 		height: 48px;
-		border-radius: 10px;
-		background: #07C160;
+		border-radius: 20px;
+		background: var(--primary);
 		display: flex;
 		align-items: center;
 		justify-content: center;

@@ -1,7 +1,6 @@
 <template>
-	<view class="toast" :class="{ 'toast--visible': visible }">
+	<view class="toast" :class="['toast--' + type, { 'toast--visible': visible }]">
 		<view class="toast__content">
-			<text class="toast__icon">{{ icon }}</text>
 			<text class="toast__message">{{ message }}</text>
 		</view>
 	</view>
@@ -10,18 +9,9 @@
 <script>
 export default {
 	props: {
-		message: {
-			type: String,
-			default: ''
-		},
-		icon: {
-			type: String,
-			default: '✓'
-		},
-		duration: {
-			type: Number,
-			default: 2500
-		}
+		message: { type: String, default: '' },
+		type: { type: String, default: 'success' },
+		duration: { type: Number, default: 2500 }
 	},
 	data() {
 		return {
@@ -30,13 +20,12 @@ export default {
 		}
 	},
 	methods: {
-		show(msg) {
+		show(msg, type) {
 			if (msg) this.message = msg
+			if (type) this.type = type
 			clearTimeout(this.timer)
 			this.visible = true
-			this.timer = setTimeout(() => {
-				this.visible = false
-			}, this.duration)
+			this.timer = setTimeout(() => { this.visible = false }, this.duration)
 		},
 		hide() {
 			clearTimeout(this.timer)
@@ -57,7 +46,7 @@ export default {
 	transform: translateX(-50%);
 	z-index: 1000;
 	opacity: 0;
-	transition: opacity 0.3s ease;
+	transition: opacity 0.25s ease;
 	pointer-events: none;
 
 	&--visible {
@@ -65,24 +54,54 @@ export default {
 	}
 
 	&__content {
-		display: flex;
-		align-items: center;
-		background: #323232;
-		color: #FFFFFF;
-		padding: 12px 24px;
-		border-radius: 12px;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-		white-space: nowrap;
+		padding: 10px 14px;
+		border-radius: 6px;
+		font-size: 13px;
+		line-height: 18px;
 	}
 
-	&__icon {
-		font-size: 18px;
-		color: #07C160;
+	// type variants
+	&--success &__content {
+		background: var(--primary-light);
+		color: var(--primary);
 	}
-
-	&__message {
-		font-size: 15px;
-		line-height: 22px;
+	&--warning &__content {
+		background: var(--accent-light);
+		color: #8A6F3E;
+	}
+	&--error &__content {
+		background: var(--error-light);
+		color: var(--error);
+	}
+	&--info &__content {
+		background: var(--info-light);
+		color: var(--info);
+	}
+	// default dark style (legacy)
+	&__content {
+		background: var(--surface-card);
+		color: var(--text-primary);
+		box-shadow: var(--shadow-md);
+	}
+	&--success &__content {
+		background: var(--primary-light);
+		color: var(--primary);
+		box-shadow: none;
+	}
+	&--warning &__content {
+		background: var(--accent-light);
+		color: #8A6F3E;
+		box-shadow: none;
+	}
+	&--error &__content {
+		background: var(--error-light);
+		color: var(--error);
+		box-shadow: none;
+	}
+	&--info &__content {
+		background: var(--info-light);
+		color: var(--info);
+		box-shadow: none;
 	}
 }
 </style>

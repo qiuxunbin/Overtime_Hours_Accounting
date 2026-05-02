@@ -53,49 +53,50 @@ export const useSalaryStore = defineStore('salary', {
 
 	actions: {
 		async loadConfig() {
-			// 1. 从本地加载（瞬间完成）
 			const local = loadLocal()
 			if (local) {
 				this.config = { ...DEFAULT_SALARY_CONFIG, ...local }
 			}
 
-			// 2. 后台尝试云端拉取
 			if (!hasToken()) return
 			try {
 				const res = await callOvertime('salaryGet')
 				if (res?.data) {
 					this.cloudId = res.data._id
 					this.config = {
+						pay_mode: res.data.pay_mode || 'hourly',
 						weekday_rate: res.data.weekday_rate || 0,
 						weekend_rate: res.data.weekend_rate || 0,
 						holiday_rate: res.data.holiday_rate || 0,
+						daily_rate: res.data.daily_rate || 0,
+						piece_rate: res.data.piece_rate || 0,
+						piece_unit: res.data.piece_unit || '件',
 						precision: res.data.precision || '15min'
 					}
 					saveLocal(this.config)
 				}
-			} catch (e) {
-				// 本地数据已加载，云端不可用不影响
-			}
+			} catch (e) {}
 		},
 
 		async updateConfig(partial) {
-			// 乐观更新 + 本地持久化
 			this.config = { ...this.config, ...partial }
 			saveLocal(this.config)
 
-			// 尽力推送到云端
 			if (!hasToken()) return
 			try {
-				const cloudData = {
-					weekday_rate: this.config.weekday_rate,
-					weekend_rate: this.config.weekend_rate,
-					holiday_rate: this.config.holiday_rate,
-					precision: this.config.precision
-				}
-				await callOvertime('salarySet', { data: cloudData })
-			} catch (e) {
-				// 本地已保存，云端下次同步
-			}
+				await callOvertime('salarySet', {
+					data: {
+						pay_mode: this.config.pay_mode || 'hourly',
+						weekday_rate: this.config.weekday_rate,
+						weekend_rate: this.config.weekend_rate,
+						holiday_rate: this.config.holiday_rate,
+						daily_rate: this.config.daily_rate || 0,
+						piece_rate: this.config.piece_rate || 0,
+						piece_unit: this.config.piece_unit || '件',
+						precision: this.config.precision
+					}
+				})
+			} catch (e) {}
 		},
 
 		resetConfig() {
