@@ -135,6 +135,9 @@
 				<view class="bottom-bar__save" @tap="handleSave">
 					<text class="bottom-bar__save-text">保存</text>
 				</view>
+				<view class="delete-btn" v-if="isEditing" @tap="handleDelete">
+					<text class="delete-btn__text">删除项目</text>
+				</view>
 			</view>
 			<view class="bottom-bar__safe"></view>
 		</view>
@@ -172,6 +175,9 @@ export default {
 	computed: {
 		pieceUnitIndex() {
 			return Math.max(0, this.pieceUnitOptions.indexOf(this.form.piece_unit))
+		},
+		isEditing() {
+			return !!this.editId
 		}
 	},
 	onLoad(options) {
@@ -212,11 +218,11 @@ export default {
 				color: this.form.color,
 				sort_order: parseInt(this.form.sort_order) || 0,
 				pay_mode: this.form.pay_mode,
-				weekday_rate: parseFloat(this.form.weekday_rate) || 0,
-				weekend_rate: parseFloat(this.form.weekend_rate) || 0,
-				holiday_rate: parseFloat(this.form.holiday_rate) || 0,
-				daily_rate: parseFloat(this.form.daily_rate) || 0,
-				piece_rate: parseFloat(this.form.piece_rate) || 0,
+				weekday_rate: this.form.weekday_rate || 0,
+				weekend_rate: this.form.weekend_rate || 0,
+				holiday_rate: this.form.holiday_rate || 0,
+				daily_rate: this.form.daily_rate || 0,
+				piece_rate: this.form.piece_rate || 0,
 				piece_unit: this.form.piece_unit || '件',
 				is_archived: this.form.is_archived
 			}
@@ -229,6 +235,22 @@ export default {
 
 			uni.showToast({ title: '已保存', icon: 'success' })
 			setTimeout(() => { uni.navigateBack() }, 500)
+		},
+		handleDelete() {
+			uni.showModal({
+				title: '确认删除',
+				content: `删除项目「${this.form.name}」不会删除记工记录，但记录将不再关联该项目。`,
+				confirmText: '删除',
+				confirmColor: '#B85C4A',
+				success: (res) => {
+					if (res.confirm) {
+						const pStore = useProjectStore()
+						pStore.deleteProject(this.editId)
+						uni.showToast({ title: '已删除', icon: 'success' })
+						setTimeout(() => { uni.navigateBack() }, 500)
+					}
+				}
+			})
 		}
 	}
 }
@@ -539,5 +561,20 @@ export default {
 		height: constant(safe-area-inset-bottom);
 		height: env(safe-area-inset-bottom);
 	}
+}
+
+.delete-btn {
+	margin-top: 12px;
+	height: 44px;
+	border-radius: 20px;
+	border: 1px solid var(--error, #B85C4A);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.delete-btn__text {
+	font-size: 15px;
+	color: var(--error, #B85C4A);
 }
 </style>
