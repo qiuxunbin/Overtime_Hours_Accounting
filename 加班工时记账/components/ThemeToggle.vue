@@ -5,7 +5,7 @@
 </template>
 
 <script>
-import { themeState, toggleTheme } from '@/App.vue'
+import { themeState, toggleTheme } from '@/utils/theme'
 
 export default {
 	computed: {

@@ -5,35 +5,8 @@
 	import { collection } from '@/utils/localStore'
 	import { DEFAULT_SALARY_CONFIG } from './utils/constants'
 	import { useProjectStore } from './stores/projectStore'
-		import { fetchFromCloud } from './utils/holidays.js'
-	import { reactive } from 'vue'
-
-	// 全局主题状态（供所有页面访问）
-	export const themeState = reactive({
-		isDark: false
-	})
-
-	export function toggleTheme() {
-		themeState.isDark = !themeState.isDark
-		uni.setStorageSync('theme', themeState.isDark ? 'dark' : 'light')
-		applyThemeClass()
-	}
-
-	function applyThemeClass() {
-		// #ifdef APP-PLUS || H5
-		if (typeof document !== 'undefined') {
-			const cls = document.documentElement.classList
-			if (themeState.isDark) cls.add('dark-mode')
-			else cls.remove('dark-mode')
-		}
-		// #endif
-		// #ifdef MP-WEIXIN
-		uni.setNavigationBarColor({
-			frontColor: themeState.isDark ? '#ffffff' : '#000000',
-			backgroundColor: themeState.isDark ? '#1A1C1E' : '#F8F6F2'
-		})
-		// #endif
-	}
+	import { fetchFromCloud } from './utils/holidays.js'
+	import { themeState, applyThemeClass } from './utils/theme.js'
 
 	export default {
 		async onLaunch() {
