@@ -1,6 +1,6 @@
 <template>
 	<view class="page-batch">
-		<NavBar title="批量记工时" :showBack="true" />
+		<NavBar title="批量记工" :showBack="true" />
 
 		<view class="page-batch__content">
 			<!-- 日期范围 -->
@@ -95,6 +95,7 @@ import NavBar from '../../components/NavBar.vue'
 import { useWorkStore } from '@/stores/workStore'
 import { useProjectStore } from '../../stores/projectStore'
 import { useHolidayStore } from '@/stores/holidayStore'
+import { useSalaryStore } from '@/stores/salaryStore'
 
 function pad(n) { return String(n).padStart(2, '0') }
 function formatDate(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` }
@@ -195,12 +196,21 @@ export default {
 			this.saving = true
 			const store = useWorkStore()
 			const pStore = useProjectStore()
+			const salaryStore = useSalaryStore()
 			const proj = this.selectedProjectId ? pStore.getProjectById(this.selectedProjectId) : null
+			const cfg = salaryStore.config
 			let success = 0
 			let fail = 0
 
 			for (const item of this.previewDates) {
 				try {
+					const durationVal = parseFloat(this.duration) || 0
+					const rate = proj
+						? (proj[item.type + '_rate'] || 0)
+						: 0
+					const pay = Math.round(durationVal * rate * 100) / 100
+					const netPay = pay
+
 					const record = {
 						date: item.date,
 						pay_mode: 'hourly',
@@ -213,8 +223,11 @@ export default {
 						deduction: { amount: 0, note: '' },
 						start_time: this.startTime,
 						end_time: this.endTime,
-						duration: parseFloat(this.duration) || 0,
-						overtime_type: item.type
+						duration: durationVal,
+						day_type: item.type,
+						rate: rate,
+						pay: pay,
+						net_pay: netPay
 					}
 
 					const res = await store.addRecord(record)
