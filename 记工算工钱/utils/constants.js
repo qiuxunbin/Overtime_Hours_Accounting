@@ -1,5 +1,5 @@
 /**
- * 加班工时记账 — 全局常量
+ * 记工算工钱 — 全局常量
  */
 
 // 计薪方式枚举
@@ -13,10 +13,10 @@ export const PAY_MODES = [
 export const PIECE_UNITS = ['件', '㎡', 'm³', '吨']
 
 // 加班类型枚举
-export const OVERTIME_TYPES = [
-	{ value: 'weekday', label: '工作日加班' },
-	{ value: 'weekend', label: '周末加班' },
-	{ value: 'holiday', label: '法定节假日' }
+export const DAY_TYPES = [
+	{ value: 'weekday', label: '平日' },
+	{ value: 'weekend', label: '周末' },
+	{ value: 'holiday', label: '节假日' }
 ]
 
 // 精度选项
@@ -52,7 +52,7 @@ export const LEGAL_RATES = {
 export const STORAGE_KEYS = {
 	USER_INFO: 'user_info',
 	DEVICE_ID: 'device_id',
-	LOCAL_RECORDS: 'local:overtime_records',
+	LOCAL_RECORDS: 'local:work_records',
 	LOCAL_SALARY_CONFIG: 'salary_config',
 	LAST_SYNC_TIME: 'last_sync_time'
 }
@@ -75,18 +75,16 @@ export const DATE_FORMAT = {
 
 // 常用备注短语
 export const COMMON_PHRASES = [
-	'日常项目加班',
-	'紧急故障处理',
-	'系统上线部署',
-	'会议加班',
-	'文档编写',
-	'客户技术支持',
-	'值班',
-	'项目赶工',
-	'培训学习',
-	'产品验收',
-	'数据迁移',
-	'代码审查'
+	'赶工期',
+	'晚上加班',
+	'周末补工',
+	'节假日值班',
+	'临时加单',
+	'帮忙顶班',
+	'材料搬运',
+	'设备检修',
+	'清理场地',
+	'培训学习'
 ]
 
 // 补贴类型
