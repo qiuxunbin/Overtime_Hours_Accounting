@@ -92,6 +92,11 @@
 				<text class="empty-wrap__text">本月没有加班记录</text>
 			</view>
 
+			<view class="unsettled-bar" v-if="unsettledSum > 0">
+				<text class="unsettled-bar__label">未结算合计</text>
+				<text class="unsettled-bar__amount">¥{{ unsettledSum.toFixed(0) }}</text>
+			</view>
+
 			<view class="page-recon__spacer"></view>
 		</view>
 
@@ -198,6 +203,8 @@ export default {
 					subtotalQty: 0,
 					isHourly: true,
 					records: [],
+					settledCount: 0,
+					unsettledCount: 0,
 					settledQty: '',
 					unsettledQty: ''
 				}
@@ -261,6 +268,17 @@ export default {
 			if (d > 0) return 'compare-card__value--green'
 			if (d < 0) return 'compare-card__value--red'
 			return ''
+		},
+		totalDays() {
+			return this.monthRecords.reduce((s, r) => s + (r.days || 0), 0)
+		},
+		totalQuantity() {
+			return this.monthRecords.reduce((s, r) => s + (r.quantity || 0), 0)
+		},
+		unsettledSum() {
+			return this.monthRecords
+				.filter(r => !r.settled)
+				.reduce((s, r) => s + (r.net_pay || r.pay || 0), 0)
 		}
 	},
 	onShow() {
@@ -396,7 +414,7 @@ export default {
 				r.date,
 				r.project_name || '',
 				this.modeLabel(r.pay_mode),
-				this.typeLabel(r.overtime_type),
+				this.typeLabel(r.day_type || r.overtime_type),
 				r.start_time || '',
 				r.end_time || '',
 				durationStr,
@@ -556,7 +574,7 @@ export default {
 
 			ctx.setFillStyle(textLight)
 			ctx.setFontSize(10)
-			ctx.fillText(this.typeLabel(r.overtime_type), leftX + 48, itemY + 5)
+			ctx.fillText(this.typeLabel(r.day_type || r.overtime_type), leftX + 48, itemY + 5)
 
 			ctx.setFillStyle(textMain)
 			ctx.setFontSize(12)
@@ -585,14 +603,19 @@ export default {
 			})
 
 			const totalHours = list.reduce((s, r) => s + (r.duration || 0), 0)
-			const totalQty = list.reduce((s, r) => s + ((r.pay_mode === "piece") ? (r.quantity || 0) : 0), 0)
-			const qtyStr = totalQty > 0 ? " · " + totalQty + (list.find(r => r.pay_mode === "piece")?.piece_unit || "件") : ""
+			const totalDays = list.reduce((s, r) => s + (r.days || 0), 0)
+			const totalQty = list.reduce((s, r) => s + (r.quantity || 0), 0)
+			const parts = []
+			if (totalHours > 0) parts.push(`${totalHours.toFixed(1)}小时`)
+			if (totalDays > 0) parts.push(`${totalDays}天`)
+			if (totalQty > 0) parts.push(`${totalQty}件`)
+			const summaryText = parts.join(" ") || "0小时"
 			const listCardBottom = listCardTop + listCardH
 			const bottomY = listCardBottom + 18
 			ctx.setFillStyle(textLight)
 			ctx.setFontSize(12)
 			ctx.setTextAlign('center')
-			ctx.fillText('合计：' + totalHours + ' 小时' + qtyStr + ' · ¥' + this.estimatedTotal.toFixed(0), w / 2, bottomY + 4)
+			ctx.fillText('合计：' + summaryText + ' · ¥' + this.estimatedTotal.toFixed(0), w / 2, bottomY + 4)
 
 			ctx.setFillStyle('#9C9C9C')
 			ctx.setFontSize(10)
@@ -989,6 +1012,15 @@ export default {
 }
 .project-group__settle-stat.unsettled {
 	color: var(--error);
+}
+
+.unsettled-bar {
+	display: flex; align-items: center; justify-content: space-between;
+	padding: 14px 16px; background: #FFF8E6;
+	border-radius: 12px; border: 1px solid #E5A100; margin-top: 12px;
+
+	&__label { font-size: 14px; color: #B8860B; }
+	&__amount { font-size: 18px; font-weight: 700; color: #B8860B; }
 }
 
 .preview-mask {
