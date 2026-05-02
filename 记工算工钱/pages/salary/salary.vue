@@ -1,6 +1,6 @@
 <template>
 	<view class="page-salary">
-		<NavBar title="加班费设置" :showBack="true" />
+		<NavBar title="工钱设置" :showBack="true" />
 
 		<view class="page-salary__content">
 			<!-- 说明 -->
@@ -175,7 +175,9 @@
 import NavBar from '../../components/NavBar.vue'
 import { useSalaryStore } from '../../stores/salaryStore'
 import { useWorkStore } from '@/stores/workStore'
+import { useProjectStore } from '@/stores/projectStore'
 import { PAY_MODES, PIECE_UNITS } from '../../utils/constants'
+import { calcPay, calcNetPay } from '@/utils/calculator'
 
 const LEGAL_DAYS = 21.75
 const LEGAL_HOURS = 8
@@ -250,34 +252,34 @@ export default {
 			const now = new Date()
 			uni.showModal({
 				title: '应用到已有记录',
-				content: '是否用新费率重算 ' + now.getFullYear() + '年' + (now.getMonth() + 1) + '月 的加班费？',
+				content: '是否用新费率重算 ' + now.getFullYear() + '年' + (now.getMonth() + 1) + '月 的工钱？',
 				confirmText: '重算',
 				success: async (res) => {
 					if (res.confirm) {
 						uni.showLoading({ title: '重算中...' })
 						try {
-							const token = uni.getStorageSync('uni_id_token')
-							const calcRes = await uniCloud.callFunction({
-								name: 'overtime-calc',
-								data: {
-									action: 'recalc',
-									token,
-									year: now.getFullYear(),
-									month: now.getMonth() + 1
+							const workStore = useWorkStore()
+							const salaryStore = useSalaryStore()
+							const cfg = salaryStore.config
+							const now2 = new Date()
+							const monthPrefix = now2.getFullYear() + '-' + String(now2.getMonth() + 1).padStart(2, '0')
+							let updated = 0
+							for (const rec of workStore.records) {
+								if (!rec.date?.startsWith(monthPrefix)) continue
+								const project = rec.project_id ? useProjectStore().getProjectById(rec.project_id) : null
+								const pay = calcPay(rec, project, cfg)
+								const netPay = calcNetPay({ ...rec, pay }, project, cfg)
+								if (pay !== rec.pay || netPay !== rec.net_pay) {
+									await workStore.updateRecord(rec.id || rec._id, { pay, net_pay: netPay, rate: rec.rate })
+									updated++
 								}
-							})
-							uni.hideLoading()
-							if (calcRes.result && calcRes.result.code === 0) {
-								const n = calcRes.result.data.updated
-								uni.showToast({ title: '已更新 ' + n + ' 条记录', icon: 'success' })
-								const overtimeStore = useWorkStore()
-								await overtimeStore.loadRecords()
-							} else {
-								uni.showToast({ title: calcRes.result?.message || '重算失败', icon: 'none' })
 							}
+							uni.hideLoading()
+							uni.showToast({ title: '已更新 ' + updated + ' 条记录', icon: 'success' })
+							await workStore.loadRecords()
 						} catch (e) {
 							uni.hideLoading()
-							uni.showToast({ title: '网络错误', icon: 'none' })
+							uni.showToast({ title: '重算失败: ' + e.message, icon: 'none' })
 						}
 					}
 					setTimeout(() => { uni.navigateBack() }, 300)
