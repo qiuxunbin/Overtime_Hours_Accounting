@@ -86,6 +86,64 @@
 					<textarea class="remark-area__input" v-model="remark" placeholder="备注（选填）"
 						placeholder-style="color: var(--text-muted); font-size: 14px;" />
 				</view>
+
+				<!-- 快捷短语 -->
+				<view class="phrase-row">
+					<text
+						v-for="(p, idx) in commonPhrases"
+						:key="idx"
+						class="phrase-tag"
+						@tap="remark = p"
+					>{{ p }}</text>
+				</view>
+
+				<!-- 补贴 & 扣款 -->
+				<view class="subsidy-section">
+					<view class="subsidy-section__header" @tap="showSubsidy = !showSubsidy">
+						<text class="subsidy-section__title">补贴 & 扣款</text>
+						<text class="subsidy-section__toggle">{{ showSubsidy ? '收起' : '展开' }}</text>
+					</view>
+					<view class="subsidy-section__body" v-if="showSubsidy">
+						<view class="subsidy-row">
+							<text class="subsidy-row__label">夜班补贴</text>
+							<view class="subsidy-row__input-wrap">
+								<text class="subsidy-row__prefix">¥</text>
+								<input class="subsidy-row__input" type="digit" v-model.number="subsidies.night_shift" placeholder="0" />
+							</view>
+						</view>
+						<view class="subsidy-row">
+							<text class="subsidy-row__label">餐补</text>
+							<view class="subsidy-row__input-wrap">
+								<text class="subsidy-row__prefix">¥</text>
+								<input class="subsidy-row__input" type="digit" v-model.number="subsidies.meal" placeholder="0" />
+							</view>
+						</view>
+						<view class="subsidy-row">
+							<text class="subsidy-row__label">交通补贴</text>
+							<view class="subsidy-row__input-wrap">
+								<text class="subsidy-row__prefix">¥</text>
+								<input class="subsidy-row__input" type="digit" v-model.number="subsidies.transport" placeholder="0" />
+							</view>
+						</view>
+						<view class="subsidy-divider"></view>
+						<view class="subsidy-row">
+							<text class="subsidy-row__label">扣款金额</text>
+							<view class="subsidy-row__input-wrap">
+								<text class="subsidy-row__prefix">¥</text>
+								<input class="subsidy-row__input" type="digit" v-model.number="deduction.amount" placeholder="0" />
+							</view>
+						</view>
+						<view class="subsidy-row">
+							<text class="subsidy-row__label">扣款原因</text>
+							<input class="subsidy-row__note" type="text" v-model="deduction.note" placeholder="选填" />
+						</view>
+					</view>
+				</view>
+
+				<view class="settle-row">
+					<text class="settle-row__label">已结算</text>
+					<switch :checked="settled" @change="settled = $event.detail.value" color="#1B8A5A" />
+				</view>
 			</template>
 
 			<!-- ==================== 日薪模式 ==================== -->
@@ -97,7 +155,7 @@
 					</view>
 					<text class="punch-card__label">上班打卡</text>
 					<text class="punch-card__stats" v-if="monthDailyCount > 0">
-						今日已记 {{ monthDailyCount }} 天 · 本月 ¥{{ monthDailyPay.toFixed(0) }}
+						{{ displayDate }} 已记 {{ monthDailyCount }} 天 · 本月 ¥{{ monthDailyPay.toFixed(0) }}
 					</text>
 				</view>
 
@@ -105,6 +163,16 @@
 				<view class="remark-area">
 					<textarea class="remark-area__input" v-model="remark" placeholder="加班说明（选填）"
 						placeholder-style="color: var(--text-muted); font-size: 14px;" />
+				</view>
+
+				<!-- 快捷短语 -->
+				<view class="phrase-row">
+					<text
+						v-for="(p, idx) in commonPhrases"
+						:key="idx"
+						class="phrase-tag"
+						@tap="remark = p"
+					>{{ p }}</text>
 				</view>
 
 				<!-- 也可手动修改天数 -->
@@ -126,6 +194,54 @@
 				<view class="pay-card" v-if="dailyPay > 0">
 					<text class="pay-card__label">加班费</text>
 					<text class="pay-card__amount">¥{{ dailyPay.toFixed(0) }}</text>
+				</view>
+
+				<!-- 补贴 & 扣款 -->
+				<view class="subsidy-section">
+					<view class="subsidy-section__header" @tap="showSubsidy = !showSubsidy">
+						<text class="subsidy-section__title">补贴 & 扣款</text>
+						<text class="subsidy-section__toggle">{{ showSubsidy ? '收起' : '展开' }}</text>
+					</view>
+					<view class="subsidy-section__body" v-if="showSubsidy">
+						<view class="subsidy-row">
+							<text class="subsidy-row__label">夜班补贴</text>
+							<view class="subsidy-row__input-wrap">
+								<text class="subsidy-row__prefix">¥</text>
+								<input class="subsidy-row__input" type="digit" v-model.number="subsidies.night_shift" placeholder="0" />
+							</view>
+						</view>
+						<view class="subsidy-row">
+							<text class="subsidy-row__label">餐补</text>
+							<view class="subsidy-row__input-wrap">
+								<text class="subsidy-row__prefix">¥</text>
+								<input class="subsidy-row__input" type="digit" v-model.number="subsidies.meal" placeholder="0" />
+							</view>
+						</view>
+						<view class="subsidy-row">
+							<text class="subsidy-row__label">交通补贴</text>
+							<view class="subsidy-row__input-wrap">
+								<text class="subsidy-row__prefix">¥</text>
+								<input class="subsidy-row__input" type="digit" v-model.number="subsidies.transport" placeholder="0" />
+							</view>
+						</view>
+						<view class="subsidy-divider"></view>
+						<view class="subsidy-row">
+							<text class="subsidy-row__label">扣款金额</text>
+							<view class="subsidy-row__input-wrap">
+								<text class="subsidy-row__prefix">¥</text>
+								<input class="subsidy-row__input" type="digit" v-model.number="deduction.amount" placeholder="0" />
+							</view>
+						</view>
+						<view class="subsidy-row">
+							<text class="subsidy-row__label">扣款原因</text>
+							<input class="subsidy-row__note" type="text" v-model="deduction.note" placeholder="选填" />
+						</view>
+					</view>
+				</view>
+
+				<view class="settle-row">
+					<text class="settle-row__label">已结算</text>
+					<switch :checked="settled" @change="settled = $event.detail.value" color="#1B8A5A" />
 				</view>
 			</template>
 
@@ -166,6 +282,64 @@
 				<view class="remark-area">
 					<textarea class="remark-area__input" v-model="remark" placeholder="备注（选填）"
 						placeholder-style="color: var(--text-muted); font-size: 14px;" />
+				</view>
+
+				<!-- 快捷短语 -->
+				<view class="phrase-row">
+					<text
+						v-for="(p, idx) in commonPhrases"
+						:key="idx"
+						class="phrase-tag"
+						@tap="remark = p"
+					>{{ p }}</text>
+				</view>
+
+				<!-- 补贴 & 扣款 -->
+				<view class="subsidy-section">
+					<view class="subsidy-section__header" @tap="showSubsidy = !showSubsidy">
+						<text class="subsidy-section__title">补贴 & 扣款</text>
+						<text class="subsidy-section__toggle">{{ showSubsidy ? '收起' : '展开' }}</text>
+					</view>
+					<view class="subsidy-section__body" v-if="showSubsidy">
+						<view class="subsidy-row">
+							<text class="subsidy-row__label">夜班补贴</text>
+							<view class="subsidy-row__input-wrap">
+								<text class="subsidy-row__prefix">¥</text>
+								<input class="subsidy-row__input" type="digit" v-model.number="subsidies.night_shift" placeholder="0" />
+							</view>
+						</view>
+						<view class="subsidy-row">
+							<text class="subsidy-row__label">餐补</text>
+							<view class="subsidy-row__input-wrap">
+								<text class="subsidy-row__prefix">¥</text>
+								<input class="subsidy-row__input" type="digit" v-model.number="subsidies.meal" placeholder="0" />
+							</view>
+						</view>
+						<view class="subsidy-row">
+							<text class="subsidy-row__label">交通补贴</text>
+							<view class="subsidy-row__input-wrap">
+								<text class="subsidy-row__prefix">¥</text>
+								<input class="subsidy-row__input" type="digit" v-model.number="subsidies.transport" placeholder="0" />
+							</view>
+						</view>
+						<view class="subsidy-divider"></view>
+						<view class="subsidy-row">
+							<text class="subsidy-row__label">扣款金额</text>
+							<view class="subsidy-row__input-wrap">
+								<text class="subsidy-row__prefix">¥</text>
+								<input class="subsidy-row__input" type="digit" v-model.number="deduction.amount" placeholder="0" />
+							</view>
+						</view>
+						<view class="subsidy-row">
+							<text class="subsidy-row__label">扣款原因</text>
+							<input class="subsidy-row__note" type="text" v-model="deduction.note" placeholder="选填" />
+						</view>
+					</view>
+				</view>
+
+				<view class="settle-row">
+					<text class="settle-row__label">已结算</text>
+					<switch :checked="settled" @change="settled = $event.detail.value" color="#1B8A5A" />
 				</view>
 			</template>
 
@@ -250,6 +424,7 @@ export default {
 			settled: false,
 			subsidies: { night_shift: 0, meal: 0, transport: 0 },
 			deduction: { amount: 0, note: "" },
+			showSubsidy: false,
 			dailyDays: 1,
 			pieceQuantity: 0
 		}
@@ -333,6 +508,7 @@ export default {
 	onReady() { setTimeout(() => { this.pageReady = true }, 350) },
 	onLoad(options) {
 		if (options.date) this.pickerDate = options.date
+		this.loadProjectPicker()
 		if (options.id) {
 			this.editId = options.id
 			const store = useWorkStore()
@@ -355,7 +531,6 @@ export default {
 			}
 		} else {
 			this.autoDetectType(this.pickerDate)
-			this.loadProjectPicker()
 		}
 	},
 	methods: {
@@ -437,8 +612,14 @@ export default {
 			if (payMode === 'daily' && (!this.dailyDays || this.dailyDays <= 0)) {
 				uni.showToast({ title: '请输入天数', icon: 'none' }); return
 			}
+			if (payMode === 'daily' && this.projectDailyRate <= 0) {
+				uni.showToast({ title: '该项目未设置日薪金额，请前往薪资设置', icon: 'none' }); return
+			}
 			if (payMode === 'piece' && (!this.pieceQuantity || this.pieceQuantity <= 0)) {
 				uni.showToast({ title: '请输入数量', icon: 'none' }); return
+			}
+			if (payMode === 'piece' && this.projectPieceRate <= 0) {
+				uni.showToast({ title: '该项目未设置计件单价，请前往薪资设置', icon: 'none' }); return
 			}
 
 			this.saving = true
@@ -685,4 +866,42 @@ export default {
 .rate-sheet__btn { height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
 .rate-sheet__btn--confirm { background: var(--primary); }
 .rate-sheet__btn-confirm-text { font-size: 17px; font-weight: 600; color: #FFFFFF; }
+
+.subsidy-section {
+    margin-top: 12px;
+    background: var(--surface-card);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+
+    &__header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; }
+    &__title { font-size: 14px; color: var(--text-primary); font-weight: 500; }
+    &__toggle { font-size: 12px; color: var(--text-muted); }
+    &__body { padding: 0 16px 12px; }
+}
+
+.subsidy-row {
+    display: flex; align-items: center; justify-content: space-between; padding: 8px 0;
+
+    &__label { font-size: 14px; color: var(--text-secondary); }
+    &__input-wrap { display: flex; align-items: center; }
+    &__prefix { font-size: 14px; color: var(--text-muted); margin-right: 4px; }
+    &__input { width: 80px; text-align: right; font-size: 16px; font-weight: 600; color: var(--text-primary); border-bottom: 1px solid var(--border); padding: 4px 0; }
+    &__note { flex: 1; text-align: right; font-size: 14px; color: var(--text-primary); max-width: 160px; }
+}
+
+.subsidy-divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+.settle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; background: var(--surface-card);
+    border-radius: 12px; border: 1px solid var(--border); margin-top: 12px;
+    &__label { font-size: 14px; color: var(--text-primary); }
+}
+
+.phrase-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.phrase-tag {
+    padding: 4px 10px; border-radius: 12px;
+    background: var(--primary-light); color: var(--primary); font-size: 11px;
+}
 </style>
