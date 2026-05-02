@@ -308,7 +308,9 @@ export default {
 		},
 
 		skip() {
-			uni.navigateBack()
+			uni.navigateBack({ delta: 1, fail: () => {
+				uni.reLaunch({ url: '/pages/index/index' })
+			}})
 		}
 	}
 }
