@@ -1,69 +1,112 @@
 /**
- * 加班费计算工具 — PLAN.md v2.0 8.5
+ * 记工算工钱 — 统一计算引擎
+ * 所有金额计算收敛到此文件，作为唯一入口。
+ * 页面和 Store 不自行计算金额。
  */
-import { getOvertimeType } from './holidays'
-
-export function round2(num) {
-	return Math.round(num * 100) / 100
-}
 
 /**
- * 计算时长（根据精度取整）
- * @param {string} startTime - HH:MM
- * @param {string} endTime - HH:MM
- * @param {string} precision - 15min|30min|60min|exact
+ * 计算时长（小时）
+ * @param {string} startTime HH:MM
+ * @param {string} endTime HH:MM
+ * @param {string} precision '15min'|'30min'|'60min'|'exact'
+ * @returns {number} 小时数
  */
 export function calcDuration(startTime, endTime, precision = 'exact') {
-	const [sh, sm] = startTime.split(':').map(Number)
-	const [eh, em] = endTime.split(':').map(Number)
-	const minutes = eh * 60 + em - (sh * 60 + sm)
-	if (minutes <= 0) return 0
+  if (!startTime || !endTime) return 0
+  const [sh, sm] = startTime.split(':').map(Number)
+  const [eh, em] = endTime.split(':').map(Number)
+  let minutes = (eh * 60 + em) - (sh * 60 + sm)
+  if (minutes <= 0) return 0
 
-	switch (precision) {
-		case '15min': return Math.floor(minutes / 15) * 15 / 60
-		case '30min': return Math.floor(minutes / 30) * 30 / 60
-		case '60min': return Math.floor(minutes / 60) * 60 / 60
-		case 'exact':
-		default: return minutes / 60
-	}
+  switch (precision) {
+    case '15min': return Math.floor(minutes / 15) * 15 / 60
+    case '30min': return Math.floor(minutes / 30) * 30 / 60
+    case '60min': return Math.floor(minutes / 60)
+    case 'exact':
+    default:     return Math.round(minutes / 60 * 100) / 100
+  }
 }
 
 /**
- * 计算单条记录的加班费
- * @param {Object} record - 记录对象
- * @param {Object} project - 项目对象
+ * 根据 day_type 获取对应时薪费率
+ * @param {string} dayType 'weekday'|'weekend'|'holiday'
+ * @param {object} project 项目配置
+ * @param {object} salaryConfig 全局薪资配置
+ * @returns {number} 时薪费率
+ */
+export function getRateByType(dayType, project, salaryConfig) {
+  const key = dayType + '_rate'
+  if (project?.[key] > 0) return project[key]
+  if (salaryConfig?.[key] > 0) return salaryConfig[key]
+  return 0
+}
+
+/**
+ * 补贴金额求和（兼容嵌套对象和扁平数字）
+ * @param {object|number} subsidies {night_shift, meal, transport} 或数字
  * @returns {number}
  */
-export function calculatePay(record, project) {
-	switch (record.pay_mode) {
-		case 'hourly': {
-			const otType = record.overtime_type || getOvertimeType(record.date)
-			const rate = otType === 'weekend'
-				? project.weekend_rate
-				: otType === 'holiday'
-				? project.holiday_rate
-				: project.weekday_rate
-			return round2((record.duration || 0) * (rate || 0))
-		}
-		case 'daily':
-			return round2((record.days || 0) * (project.daily_rate || 0))
-		case 'piece':
-			return round2((record.quantity || 0) * (project.piece_rate || 0))
-		default:
-			return 0
-	}
+export function calcSubsidies(subsidies) {
+  if (!subsidies) return 0
+  if (typeof subsidies === 'object') {
+    return (subsidies.night_shift || 0) + (subsidies.meal || 0) + (subsidies.transport || 0)
+  }
+  return Number(subsidies) || 0
 }
 
 /**
- * 计算净额（加班费 + 补贴 - 扣款）
+ * 扣款金额取值（兼容嵌套对象和扁平数字）
+ * @param {object|number} deduction {amount, note} 或数字
+ * @returns {number}
  */
-export function calculateNetPay(record, project) {
-	const pay = calculatePay(record, project)
-	const subsidies = typeof record.subsidies === 'object'
-		? ((record.subsidies.night_shift || 0) + (record.subsidies.meal || 0) + (record.subsidies.transport || 0))
-		: (record.subsidies || 0)
-	const deduction = typeof record.deduction === 'object'
-		? (record.deduction.amount || 0)
-		: (record.deduction || 0)
-	return round2(pay + subsidies - deduction)
+export function calcDeduction(deduction) {
+  if (!deduction) return 0
+  if (typeof deduction === 'object') return Number(deduction.amount) || 0
+  return Number(deduction) || 0
+}
+
+/**
+ * 计算单条记录的应付金额 pay
+ * @param {object} record 记工记录
+ * @param {object} project 项目配置
+ * @param {object} salaryConfig 全局薪资配置
+ * @returns {number}
+ */
+export function calcPay(record, project, salaryConfig) {
+  switch (record.pay_mode) {
+    case 'daily': {
+      const rate = record.daily_rate || project?.daily_rate || salaryConfig?.daily_rate || 0
+      return round2((record.days || 0) * rate)
+    }
+    case 'piece': {
+      const rate = record.piece_rate || project?.piece_rate || salaryConfig?.piece_rate || 0
+      return round2((record.quantity || 0) * rate)
+    }
+    case 'hourly':
+    default: {
+      const rate = record.rate || getRateByType(record.day_type || 'weekday', project, salaryConfig)
+      return round2((record.duration || 0) * rate)
+    }
+  }
+}
+
+/**
+ * 计算净额 net_pay = pay + 补贴 - 扣款
+ * @param {object} record 记工记录（需含 pay 字段或可计算）
+ * @param {object} project 项目配置
+ * @param {object} salaryConfig 全局薪资配置
+ * @returns {number}
+ */
+export function calcNetPay(record, project, salaryConfig) {
+  const pay = record.pay ?? calcPay(record, project, salaryConfig)
+  return round2(pay + calcSubsidies(record.subsidies) - calcDeduction(record.deduction))
+}
+
+/**
+ * 保留两位小数
+ * @param {number} n
+ * @returns {number}
+ */
+export function round2(n) {
+  return Math.round(n * 100) / 100
 }
