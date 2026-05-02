@@ -609,6 +609,7 @@ export default {
 
 
 
+.summary-card {
 	&__value {
 		font-size: 22px;
 		font-weight: 700;
