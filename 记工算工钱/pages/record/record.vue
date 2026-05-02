@@ -390,6 +390,7 @@ import { COMMON_PHRASES } from '../../utils/constants.js'
 import { useProjectStore } from '../../stores/projectStore'
 import { formatDate, calcDuration } from '../../utils/date.js'
 import { useHolidayStore } from '@/stores/holidayStore'
+import { round2 } from '@/utils/calculator'
 
 function pad(n) { return String(n).padStart(2, '0') }
 
@@ -477,11 +478,11 @@ export default {
 		},
 		estimatedPay() {
 			if (this.duration <= 0 || this.currentRate <= 0) return 0
-			return this.duration * this.currentRate
+			return round2(this.duration * this.currentRate)
 		},
 		// 日薪
 		projectDailyRate() { return this.selectedProject?.daily_rate || 0 },
-		dailyPay() { return (this.dailyDays || 0) * this.projectDailyRate },
+		dailyPay() { return round2((this.dailyDays || 0) * this.projectDailyRate) },
 		monthDailyCount() {
 			if (!this.pickerDate) return 0
 			const store = useWorkStore()
@@ -498,7 +499,7 @@ export default {
 		},
 		// 计件
 		projectPieceRate() { return this.selectedProject?.piece_rate || 0 },
-		piecePay() { return (this.pieceQuantity || 0) * this.projectPieceRate },
+		piecePay() { return round2((this.pieceQuantity || 0) * this.projectPieceRate) },
 		// 通用
 		basePay() { return this.estimatedPay || this.dailyPay || this.piecePay || 0 },
 		totalSubsidies() { return (this.subsidies.night_shift || 0) + (this.subsidies.meal || 0) + (this.subsidies.transport || 0) },

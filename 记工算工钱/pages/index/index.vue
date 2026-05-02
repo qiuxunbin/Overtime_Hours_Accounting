@@ -352,13 +352,13 @@ export default {
 			},
 			typeFull(type) {
 				const m = { weekday: '平日', weekend: '周末', holiday: '节假日' }
-				return m[type] || '平日工钱'
+				return m[type] || '平日'
 			},
 			iconClass(type) {
 				return type === 'weekend' ? 'record-item__icon--weekend' : type === 'holiday' ? 'record-item__icon--holiday' : 'record-item__icon--weekday'
 			},
 			restoreClock() {
-				const saved = uni.getStorageSync('overtime_clock_in')
+				const saved = uni.getStorageSync('work_clock_in')
 				if (saved) {
 					this.clockInTime = saved
 					this.updateClockElapsed()
@@ -372,14 +372,14 @@ export default {
 				if (this.isClockedIn) {
 					this.clockInTime = null
 					this.clockElapsed = '0min'
-					uni.removeStorageSync('overtime_clock_in')
+					uni.removeStorageSync('work_clock_in')
 					if (this.clockTimer) {
 						clearInterval(this.clockTimer)
 						this.clockTimer = null
 					}
 				} else {
 					this.clockInTime = Date.now()
-					uni.setStorageSync('overtime_clock_in', this.clockInTime)
+					uni.setStorageSync('work_clock_in', this.clockInTime)
 					this.updateClockElapsed()
 					this.clockTimer = setInterval(() => { this.updateClockElapsed() }, 60000)
 				}

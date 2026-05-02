@@ -29,7 +29,7 @@
 			<view class="rate-inputs" v-if="payMode === 'hourly'">
 				<view class="rate-input">
 					<view class="rate-input__left">
-						<text class="rate-input__type">平日工钱</text>
+						<text class="rate-input__type">平日</text>
 						<text class="rate-input__hint">工作日下班后</text>
 					</view>
 					<view class="rate-input__right">
@@ -45,7 +45,7 @@
 				</view>
 				<view class="rate-input">
 					<view class="rate-input__left">
-						<text class="rate-input__type">周末工钱</text>
+						<text class="rate-input__type">周末</text>
 						<text class="rate-input__hint">周六日全天</text>
 					</view>
 					<view class="rate-input__right">
@@ -61,7 +61,7 @@
 				</view>
 				<view class="rate-input rate-input--last">
 					<view class="rate-input__left">
-						<text class="rate-input__type">节假日工钱</text>
+						<text class="rate-input__type">节假日</text>
 						<text class="rate-input__hint">元旦/春节/国庆等</text>
 					</view>
 					<view class="rate-input__right">

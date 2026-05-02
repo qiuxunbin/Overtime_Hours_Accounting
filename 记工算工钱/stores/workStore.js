@@ -275,7 +275,7 @@ export const useWorkStore = defineStore('work', {
 							})
 						} else if (!localRec || cloudTime >= localTime) {
 							// 云端更新 → 覆盖本地
-							col.update(cloudRec._id, {
+							col.upsert(cloudRec._id, {
 								...cloudRec,
 								_synced: true,
 								_updated_at: cloudRec.updated_at || Date.now()

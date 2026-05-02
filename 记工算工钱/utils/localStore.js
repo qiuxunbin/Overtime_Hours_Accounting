@@ -79,6 +79,15 @@ export function collection(name) {
 			}
 		},
 
+		upsert(id, data) {
+			const map = readAll(name)
+			const existing = map[id]
+			map[id] = existing
+				? { ...existing, ...data, _updated_at: Date.now(), _synced: false }
+				: { ...data, _id: id, created_at: data.created_at || Date.now(), _updated_at: Date.now(), _synced: true }
+			writeAll(name, map)
+		},
+
 		remove(id) {
 			const map = readAll(name)
 			delete map[id]
