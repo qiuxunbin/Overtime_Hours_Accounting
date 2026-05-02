@@ -17,6 +17,9 @@
 						<text class="project-card__rate">{{ rateSummary(project) }}</text>
 						<text class="project-card__stats" v-if="projectStats(project)">{{ projectStats(project) }}</text>
 					</view>
+					<view class="project-card__delete" @tap.stop="confirmDelete(project)">
+						<text class="project-card__delete-icon">🗑</text>
+					</view>
 					<text class="project-card__arrow">›</text>
 				</view>
 			</view>
@@ -42,6 +45,9 @@
 						<text class="project-card__name">{{ project.name }}</text>
 						<text class="project-card__rate">{{ rateSummary(project) }}</text>
 						<text class="project-card__stats" v-if="projectStats(project)">{{ projectStats(project) }}</text>
+					</view>
+					<view class="project-card__delete" @tap.stop="confirmDelete(project)">
+						<text class="project-card__delete-icon">🗑</text>
 					</view>
 					<text class="project-card__arrow">›</text>
 				</view>
@@ -190,6 +196,13 @@ export default {
 		color: var(--primary);
 		margin-top: 1px;
 		display: block;
+	}
+
+	&__delete {
+		padding: 4px; margin-right: 4px;
+	}
+	&__delete-icon {
+		font-size: 14px; opacity: 0.5;
 	}
 
 	&__arrow {
