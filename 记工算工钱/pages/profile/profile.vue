@@ -9,8 +9,8 @@
 					<text class="profile-header__avatar-text">&#x1F464;</text>
 				</view>
 				<view class="profile-header__info">
-					<text class="profile-header__name">加班人</text>
-					<text class="profile-header__desc">记录每一笔加班</text>
+					<text class="profile-header__name">记工人</text>
+					<text class="profile-header__desc">记录每一笔记工</text>
 				</view>
 			</view>
 
@@ -34,7 +34,7 @@
 				</view>
 				<view class="cell-item" @tap="goBatchRecord">
 					<view class="cell-item__icon"><text class="cell-item__icon-text">&#x1F4DD;</text></view>
-					<view class="cell-item__content"><text class="cell-item__label">批量记工时</text></view>
+					<view class="cell-item__content"><text class="cell-item__label">批量记工</text></view>
 					<view class="cell-item__right"><text class="cell-item__arrow">&#x203A;</text></view>
 				</view>
 				<view class="cell-item" @tap="goSalary">
@@ -107,7 +107,7 @@
 					<textarea
 						class="import-panel__textarea"
 						v-model="csvText"
-						placeholder="日期,类型,计薪方式,明细,公式,加班费,项目,备注,补贴,扣款&#10;2026-05-02,平日,时薪,18:00-21:00 3h,3h × ¥30/h,90,xx工地,,0,0"
+						placeholder="日期,类型,计薪方式,明细,公式,工钱,项目,备注,补贴,扣款&#10;2026-05-02,平日,时薪,18:00-21:00 3h,3h × ¥30/h,90,xx工地,,0,0"
 						placeholder-style="color: var(--text-muted); font-size: 12px;"
 						@input="onCsvInput"
 					/>
@@ -179,7 +179,7 @@ const COLUMN_MAP = {
 	'项目': 'project_name',
 	'项目名称': 'project_name',
 	'计薪方式': 'pay_mode_str',
-	'类型': 'overtime_type_str',
+	'类型': 'day_type_str',
 	'开始时间': 'start_time',
 	'结束时间': 'end_time',
 	'时长': 'duration_str',
@@ -187,7 +187,7 @@ const COLUMN_MAP = {
 	'天数': 'days_str',
 	'件数': 'quantity_str',
 	'单价': 'rate',
-	'加班费': 'pay',
+	'工钱': 'pay',
 	'金额': 'pay',
 	'备注': 'remark',
 	'是否结算': 'settled_str',
@@ -277,9 +277,9 @@ export default {
 									}
 								})
 							} else if (actionRes.tapIndex === 1) {
-								const records = backup.data['overtime-record'] || []
+								const records = backup.data['work-record'] || []
 								const totalHours = records.reduce((s, r) => s + (r.duration || 0), 0)
-								const summary = `加班工时记账 - 数据备份\n记录数：${records.length} 条\n总工时：${totalHours} 小时\n导出时间：${new Date().toLocaleString()}\n\n--- 以下是 JSON 数据 ---\n${jsonStr}`
+								const summary = `记工算工钱 - 数据备份\n记录数：${records.length} 条\n总工时：${totalHours} 小时\n导出时间：${new Date().toLocaleString()}\n\n--- 以下是 JSON 数据 ---\n${jsonStr}`
 								uni.setClipboardData({
 									data: summary,
 									success: () => {
@@ -359,7 +359,7 @@ export default {
 
 				const payModeStr = getCol('pay_mode_str')
 				const payMode = PAY_MODE_MAP[payModeStr] || proj?.pay_mode || 'hourly'
-				const typeStr = getCol('overtime_type_str')
+				const typeStr = getCol('day_type_str')
 				const overtimeType = TYPE_MAP[typeStr] || useHolidayStore().getDayType(date)
 
 				// Parse duration/days/quantity from CSV
@@ -405,7 +405,7 @@ export default {
 					project_name: project_name || '',
 					project_id: proj ? proj._id : null,
 					pay_mode: payMode,
-					overtime_type: overtimeType,
+					day_type: overtimeType,
 					start_time: getCol('start_time'),
 					end_time: getCol('end_time'),
 					duration,
@@ -520,13 +520,13 @@ export default {
 				return
 			}
 
-			const recordCount = backup.data['overtime-record']
-				? (Array.isArray(backup.data['overtime-record']) ? backup.data['overtime-record'].length : '?')
+			const recordCount = backup.data['work-record']
+				? (Array.isArray(backup.data['work-record']) ? backup.data['work-record'].length : '?')
 				: 0
 
 			uni.showModal({
 				title: '确认导入',
-				content: `将从备份恢复 ${recordCount} 条加班记录。\n云端现有数据将被覆盖，是否继续？`,
+				content: `将从备份恢复 ${recordCount} 条记工记录。\n云端现有数据将被覆盖，是否继续？`,
 				confirmText: '确认导入',
 				confirmColor: '#B85C4A',
 				success: async (res) => {
@@ -548,8 +548,8 @@ export default {
 						uni.hideLoading()
 
 						if (result.result && result.result.code === 0) {
-							const overtimeStore = useWorkStore()
-							await overtimeStore.loadRecords()
+							const workStore = useWorkStore()
+							await workStore.loadRecords()
 							const salaryStore = useSalaryStore()
 							await salaryStore.loadConfig()
 
@@ -572,8 +572,8 @@ export default {
 		},
 		showAbout() {
 			uni.showModal({
-				title: '加班工时记账',
-				content: '记录加班、自动算钱、月结对账。\n让每一分钟加班都算数。\n\nv1.0.0',
+				title: '记工算工钱',
+				content: '记录记工、自动算钱、月结对账。\n让每一笔记工都算数。\n\nv1.0.0',
 				showCancel: false,
 				confirmText: '知道了'
 			})

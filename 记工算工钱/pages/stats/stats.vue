@@ -44,7 +44,7 @@
 
 				<!-- 类型分布 - uCharts 环形图 -->
 			<view class="card" v-if="recordCount > 0">
-				<text class="card__title">加班类型分布</text>
+				<text class="card__title">日期类型分布</text>
 				<view class="chart-wrap chart-wrap--ring" v-if="totalPay > 0">
 					<canvas
 						canvas-id="ringChart"
@@ -120,11 +120,11 @@
 						</view>
 						<view class="year-summary__item">
 							<text class="year-summary__num">¥{{ yearPay.toFixed(0) }}</text>
-							<text class="year-summary__lbl">总加班费</text>
+							<text class="year-summary__lbl">总工钱</text>
 						</view>
 						<view class="year-summary__item">
 							<text class="year-summary__num">{{ yearMonths }}</text>
-							<text class="year-summary__lbl">有加班月份</text>
+							<text class="year-summary__lbl">有记工月份</text>
 						</view>
 						<view class="year-summary__item" v-if="yearDays > 0">
 							<text class="year-summary__num">{{ yearDays }}天</text>
@@ -157,7 +157,7 @@
 				<!-- 空状态 -->
 			<view class="empty-wrap" v-if="recordCount === 0">
 				<text class="empty-wrap__icon">&#x1F4CA;</text>
-				<text class="empty-wrap__text">本月没有加班记录</text>
+				<text class="empty-wrap__text">本月没有记工记录</text>
 				<text class="empty-wrap__hint">开始记录后这里会显示统计图表</text>
 			</view>
 
@@ -451,7 +451,7 @@ export default {
 						background: "#FFFFFF",
 						fontSize: 10,
 						categories: categories,
-						series: [{ name: "加班费", data: data }],
+						series: [{ name: "工钱", data: data }],
 						yAxis: { min: 0, gridColor: "#F0EDE6", fontSize: 9, splitNumber: 3 },
 						xAxis: { fontSize: 9, axisLineColor: "#E8E4DC", disableGrid: true },
 						legend: { show: false },
@@ -491,7 +491,7 @@ export default {
 					background: '#FFFFFF',
 					fontSize: 11,
 					series: [{
-						name: '加班类型',
+						name: '日期类型',
 						data: pieData
 					}],
 					legend: { show: false },
@@ -598,7 +598,7 @@ export default {
 				uni.showToast({ title: "无数据", icon: "none" })
 				return
 			}
-			let csv = "﻿日期,类型,计薪方式,时长/天数/件数,加班费,项目,备注,补贴,扣款\n"
+			let csv = "﻿日期,类型,计薪方式,时长/天数/件数,工钱,项目,备注,补贴,扣款\n"
 			records.forEach(r => {
 				const subsidies = r.subsidies ? ((r.subsidies.night_shift||0)+(r.subsidies.meal||0)+(r.subsidies.transport||0)) : 0
 				const deduction = r.deduction ? (r.deduction.amount||0) : 0
@@ -608,7 +608,7 @@ export default {
 				csv += row + "\n"
 			})
 			const now = new Date()
-			const fileName = "加班统计_" + now.getFullYear() + "-" + pad(now.getMonth()+1) + "-" + pad(now.getDate()) + ".csv"
+			const fileName = "记工统计_" + now.getFullYear() + "-" + pad(now.getMonth()+1) + "-" + pad(now.getDate()) + ".csv"
 			// #ifdef MP-WEIXIN
 			try {
 				const fd = uni.getFileSystemManager()

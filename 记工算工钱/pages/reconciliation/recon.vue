@@ -17,11 +17,11 @@
 			<!-- 对账卡片 -->
 			<view class="compare-card">
 				<view class="compare-card__row">
-					<text class="compare-card__label">预估加班费</text>
+					<text class="compare-card__label">预估工钱</text>
 					<text class="compare-card__value compare-card__value--green">¥ {{ estimatedTotal.toFixed(0) }}</text>
 				</view>
 				<view class="compare-card__row compare-card__row--input">
-					<text class="compare-card__label">实发加班费</text>
+					<text class="compare-card__label">实发工钱</text>
 					<view class="compare-card__input-wrap">
 						<text class="compare-card__prefix">¥</text>
 						<input
@@ -89,7 +89,7 @@
 			<!-- 空状态 -->
 			<view class="empty-wrap" v-else>
 				<text class="empty-wrap__icon">&#x1F4CB;</text>
-				<text class="empty-wrap__text">本月没有加班记录</text>
+				<text class="empty-wrap__text">本月没有记工记录</text>
 			</view>
 
 			<view class="unsettled-bar" v-if="unsettledSum > 0">
@@ -351,11 +351,11 @@ export default {
 			uni.showToast({ title: '本月无记录', icon: 'none' })
 			return
 			}
-			let text = this.monthLabel + ' 加班对账\n'
+			let text = this.monthLabel + ' 记工对账\n'
 			text += '─'.repeat(20) + '\n'
-			text += '预估加班费：¥' + this.estimatedTotal.toFixed(0) + '\n'
+			text += '预估工钱：¥' + this.estimatedTotal.toFixed(0) + '\n'
 			if (this.actualPay > 0) {
-			text += '实发加班费：¥' + parseFloat(this.actualPay).toFixed(0) + '\n'
+			text += '实发工钱：¥' + parseFloat(this.actualPay).toFixed(0) + '\n'
 			text += '差额：' + this.diffDisplay + '\n'
 			}
 			text += '─'.repeat(20) + '\n'
@@ -397,7 +397,7 @@ export default {
 			return
 			}
 			// Build CSV with BOM for Excel compat — 15 columns matching import COLUMN_MAP
-			const header = '﻿日期,项目,计薪方式,类型,开始时间,结束时间,时长,天数,件数,单价,加班费,备注,是否结算,补贴,扣款'
+			const header = '﻿日期,项目,计薪方式,类型,开始时间,结束时间,时长,天数,件数,单价,工钱,备注,是否结算,补贴,扣款'
 			let csv = header + '\n'
 			list.forEach(r => {
 			const subsidies = r.subsidies ? ((r.subsidies.night_shift || 0) + (r.subsidies.meal || 0) + (r.subsidies.transport || 0)) : 0
@@ -433,7 +433,7 @@ export default {
 			// WeChat: save file and share
 			// #ifdef MP-WEIXIN
 			try {
-			const fileName = '加班对账_' + this.viewYear + '-' + String(this.viewMonth).padStart(2, '0') + '.csv'
+			const fileName = '记工对账_' + this.viewYear + '-' + String(this.viewMonth).padStart(2, '0') + '.csv'
 			const fs = wx.getFileSystemManager()
 			const tempPath = wx.env.USER_DATA_PATH + '/' + fileName
 			fs.writeFileSync(tempPath, csv, 'utf8')
@@ -491,7 +491,7 @@ export default {
 			ctx.setFillStyle(textMain)
 			ctx.setFontSize(18)
 			ctx.setTextAlign('center')
-			ctx.fillText(this.monthLabel + ' 加班对账', w / 2, titleY)
+			ctx.fillText(this.monthLabel + ' 记工对账', w / 2, titleY)
 
 			const cardX = px
 			const cardW = w - px * 2
@@ -506,7 +506,7 @@ export default {
 			ctx.setFillStyle(textSub)
 			ctx.setFontSize(13)
 			ctx.setTextAlign('left')
-			ctx.fillText('预估加班费', cardX + cardPad, rowY + 5)
+			ctx.fillText('预估工钱', cardX + cardPad, rowY + 5)
 
 			ctx.setFillStyle(green)
 			ctx.setFontSize(18)
@@ -517,7 +517,7 @@ export default {
 			ctx.setFillStyle(textSub)
 			ctx.setFontSize(13)
 			ctx.setTextAlign('left')
-			ctx.fillText('实发加班费', cardX + cardPad, rowY + 5)
+			ctx.fillText('实发工钱', cardX + cardPad, rowY + 5)
 
 			ctx.setFillStyle(textMain)
 			ctx.setFontSize(18)
@@ -619,7 +619,7 @@ export default {
 
 			ctx.setFillStyle('#9C9C9C')
 			ctx.setFontSize(10)
-			ctx.fillText('加班工时记账', w / 2, bottomY + 20)
+			ctx.fillText('记工算工钱', w / 2, bottomY + 20)
 
 			ctx.draw(false, () => {
 			setTimeout(() => {

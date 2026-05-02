@@ -28,7 +28,7 @@
 			<view class="empty-wrap" v-if="store.activeProjects.length === 0">
 				<text class="empty-wrap__icon">&#x1F3E0;</text>
 				<text class="empty-wrap__text">还没有项目</text>
-				<text class="empty-wrap__hint">创建项目后可以按项目统计加班收入</text>
+				<text class="empty-wrap__hint">创建项目后可以按项目统计记工收入</text>
 			</view>
 
 			<!-- 已归档项目 -->
@@ -119,7 +119,7 @@ export default {
 		confirmDelete(project) {
 			uni.showModal({
 				title: '确认删除',
-				content: `删除项目「${project.name}」不会删除加班记录，但记录将不再关联该项目。`,
+				content: `删除项目「${project.name}」不会删除记工记录，但记录将不再关联该项目。`,
 				confirmText: '删除',
 				confirmColor: '#B85C4A',
 				success: (res) => {

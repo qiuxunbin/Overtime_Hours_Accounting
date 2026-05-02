@@ -12,7 +12,7 @@
 			<view class="splash__logo">
 				<text class="splash__logo-icon">&#x23F0;</text>
 			</view>
-			<text class="splash__title">加班工时记账</text>
+			<text class="splash__title">记工算工钱</text>
 			<text class="splash__tagline">记的每一分钟，都算数</text>
 		</view>
 

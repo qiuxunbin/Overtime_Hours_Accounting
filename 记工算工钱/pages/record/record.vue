@@ -1,6 +1,6 @@
 <template>
 	<view class="page-record">
-		<NavBar :title="editId ? '编辑记录' : '记录加班'" :showBack="true" />
+		<NavBar :title="editId ? '编辑记录' : '记录记工'" :showBack="true" />
 
 		<view class="page-record__content">
 			<!-- 公共：日期行 -->
@@ -71,14 +71,14 @@
 					</view>
 				</view>
 
-				<!-- 加班费预览 -->
+				<!-- 工钱预览 -->
 				<view class="pay-card" v-if="estimatedPay > 0">
-					<text class="pay-card__label">加班费</text>
+					<text class="pay-card__label">工钱</text>
 					<text class="pay-card__amount">¥{{ estimatedPay.toFixed(0) }}</text>
 					<text class="pay-card__detail">{{ formattedDuration }}h × ¥{{ currentRate }}/h</text>
 				</view>
 				<view class="pay-card pay-card--warn" v-else-if="duration > 0" @tap="showRateSheet = true">
-					<text class="pay-card__warn-text">暂未设置该类型的加班时薪，点击设置</text>
+					<text class="pay-card__warn-text">暂未设置该类型的记工时薪，点击设置</text>
 				</view>
 
 				<!-- 备注 -->
@@ -161,7 +161,7 @@
 
 				<!-- 备注 -->
 				<view class="remark-area">
-					<textarea class="remark-area__input" v-model="remark" placeholder="加班说明（选填）"
+					<textarea class="remark-area__input" v-model="remark" placeholder="记工说明（选填）"
 						placeholder-style="color: var(--text-muted); font-size: 14px;" />
 				</view>
 
@@ -190,9 +190,9 @@
 					</view>
 				</view>
 
-				<!-- 加班费 -->
+				<!-- 工钱 -->
 				<view class="pay-card" v-if="dailyPay > 0">
-					<text class="pay-card__label">加班费</text>
+					<text class="pay-card__label">工钱</text>
 					<text class="pay-card__amount">¥{{ dailyPay.toFixed(0) }}</text>
 				</view>
 
@@ -272,9 +272,9 @@
 					<text class="big-number__unit">{{ selectedProject?.piece_unit || '件' }}</text>
 				</view>
 
-				<!-- 加班费 -->
+				<!-- 工钱 -->
 				<view class="pay-card" v-if="piecePay > 0">
-					<text class="pay-card__label">加班费</text>
+					<text class="pay-card__label">工钱</text>
 					<text class="pay-card__amount">¥{{ piecePay.toFixed(0) }}</text>
 				</view>
 
@@ -362,7 +362,7 @@
 		<!-- 时薪设置弹窗（零费率时弹出） -->
 		<view class="rate-sheet" v-if="showRateSheet" @tap="showRateSheet = false">
 			<view class="rate-sheet__panel" @tap.stop>
-				<text class="rate-sheet__title">这一小时加班费多少？</text>
+				<text class="rate-sheet__title">这一小时工钱多少？</text>
 				<text class="rate-sheet__desc">填一个数就行，其他类型会自动沿用</text>
 				<view class="rate-sheet__input-row">
 					<text class="rate-sheet__prefix">¥</text>
@@ -370,7 +370,7 @@
 					<text class="rate-sheet__suffix">/ 小时</text>
 				</view>
 				<view class="rate-sheet__apply" v-if="quickRate > 0">
-					<text class="rate-sheet__apply-text">保存 ¥{{ quickRate }}/h 并应用到已有的加班记录</text>
+					<text class="rate-sheet__apply-text">保存 ¥{{ quickRate }}/h 并应用到已有的记工记录</text>
 				</view>
 				<view class="rate-sheet__btns">
 					<view class="rate-sheet__btn rate-sheet__btn--confirm" @tap="applyQuickRate">
@@ -519,7 +519,7 @@ export default {
 				this.endTime = rec.end_time
 				this.pickerStartTime = rec.start_time
 				this.pickerEndTime = rec.end_time
-				this.overtimeType = rec.overtime_type
+				this.overtimeType = rec.day_type || rec.overtime_type
 				this.remark = rec.remark || ''
 				this.projectName = rec.project_name || ''
 				this.selectedProjectId = rec.project_id || null
@@ -639,14 +639,14 @@ export default {
 			if (payMode === 'hourly') {
 				Object.assign(baseData, {
 					start_time: this.startTime, end_time: this.endTime,
-					duration: this.duration, overtime_type: this.overtimeType,
+					duration: this.duration, day_type: this.overtimeType,
 					rate: this.currentRate, pay: this.estimatedPay, net_pay: this.netPay
 				})
 			} else if (payMode === 'daily') {
 				const rate = this.projectDailyRate
 				Object.assign(baseData, {
 					start_time: '', end_time: '', duration: 0,
-					overtime_type: useHolidayStore().getDayType(this.pickerDate),
+					day_type: useHolidayStore().getDayType(this.pickerDate),
 					rate, days: this.dailyDays, daily_rate: rate,
 					pay: this.dailyPay, net_pay: this.netPay
 				})
@@ -654,7 +654,7 @@ export default {
 				const rate = this.projectPieceRate
 				Object.assign(baseData, {
 					start_time: '', end_time: '', duration: 0,
-					overtime_type: useHolidayStore().getDayType(this.pickerDate),
+					day_type: useHolidayStore().getDayType(this.pickerDate),
 					rate, quantity: this.pieceQuantity, piece_rate: rate,
 					piece_unit: this.selectedProject?.piece_unit || '件',
 					pay: this.piecePay, net_pay: this.netPay
@@ -756,7 +756,7 @@ export default {
 	&__text { line-height: 1; }
 }
 
-/* ===== 加班费预览卡片（三种模式共用） ===== */
+/* ===== 工钱预览卡片（三种模式共用） ===== */
 .pay-card {
 	display: flex; align-items: center; justify-content: space-between;
 	padding: 12px 14px; background: var(--primary-light); border-radius: 8px; margin-top: 12px;

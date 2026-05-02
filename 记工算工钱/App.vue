@@ -50,8 +50,8 @@
 				// 静默登录改为非阻塞，失败不阻碍用户使用本地功能
 				this.silentLogin(userStore).then(() => {
 					if (userStore.isLoggedIn) {
-						const overtimeStore = useWorkStore()
-						overtimeStore.mergeOnLogin(userStore.uid)
+						const workStore = useWorkStore()
+						workStore.mergeOnLogin(userStore.uid)
 					}
 				}).catch(() => {})
 			} else {
@@ -62,13 +62,13 @@
 		methods: {
 			preloadLocalData() {
 				// 从本地存储预加载工时记录
-				const overtimeStore = useWorkStore()
-				const localDocs = collection('overtime_records').getAll()
-				overtimeStore.records = localDocs.map(r => ({ ...r, id: r._id }))
+				const workStore = useWorkStore()
+				const localDocs = collection('work_records').getAll()
+				workStore.records = localDocs.map(r => ({ ...r, id: r._id }))
 				// 设置当前月份
 				const now = new Date()
 				const m = String(now.getMonth() + 1).padStart(2, '0')
-				overtimeStore.currentMonth = `${now.getFullYear()}-${m}`
+				workStore.currentMonth = `${now.getFullYear()}-${m}`
 
 				// 从本地存储预加载项目列表
 				const projectStore = useProjectStore()
@@ -155,11 +155,11 @@
 			console.log('App Show')
 			// 每 5 分钟后台同步一次
 			this._syncInterval = setInterval(() => {
-				const overtimeStore = useWorkStore()
+				const workStore = useWorkStore()
 				const token = uni.getStorageSync('uni_id_token')
 				if (token) {
-					overtimeStore.flushSyncQueue()
-					overtimeStore.pullFromCloud()
+					workStore.flushSyncQueue()
+					workStore.pullFromCloud()
 				}
 			}, 300000)
 		},

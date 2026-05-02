@@ -3,7 +3,7 @@
 		<NavBar title="记工算工钱" green />
 
 		<view class="page-index__content">
-			<!-- 加班状态 -->
+			<!-- 记工状态 -->
 			<view class="clock-status" @tap="toggleClock">
 				<view class="clock-status__dot" :class="{ 'clock-status__dot--active': isClockedIn }"></view>
 				<text class="clock-status__text" v-if="isClockedIn">当前记工 · 已计时 {{ clockElapsed }}</text>
@@ -110,12 +110,12 @@
 					>
 						<view
 							class="record-item__icon"
-							:class="iconClass(rec.overtime_type)"
+							:class="iconClass(rec.day_type || rec.overtime_type)"
 						>
-							<text class="record-item__icon-text">{{ typeLabel(rec.overtime_type) }}</text>
+							<text class="record-item__icon-text">{{ typeLabel(rec.day_type || rec.overtime_type) }}</text>
 						</view>
 						<view class="record-item__info">
-							<text class="record-item__type">{{ typeFull(rec.overtime_type) }}</text>
+							<text class="record-item__type">{{ typeFull(rec.day_type || rec.overtime_type) }}</text>
 							<text class="record-item__date">{{ rec.date }} {{ recordTimeStr(rec) }}</text>
 								<text class="record-item__project" v-if="rec.project_name">{{ rec.project_name }}</text>
 						</view>
@@ -160,7 +160,7 @@
 						@tap="goEdit(rec.id)"
 					>
 						<view class="day-sheet__item-left">
-							<text class="day-sheet__item-type">{{ typeFull(rec.overtime_type) }}</text>
+							<text class="day-sheet__item-type">{{ typeFull(rec.day_type || rec.overtime_type) }}</text>
 							<text class="day-sheet__item-time">{{ recordTimeStr(rec) }}</text>
 							<text class="record-item__project" v-if="rec.project_name">{{ rec.project_name }}</text>
 						</view>
@@ -352,7 +352,7 @@ export default {
 			},
 			typeFull(type) {
 				const m = { weekday: '平日', weekend: '周末', holiday: '节假日' }
-				return m[type] || '平日加班'
+				return m[type] || '平日工钱'
 			},
 			iconClass(type) {
 				return type === 'weekend' ? 'record-item__icon--weekend' : type === 'holiday' ? 'record-item__icon--holiday' : 'record-item__icon--weekday'
@@ -465,7 +465,7 @@ export default {
 	}
 }
 
-/* 加班状态 */
+/* 记工状态 */
 .clock-status {
 	display: flex;
 	align-items: center;

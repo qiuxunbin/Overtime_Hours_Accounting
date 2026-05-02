@@ -34,7 +34,7 @@ exports.main = async (event, context) => {
  * 导出全部数据
  */
 async function exportAll(uid) {
-	const collections = ['overtime-record', 'salary-config', 'feedback']
+	const collections = ['work-record', 'salary-config', 'feedback']
 
 	const backup = {
 		version: 1,
@@ -72,7 +72,7 @@ async function importAll(uid, { data: backupData, overwrite = false }) {
 		return { code: 400, message: '无效的备份数据格式' }
 	}
 
-	const collections = ['overtime-record', 'salary-config', 'feedback']
+	const collections = ['work-record', 'salary-config', 'feedback']
 	const result = { imported: {}, skipped: {} }
 
 	for (const colName of collections) {
@@ -117,7 +117,7 @@ async function importAll(uid, { data: backupData, overwrite = false }) {
  * 查看备份概况
  */
 async function backupInfo(uid) {
-	const collections = ['overtime-record', 'salary-config', 'feedback']
+	const collections = ['work-record', 'salary-config', 'feedback']
 	const info = {}
 
 	for (const colName of collections) {
@@ -132,7 +132,7 @@ async function backupInfo(uid) {
 		code: 0,
 		data: {
 			info,
-			totalRecords: info['overtime-record'] || 0,
+			totalRecords: info['work-record'] || 0,
 			hasSalaryConfig: (info['salary-config'] || 0) > 0,
 			feedbackCount: info['feedback'] || 0
 		}

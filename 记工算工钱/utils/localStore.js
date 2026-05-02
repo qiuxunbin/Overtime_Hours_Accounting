@@ -3,7 +3,7 @@
  *
  * 用法:
  *   import { collection } from '@/utils/localStore'
- *   const col = collection('overtime_records')
+ *   const col = collection('work_records')
  *   col.add({ date: '2026-01-01', duration: 2 })
  *   const all = col.getAll()
  */

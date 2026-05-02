@@ -7,8 +7,8 @@
 			<view class="login-header__logo">
 				<text class="login-header__logo-icon">&#x23F0;</text>
 			</view>
-			<text class="login-header__title">加班工时记账</text>
-			<text class="login-header__desc">登录后同步您的加班数据</text>
+			<text class="login-header__title">记工算工钱</text>
+			<text class="login-header__desc">登录后同步您的记工数据</text>
 		</view>
 
 		<!-- 登录方式切换 -->
@@ -301,8 +301,8 @@ export default {
 			uni.setStorageSync('uni_id_token_expired', tokenExpired)
 
 			// 合并本地数据到该用户账户
-			const overtimeStore = useWorkStore()
-			overtimeStore.mergeOnLogin(uid)
+			const workStore = useWorkStore()
+			workStore.mergeOnLogin(uid)
 
 			uni.showToast({ title: '登录成功', icon: 'success' })
 			setTimeout(() => {
