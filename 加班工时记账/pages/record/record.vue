@@ -424,10 +424,10 @@ export default {
 		},
 		totalSubsidies() {
 			const s = this.subsidies
-			return (s.night_shift || 0) + (s.meal || 0) + (s.transport || 0)
+			return Number(s.night_shift || 0) + Number(s.meal || 0) + Number(s.transport || 0)
 		},
 		deductionAmount() {
-			return this.deduction.amount || 0
+			return Number(this.deduction.amount) || 0
 		},
 		netPay() {
 			return this.basePay + this.totalSubsidies - this.deductionAmount
@@ -522,11 +522,10 @@ export default {
 			}
 		},
 		onDeductionInput() {
-			const v = parseFloat(this.deduction.amount)
-			if (v < 0) this.deduction.amount = 0
-			if (this.deduction.amount !== undefined && this.deduction.amount.toString().length > 5) {
-				this.deduction.amount = parseFloat(this.deduction.amount.toString().slice(0, 5))
-			}
+			const v = parseFloat(this.deduction.amount) || 0
+			if (v < 0) { this.deduction.amount = 0; return }
+			if (String(v).length > 5) { this.deduction.amount = parseFloat(String(v).slice(0, 5)); return }
+			this.deduction.amount = v
 		},
 		showProjectSelector() {
 			const pStore = useProjectStore()
