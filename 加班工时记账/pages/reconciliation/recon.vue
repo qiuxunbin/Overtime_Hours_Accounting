@@ -380,8 +380,7 @@ export default {
 			}
 			// Build CSV with BOM for Excel compat — 15 columns matching import COLUMN_MAP
 			const header = '﻿日期,项目,计薪方式,类型,开始时间,结束时间,时长,天数,件数,单价,加班费,备注,是否结算,补贴,扣款'
-			let csv = header + '
-'
+			let csv = header + '\n'
 			list.forEach(r => {
 			const subsidies = r.subsidies ? ((r.subsidies.night_shift || 0) + (r.subsidies.meal || 0) + (r.subsidies.transport || 0)) : 0
 			const deduction = r.deduction ? (r.deduction.amount || 0) : 0
@@ -410,8 +409,7 @@ export default {
 				subsidies,
 				deduction
 				].join(',')
-			csv += row + '
-'
+			csv += row + '\n'
 			})
 
 			// WeChat: save file and share
