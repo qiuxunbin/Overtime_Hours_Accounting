@@ -3,7 +3,7 @@
 const crypto = require('crypto')
 const db = uniCloud.database()
 const cmd = db.command
-const SECRET = 'overtime-app-jwt-secret-change-in-production'
+const SECRET = 'work-app-jwt-secret-change-in-production'
 
 // ========== JWT 验证 ==========
 function b64d(str) {
@@ -76,7 +76,7 @@ exports.main = async (event, context) => {
 
 async function getMonthlySummary(uid, year, month) {
 	const prefix = `${year}-${String(month).padStart(2, '0')}`
-	const collection = db.collection('overtime-record')
+	const collection = db.collection('work-record')
 	const { data: records } = await collection
 		.where({ user_id: uid, date: new RegExp(`^${prefix}`) })
 		.limit(1000)
@@ -85,9 +85,9 @@ async function getMonthlySummary(uid, year, month) {
 	const totalHours = records.reduce((s, r) => s + (r.duration || 0), 0)
 	const totalPay = records.reduce((s, r) => s + (r.pay || 0), 0)
 	const breakdown = { weekday: { hours: 0, pay: 0 }, weekend: { hours: 0, pay: 0 }, holiday: { hours: 0, pay: 0 } }
-	records.forEach(r => { if (breakdown[r.overtime_type]) { breakdown[r.overtime_type].hours += r.duration || 0; breakdown[r.overtime_type].pay += r.pay || 0 } })
+	records.forEach(r => { if (breakdown[r.day_type]) { breakdown[r.day_type].hours += r.duration || 0; breakdown[r.day_type].pay += r.pay || 0 } })
 
-	return { code: 0, data: { year, month, recordCount: records.length, totalHours: Math.round(totalHours * 100) / 100, totalPay: Math.round(totalPay * 100) / 100, breakdown, records } }
+	return { code: 0, data: { year, month, recordCount: records.length, totalHours: Math.round(totalHours * 100) / 100, totalPay: Math.round(totalPay * 100) / 100, totalDays: Math.round(totalDays * 100) / 100, totalQuantity: Math.round(totalQuantity * 100) / 100, breakdown, records } }
 }
 
 async function recalcMonth(uid, year, month) {
@@ -101,7 +101,7 @@ async function recalcMonth(uid, year, month) {
 	const projMap = {}
 	projects.forEach(p => { projMap[p._id] = p })
 
-	const collection = db.collection('overtime-record')
+	const collection = db.collection('work-record')
 	const { data: records } = await collection.where({ user_id: uid, date: new RegExp(`^${prefix}`) }).limit(1000).get()
 	let updated = 0
 	for (const rec of records) {
@@ -122,7 +122,7 @@ async function recalcMonth(uid, year, month) {
 			}
 			case 'hourly':
 			default: {
-				rate = rateMap[rec.overtime_type] || rec.rate || 0
+				rate = rateMap[rec.day_type] || rec.rate || 0
 				pay = Math.round((rec.duration || 0) * rate * 100) / 100
 				break
 			}
@@ -146,18 +146,18 @@ async function recalcMonth(uid, year, month) {
 }
 
 async function getYearStats(uid, year) {
-	const { data: records } = await db.collection('overtime-record')
+	const { data: records } = await db.collection('work-record')
 		.where({ user_id: uid, date: new RegExp(`^${String(year)}`) })
 		.limit(5000).get()
 	const totalHours = records.reduce((s, r) => s + (r.duration || 0), 0)
 	const totalPay = records.reduce((s, r) => s + (r.pay || 0), 0)
 	const months = new Set()
 	records.forEach(r => { if (r.date) months.add(r.date.slice(0, 7)) })
-	return { code: 0, data: { year, totalHours: Math.round(totalHours * 100) / 100, totalPay: Math.round(totalPay * 100) / 100, recordCount: records.length, activeMonths: months.size, monthlyBreakdown: [...months].sort() } }
+	return { code: 0, data: { year, totalHours: Math.round(totalHours * 100) / 100, totalPay: Math.round(totalPay * 100) / 100, totalDays: Math.round(totalDays * 100) / 100, totalQuantity: Math.round(totalQuantity * 100) / 100, recordCount: records.length, activeMonths: months.size, monthlyBreakdown: [...months].sort() } }
 }
 
 async function listRecords(uid) {
-	const { data } = await db.collection('overtime-record')
+	const { data } = await db.collection('work-record')
 		.where({ user_id: uid }).orderBy('created_at', 'desc').limit(1000).get()
 	return { code: 0, data }
 }
@@ -167,10 +167,10 @@ function validateRecord(record) {
 	const errors = []
 	switch (mode) {
 		case 'hourly':
-			if (!record.duration || record.duration <= 0) errors.push('时薪模式必须填写加班时长')
+			if (!record.duration || record.duration <= 0) errors.push('时薪模式必须填写记工时长')
 			if (!record.start_time) errors.push('时薪模式必须填写开始时间')
 			if (!record.end_time) errors.push('时薪模式必须填写结束时间')
-			if (!['weekday', 'weekend', 'holiday'].includes(record.overtime_type)) errors.push('时薪模式加班类型无效')
+			if (!['weekday', 'weekend', 'holiday'].includes(record.day_type)) errors.push('日期类型无效')
 			break
 		case 'daily':
 			if (!record.days || record.days < 1) errors.push('日薪模式必须填写天数')
@@ -190,12 +190,12 @@ async function addRecord(uid, record) {
 	// 非时薪模式不检测时间段重叠
 	if (payMode === 'daily' || payMode === 'piece') {
 		const data = { ...record, user_id: uid, created_at: Date.now() }
-		const res = await db.collection('overtime-record').add(data)
+		const res = await db.collection('work-record').add(data)
 		return { code: 0, id: res.id, data: { ...data, _id: res.id }, duplicated: false }
 	}
 
 	// 时薪模式检测时间段重叠
-	const dup = await db.collection('overtime-record')
+	const dup = await db.collection('work-record')
 		.where({
 			user_id: uid,
 			date: record.date,
@@ -205,12 +205,12 @@ async function addRecord(uid, record) {
 	if (dup.data.length > 0) return { code: 0, data: dup.data[0], duplicated: true }
 
 	const data = { ...record, user_id: uid, created_at: Date.now() }
-	const res = await db.collection('overtime-record').add(data)
+	const res = await db.collection('work-record').add(data)
 	return { code: 0, id: res.id, data: { ...data, _id: res.id }, duplicated: false }
 }
 
 async function updateRecord(uid, id, record) {
-	const { data: exist } = await db.collection('overtime-record').where({ _id: id, user_id: uid }).limit(1).get()
+	const { data: exist } = await db.collection('work-record').where({ _id: id, user_id: uid }).limit(1).get()
 	if (!exist.length) return { code: 404, message: '记录不存在' }
 	// 验证模式相关字段
 	const merged = { ...exist[0], ...record }
@@ -221,7 +221,7 @@ async function updateRecord(uid, id, record) {
 		const date = record.date || exist[0].date
 		const st = record.start_time || exist[0].start_time
 		const et = record.end_time || exist[0].end_time
-		const dup = await db.collection('overtime-record')
+		const dup = await db.collection('work-record')
 			.where({
 				user_id: uid,
 				date,
@@ -231,14 +231,14 @@ async function updateRecord(uid, id, record) {
 			}).limit(1).get()
 		if (dup.data.length > 0) return { code: 0, duplicated: true }
 	}
-	await db.collection('overtime-record').doc(id).update({ ...record, updated_at: Date.now() })
+	await db.collection('work-record').doc(id).update({ ...record, updated_at: Date.now() })
 	return { code: 0 }
 }
 
 async function deleteRecord(uid, id) {
-	const { data: exist } = await db.collection('overtime-record').where({ _id: id, user_id: uid }).limit(1).get()
+	const { data: exist } = await db.collection('work-record').where({ _id: id, user_id: uid }).limit(1).get()
 	if (!exist.length) return { code: 404, message: '记录不存在' }
-	await db.collection('overtime-record').doc(id).remove()
+	await db.collection('work-record').doc(id).remove()
 	return { code: 0 }
 }
 
@@ -261,7 +261,7 @@ async function setSalaryConfig(uid, config) {
 
 async function syncRecords(uid, event) {
 	const { operations, device_id } = event
-	const collection = db.collection('overtime-record')
+	const collection = db.collection('work-record')
 	const idMappings = {}
 	const conflicts = []
 	const realUid = uid || null

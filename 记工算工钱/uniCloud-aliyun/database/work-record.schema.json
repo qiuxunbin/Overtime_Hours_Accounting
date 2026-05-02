@@ -1,6 +1,6 @@
 {
   "bsonType": "object",
-  "required": ["user_id", "date", "overtime_type"],
+  "required": ["user_id", "date", "day_type"],
   "permission": {
     "read": "auth.uid == doc.user_id",
     "create": "auth.uid != null",
@@ -21,7 +21,7 @@
     },
     "date": {
       "bsonType": "string",
-      "description": "加班日期 YYYY-MM-DD",
+      "description": "记工日期 YYYY-MM-DD",
       "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
     },
     "start_time": {
@@ -36,13 +36,13 @@
     },
     "duration": {
       "bsonType": "number",
-      "description": "加班时长（小时），如 3.5",
+      "description": "记工时长（小时），如 3.5",
       "minimum": 0,
       "maximum": 24
     },
-    "overtime_type": {
+    "day_type": {
       "bsonType": "string",
-      "description": "加班类型",
+      "description": "日期类型",
       "enum": ["weekday", "weekend", "holiday"]
     },
     "pay_mode": {
@@ -73,7 +73,7 @@
     },
     "days": {
       "bsonType": "number",
-      "description": "加班天数（日薪模式）",
+      "description": "记工天数（日薪模式）",
       "minimum": 0
     },
     "quantity": {
@@ -83,12 +83,12 @@
     },
     "pay": {
       "bsonType": "number",
-      "description": "预估加班费",
+      "description": "预估工钱",
       "minimum": 0
     },
     "net_pay": {
       "bsonType": "number",
-      "description": "净额 = 加班费 + 补贴 - 扣款",
+      "description": "净额 = 工钱 + 补贴 - 扣款",
       "minimum": 0
     },
     "remark": {
