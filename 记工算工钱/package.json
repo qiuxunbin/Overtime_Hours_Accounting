@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "@qiun/ucharts": "^2.5.0-20230101"
+  },
+  "devDependencies": {
+    "@dcloudio/uni-mp-vite": "^3.0.0-alpha-3021020211012002",
+    "@dcloudio/uni-mp-weixin": "^2.0.2-5000720260410001",
+    "@dcloudio/vite-plugin-uni": "^3.0.0-alpha-5000820260430001",
+    "sass": "^1.77.0",
+    "vite": "^5.2.8"
+  }
+}

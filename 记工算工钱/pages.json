@@ -1,0 +1,166 @@
+{
+	"pages": [
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/stats/stats",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/profile/profile",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationStyle": "custom",
+		"backgroundColor": "#F8F6F2"
+	},
+	"tabBar": {
+		"color": "#9C9C9C",
+		"selectedColor": "#1B8A5A",
+		"backgroundColor": "#FFFFFF",
+		"borderStyle": "white",
+		"height": "64px",
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"text": "记账",
+				"iconPath": "static/tabbar/record.png",
+				"selectedIconPath": "static/tabbar/record-active.png"
+			},
+			{
+				"pagePath": "pages/stats/stats",
+				"text": "统计",
+				"iconPath": "static/tabbar/stats.png",
+				"selectedIconPath": "static/tabbar/stats-active.png"
+			},
+			{
+				"pagePath": "pages/profile/profile",
+				"text": "我的",
+				"iconPath": "static/tabbar/profile.png",
+				"selectedIconPath": "static/tabbar/profile-active.png"
+			}
+		]
+	},
+	"uniIdRouter": {},
+	"subPackages": [
+		{
+			"root": "pages/splash",
+			"pages": [
+				{
+					"path": "splash",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		},
+		{
+			"root": "pages/record",
+			"pages": [
+				{
+					"path": "record",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		},
+		{
+			"root": "pages/reconciliation",
+			"pages": [
+				{
+					"path": "recon",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		},
+		{
+			"root": "pages/salary",
+			"pages": [
+				{
+					"path": "salary",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		},
+		{
+			"root": "pages/clock",
+			"pages": [
+				{
+					"path": "clock",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		},
+		{
+			"root": "pages/feedback",
+			"pages": [
+				{
+					"path": "feedback",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		},
+		{
+			"root": "pages/login",
+			"pages": [
+				{
+					"path": "login",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		},
+		{
+			"root": "pages/projects",
+			"pages": [
+				{
+					"path": "projects",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		},
+		{
+			"root": "pages/project-edit",
+			"pages": [
+				{
+					"path": "project-edit",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		},
+		{
+			"root": "pages/batch-record",
+			"pages": [
+				{
+					"path": "batch-record",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		}
+	]
+}
