@@ -170,9 +170,10 @@
 </script>
 
 <style>
-	/* 引入 Google Fonts — 仅在 App 端生效，小程序会 fallback 到系统字体 */
+	/* 引入 Google Fonts — 仅在 App/H5 端生效，小程序会 fallback 到系统字体 */
+	// #ifndef MP-WEIXIN
 	@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Noto+Sans+SC:wght@400;500;600;700&family=Source+Han+Serif+SC:wght@600;700&display=swap');
-
+	// #endif
 	/* ===== 设计系统 CSS 变量（浅色模式） ===== */
 	page {
 		--primary: #1B8A5A;
