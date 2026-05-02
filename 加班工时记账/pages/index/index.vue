@@ -180,7 +180,6 @@
 <script>
 import NavBar from '../../components/NavBar.vue'
 import { useOvertimeStore } from '../../stores/overtimeStore'
-import { useSalaryStore } from '../../stores/salaryStore'
 import { useProjectStore } from '../../stores/projectStore'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 

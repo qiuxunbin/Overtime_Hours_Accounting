@@ -115,6 +115,7 @@ export function getOvertimeType(dateStr) {
  * 按月薪计算各加班费率
  */
 export function calcRatesFromSalary(monthlySalary) {
+	if (!monthlySalary || monthlySalary <= 0) return { weekday_rate: 0, weekend_rate: 0, holiday_rate: 0 }
 	const hourly = monthlySalary / 21.75 / 8
 	return {
 		weekday_rate: Math.round(hourly * 1.5 * 100) / 100,

@@ -375,8 +375,12 @@ export default {
 						if (st && et) {
 							const [sh, sm] = st.split(':').map(Number)
 							const [eh, em] = et.split(':').map(Number)
-							duration = ((eh * 60 + em) - (sh * 60 + sm)) / 60
-							if (duration < 0) duration = 0
+							if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) {
+								duration = parseFloat(durStr) || 0
+							} else {
+								duration = ((eh * 60 + em) - (sh * 60 + sm)) / 60
+								if (duration < 0) duration = 0
+							}
 						}
 					}
 				} else if (payMode === 'daily') {

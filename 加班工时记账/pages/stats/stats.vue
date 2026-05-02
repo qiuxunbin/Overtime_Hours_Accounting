@@ -232,6 +232,7 @@ export default {
 			this.monthRecords.forEach(r => {
 				const d = new Date(r.date)
 				const dom = d.getDate()
+				if (isNaN(dom)) return  // 跳过无效日期
 				const wn = Math.ceil(dom / 7)
 				const key = 'W' + wn
 				if (!weeks[key]) weeks[key] = 0

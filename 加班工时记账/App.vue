@@ -119,7 +119,7 @@
 				try {
 					console.log('[silentLogin] 开始微信静默登录...')
 					const loginRes = await uni.login()
-					console.log('[silentLogin] uni.login 返回:', JSON.stringify(loginRes))
+					console.log('[silentLogin] uni.login 返回 code:', loginRes?.code)
 					if (!loginRes || !loginRes.code) {
 						console.log('[silentLogin] 未获取到 code，终止登录')
 						return
@@ -132,7 +132,7 @@
 						}),
 						new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 6000))
 					])
-					console.log('[silentLogin] 云函数返回:', JSON.stringify(result))
+					console.log('[silentLogin] 云函数返回 code:', result?.result?.code)
 					if (result && result.result && result.result.code === 0) {
 						const { uid, token, tokenExpired } = result.result.data
 						userStore.setUser({ uid })
@@ -151,14 +151,14 @@
 				try {
 					console.log('[silentLogin] 开始 App 一键登录...')
 					const loginRes = await uni.login({ provider: 'univerify' })
-					console.log('[silentLogin] uni.login(univerify) 返回:', JSON.stringify(loginRes))
+					console.log('[silentLogin] uni.login(univerify) 返回 authResult:', !!loginRes?.authResult)
 					if (loginRes && loginRes.authResult) {
 						const { access_token, openid } = loginRes.authResult
 						const result = await uniCloud.callFunction({
 							name: 'user-auth',
 							data: { action: 'loginByUniverify', access_token, openid }
 						})
-						console.log('[silentLogin] 云函数返回:', JSON.stringify(result))
+						console.log('[silentLogin] 云函数返回 code:', result?.result?.code)
 						if (result && result.result && result.result.code === 0) {
 							const { uid, token, tokenExpired } = result.result.data
 							userStore.setUser({ uid })

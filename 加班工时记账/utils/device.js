@@ -7,6 +7,36 @@
 
 const STORAGE_KEY = 'device_id'
 
+// 跨平台 base64 解码 — atob() 在微信小程序基础库 < 2.24.0 上不可用
+function base64Decode(str) {
+	// #ifdef MP-WEIXIN
+	try {
+		const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='
+		let output = ''
+		let i = 0
+		str = str.replace(/[^A-Za-z0-9+/=]/g, '')
+		while (i < str.length) {
+			const e1 = chars.indexOf(str.charAt(i++))
+			const e2 = chars.indexOf(str.charAt(i++))
+			const e3 = chars.indexOf(str.charAt(i++))
+			const e4 = chars.indexOf(str.charAt(i++))
+			const c1 = (e1 << 2) | (e2 >> 4)
+			const c2 = ((e2 & 15) << 4) | (e3 >> 2)
+			const c3 = ((e3 & 3) << 6) | e4
+			output += String.fromCharCode(c1)
+			if (e3 !== 64) output += String.fromCharCode(c2)
+			if (e4 !== 64) output += String.fromCharCode(c3)
+		}
+		return decodeURIComponent(Array.prototype.map.call(output, function(c) {
+			return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+		}).join(''))
+	} catch { return '' }
+	// #endif
+	// #ifndef MP-WEIXIN
+	try { return atob(str) } catch { return '' }
+	// #endif
+}
+
 function generateUUID() {
 	try {
 		const info = uni.getSystemInfoSync()
@@ -51,7 +81,7 @@ export function getOwner() {
 		try {
 			const parts = token.split('.')
 			if (parts.length === 3) {
-				const payload = JSON.parse(atob(parts[1]))
+				const payload = JSON.parse(base64Decode(parts[1]))
 				if (payload.uid) {
 					return { type: 'user', id: payload.uid }
 				}

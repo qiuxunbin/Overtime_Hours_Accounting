@@ -286,7 +286,7 @@
 import NavBar from '../../components/NavBar.vue'
 import { useOvertimeStore } from '../../stores/overtimeStore'
 import { useSalaryStore } from '../../stores/salaryStore'
-import { COMMON_PHRASES, PROJECT_COLORS } from '../../utils/constants.js'
+import { COMMON_PHRASES } from '../../utils/constants.js'
 import { useProjectStore } from '../../stores/projectStore'
 import { formatDate, calcDuration } from '../../utils/date.js'
 import { getOvertimeType } from '../../utils/holidays.js'
