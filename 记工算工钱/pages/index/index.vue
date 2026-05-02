@@ -1,20 +1,20 @@
 <template>
 	<view class="page-index">
-		<NavBar title="加班记账" green />
+		<NavBar title="记工算工钱" green />
 
 		<view class="page-index__content">
 			<!-- 加班状态 -->
 			<view class="clock-status" @tap="toggleClock">
 				<view class="clock-status__dot" :class="{ 'clock-status__dot--active': isClockedIn }"></view>
-				<text class="clock-status__text" v-if="isClockedIn">当前加班 · 已计时 {{ clockElapsed }}</text>
-				<text class="clock-status__text clock-status__text--idle" v-else>未在加班，点击计时</text>
+				<text class="clock-status__text" v-if="isClockedIn">当前记工 · 已计时 {{ clockElapsed }}</text>
+				<text class="clock-status__text clock-status__text--idle" v-else>未在记工，点击计时</text>
 			</view>
 
 			<!-- 月度摘要 -->
 			<view class="summary-card">
 				<view class="summary-card__top">
 					<view class="summary-card__left">
-						<text class="summary-card__label">本月加班</text>
+						<text class="summary-card__label">本月记工</text>
 						<text class="summary-card__hours">
 							{{ totalHours }}<text class="summary-card__unit">h</text>
 						</text>
@@ -33,14 +33,17 @@
 					<view class="summary-card__breakdown-item">
 						<text class="summary-card__breakdown-label">平日</text>
 						<text class="summary-card__breakdown-value">{{ weekdayHours }}h</text>
+							<text class="summary-card__breakdown-pay" v-if="weekdayPay > 0">¥{{ weekdayPay.toFixed(0) }}</text>
 					</view>
 					<view class="summary-card__breakdown-item">
 						<text class="summary-card__breakdown-label">周末</text>
 						<text class="summary-card__breakdown-value">{{ weekendHours }}h</text>
+							<text class="summary-card__breakdown-pay" v-if="weekendPay > 0">¥{{ weekendPay.toFixed(0) }}</text>
 					</view>
 					<view class="summary-card__breakdown-item">
 						<text class="summary-card__breakdown-label">节假日</text>
 						<text class="summary-card__breakdown-value">{{ holidayHours }}h</text>
+							<text class="summary-card__breakdown-pay" v-if="holidayPay > 0">¥{{ holidayPay.toFixed(0) }}</text>
 					</view>
 				</view>
 			</view>
@@ -131,8 +134,8 @@
 				<view class="empty-wrap__icon">
 					<text class="empty-wrap__icon-text">&#x1F4C5;</text>
 				</view>
-				<text class="empty-wrap__title">还没有加班记录</text>
-				<text class="empty-wrap__desc">点击下方 + 开始记录第一笔加班</text>
+				<text class="empty-wrap__title">还没有记工记录</text>
+				<text class="empty-wrap__desc">点击下方 + 开始记录第一笔记工</text>
 			</view>
 		</view>
 
@@ -227,14 +230,23 @@ export default {
 				return this.monthRecords.reduce((s, r) => s + (r.quantity || 0), 0)
 			},
 		weekdayHours() {
-			return this.monthRecords.filter(r => r.overtime_type === 'weekday').reduce((s, r) => s + (r.duration || 0), 0)
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekday').reduce((s, r) => s + (r.duration || 0), 0)
 		},
 		weekendHours() {
-			return this.monthRecords.filter(r => r.overtime_type === 'weekend').reduce((s, r) => s + (r.duration || 0), 0)
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekend').reduce((s, r) => s + (r.duration || 0), 0)
 		},
 		holidayHours() {
-			return this.monthRecords.filter(r => r.overtime_type === 'holiday').reduce((s, r) => s + (r.duration || 0), 0)
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'holiday').reduce((s, r) => s + (r.duration || 0), 0)
 		},
+			weekdayPay() {
+				return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekday').reduce((s, r) => s + (r.pay || 0), 0)
+			},
+			weekendPay() {
+				return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekend').reduce((s, r) => s + (r.pay || 0), 0)
+			},
+			holidayPay() {
+				return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'holiday').reduce((s, r) => s + (r.pay || 0), 0)
+			},
 		recordDates() {
 			return new Set(this.monthRecords.map(r => r.date))
 		},
@@ -339,7 +351,7 @@ export default {
 				return m[type] || '平'
 			},
 			typeFull(type) {
-				const m = { weekday: '平日加班', weekend: '周末加班', holiday: '节假日加班' }
+				const m = { weekday: '平日', weekend: '周末', holiday: '节假日' }
 				return m[type] || '平日加班'
 			},
 			iconClass(type) {
@@ -384,7 +396,12 @@ export default {
 				}
 			},
 			goRecord() {
-				uni.navigateTo({ url: '/pages/record/record' })
+				const pStore = useProjectStore()
+				if (pStore.activeProjects.length === 0) {
+					uni.navigateTo({ url: '/pages/project-edit/project-edit' })
+				} else {
+					uni.navigateTo({ url: '/pages/record/record' })
+				}
 			},
 			goEdit(id) {
 				uni.navigateTo({ url: '/pages/record/record?id=' + id })
@@ -560,6 +577,12 @@ export default {
 		font-size: 16px;
 		font-weight: 600;
 		color: var(--text-primary);
+		margin-top: 2px;
+		display: block;
+	}
+	&__breakdown-pay {
+		font-size: 12px;
+		color: var(--primary);
 		margin-top: 2px;
 		display: block;
 	}
