@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>加班工时记账 — 设计系统预览</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Noto+Sans+SC:wght@100..900&family=Source+Han+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #1B8A5A;
+    --primary-hover: #15734B;
+    --primary-light: #E8F5EE;
+    --accent: #C4A46C;
+    --accent-light: #F5EDE0;
+    --surface: #F8F6F2;
+    --surface-card: #FFFFFF;
+    --surface-hover: #F0EDE6;
+    --text-primary: #1E1E1E;
+    --text-secondary: #5C5C5C;
+    --text-muted: #9C9C9C;
+    --border: #E8E4DC;
+    --success: #1B8A5A;
+    --warning: #C4A46C;
+    --error: #B85C4A;
+    --info: #4A6B8A;
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 12px;
+    --radius-full: 20px;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+    --shadow-lg: 0 4px 16px rgba(0,0,0,0.08);
+    --font-display: 'Source Han Serif SC', 'Noto Serif SC', serif;
+    --font-body: 'Noto Sans SC', -apple-system, sans-serif;
+    --font-number: 'DM Sans', 'Noto Sans SC', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font-body);
+    background: var(--surface);
+    color: var(--text-primary);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Header */
+  .header {
+    background: var(--primary);
+    color: white;
+    padding: 48px 24px 40px;
+    text-align: center;
+  }
+  .header__tag {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    padding: 4px 14px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    margin-bottom: 16px;
+  }
+  .header h1 {
+    font-family: var(--font-display);
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .header p {
+    opacity: 0.85;
+    font-size: 15px;
+  }
+
+  .container {
+    max-width: 840px;
+    margin: 0 auto;
+    padding: 32px 20px 80px;
+  }
+
+  /* Section titles */
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border);
+  }
+  .section-subtitle {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: -16px;
+    margin-bottom: 20px;
+  }
+
+  /* Aesthetic card */
+  .aesthetic-card {
+    background: var(--surface-card);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 32px;
+  }
+  .aesthetic-card__label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--primary);
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .aesthetic-card__value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .aesthetic-card__desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-top: 8px;
+    line-height: 1.7;
+  }
+
+  /* Color swatches */
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .swatch {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--surface-card);
+    box-shadow: var(--shadow-sm);
+  }
+  .swatch__color {
+    height: 80px;
+  }
+  .swatch__info {
+    padding: 10px 12px;
+  }
+  .swatch__name {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .swatch__hex {
+    font-family: var(--font-number);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* Typography specimens */
+  .type-specimen {
+    background: var(--surface-card);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 16px;
+  }
+  .type-specimen__role {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+  .type-specimen__role-name {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+    font-weight: 600;
+    min-width: 70px;
+  }
+  .type-specimen__role-detail {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .type-specimen__sample {
+    margin-top: 4px;
+  }
+
+  .display-sample {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+  .body-sample {
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  .number-sample {
+    font-family: var(--font-number);
+    font-size: 28px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .number-sample--small {
+    font-size: 15px;
+    font-weight: 400;
+  }
+  .number-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .number-row span {
+    font-family: var(--font-number);
+    font-variant-numeric: tabular-nums;
+    font-size: 15px;
+  }
+
+  /* UI component demo */
+  .ui-demo {
+    background: var(--surface-card);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 32px;
+  }
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .btn {
+    padding: 10px 24px;
+    border-radius: var(--radius-full);
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn--primary {
+    background: var(--primary);
+    color: white;
+  }
+  .btn--primary:hover {
+    background: var(--primary-hover);
+  }
+  .btn--secondary {
+    background: transparent;
+    color: var(--primary);
+    border: 1.5px solid var(--primary);
+  }
+  .btn--ghost {
+    background: transparent;
+    color: var(--text-secondary);
+  }
+  .btn--ghost:hover {
+    background: var(--surface-hover);
+  }
+
+  /* Cards demo */
+  .card-demo {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .demo-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    border: 1px solid var(--border);
+  }
+  .demo-card__label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .demo-card__value {
+    font-family: var(--font-number);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .demo-card__value .unit {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--text-muted);
+  }
+
+  /* Form inputs */
+  .form-group {
+    margin-bottom: 14px;
+  }
+  .form-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    display: block;
+  }
+  .form-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: 15px;
+    color: var(--text-primary);
+    background: var(--surface);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .form-input:focus {
+    border-color: var(--primary);
+  }
+
+  /* Tags */
+  .tag-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .tag {
+    padding: 4px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .tag--primary {
+    background: var(--primary-light);
+    color: var(--primary);
+  }
+  .tag--accent {
+    background: var(--accent-light);
+    color: #8A6F3E;
+  }
+  .tag--error {
+    background: #FDF0ED;
+    color: var(--error);
+  }
+
+  /* Alert */
+  .alert {
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+  .alert--success {
+    background: var(--primary-light);
+    color: var(--primary);
+  }
+  .alert--warning {
+    background: var(--accent-light);
+    color: #8A6F3E;
+  }
+  .alert--error {
+    background: #FDF0ED;
+    color: var(--error);
+  }
+  .alert--info {
+    background: #EDF1F5;
+    color: var(--info);
+  }
+
+  /* Mockup phone frame */
+  .mockup-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    justify-content: center;
+    margin: 32px 0;
+  }
+  .phone-frame {
+    background: var(--surface-card);
+    border-radius: 24px;
+    padding: 16px;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border);
+    width: 300px;
+    flex-shrink: 0;
+  }
+  .phone-frame__inner {
+    background: var(--surface);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .phone-frame__status-bar {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 16px 6px;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: var(--font-number);
+  }
+  .phone-frame__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    background: var(--primary);
+    color: white;
+  }
+  .phone-frame__header-title {
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .phone-frame__header-right {
+    font-size: 13px;
+    opacity: 0.8;
+  }
+  .phone-frame__body {
+    padding: 12px 16px 20px;
+  }
+
+  .mockup-card {
+    background: var(--surface-card);
+    border-radius: var(--radius-lg);
+    padding: 14px;
+    margin-bottom: 10px;
+    box-shadow: var(--shadow-sm);
+  }
+  .mockup-card__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .mockup-card__label {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .mockup-card__hours {
+    font-family: var(--font-number);
+    font-size: 24px;
+    font-weight: 700;
+  }
+  .mockup-card__hours .unit {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--text-muted);
+  }
+  .mockup-card__pay {
+    font-family: var(--font-number);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary);
+    text-align: right;
+  }
+  .mockup-card__pay-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: right;
+  }
+  .mockup-card__divider {
+    height: 1px;
+    background: var(--border);
+    margin: 10px 0;
+  }
+  .mockup-card__breakdown {
+    display: flex;
+    gap: 16px;
+  }
+  .mockup-card__breakdown-item {
+    flex: 1;
+  }
+  .mockup-card__breakdown-label {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .mockup-card__breakdown-value {
+    font-family: var(--font-number);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .mockup-calendar {
+    margin-bottom: 10px;
+  }
+  .mockup-calendar__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+  }
+  .mockup-calendar__title {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .mockup-calendar__nav {
+    font-size: 18px;
+    color: var(--text-muted);
+    cursor: default;
+  }
+  .mockup-calendar__weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 4px 0;
+  }
+  .mockup-calendar__grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    gap: 2px;
+  }
+  .mockup-calendar__cell {
+    padding: 6px 0;
+    font-size: 13px;
+    color: var(--text-primary);
+    position: relative;
+  }
+  .mockup-calendar__cell--today {
+    background: var(--primary);
+    color: white;
+    border-radius: var(--radius-full);
+  }
+  .mockup-calendar__cell--muted {
+    color: var(--text-muted);
+  }
+  .mockup-calendar__dot {
+    width: 4px; height: 4px;
+    background: var(--primary);
+    border-radius: 50%;
+    margin: 1px auto 0;
+  }
+
+  .mockup-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: var(--primary-light);
+    border-radius: var(--radius-full);
+    margin-bottom: 10px;
+  }
+  .mockup-status__dot {
+    width: 8px; height: 8px;
+    background: var(--primary);
+    border-radius: 50%;
+  }
+  .mockup-status__text {
+    font-size: 12px;
+    color: var(--primary);
+    font-weight: 500;
+  }
+
+  .mockup-stat {
+    text-align: center;
+    padding: 12px;
+    background: var(--surface-card);
+    border-radius: var(--radius-lg);
+  }
+  .mockup-stat__value {
+    font-family: var(--font-number);
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .mockup-stat__label {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .mockup-tabbar {
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 0 4px;
+    border-top: 1px solid var(--border);
+    margin-top: 4px;
+  }
+  .mockup-tabbar__item {
+    text-align: center;
+    font-size: 10px;
+    color: var(--text-muted);
+    padding: 4px 12px;
+  }
+  .mockup-tabbar__item--active {
+    color: var(--primary);
+    font-weight: 600;
+  }
+  .mockup-tabbar__icon {
+    font-size: 18px;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  /* Spacing scale */
+  .spacing-scale {
+    display: flex;
+    gap: 4px;
+    align-items: flex-end;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+  .spacing-block {
+    background: var(--primary-light);
+    border: 1px solid var(--primary);
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: var(--primary);
+    font-family: var(--font-number);
+  }
+
+  .border-demo {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .border-sample {
+    width: 64px;
+    height: 64px;
+    background: var(--surface-card);
+    border: 1.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  /* Toggle */
+  .toggle-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .toggle-row__label {
+    font-size: 14px;
+  }
+  .toggle {
+    width: 44px;
+    height: 24px;
+    background: var(--primary);
+    border-radius: 12px;
+    position: relative;
+    cursor: default;
+  }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    top: 2px;
+    right: 2px;
+  }
+
+  /* Dark mode */
+  .dark-mode-toggle {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--text-primary);
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: var(--radius-full);
+    font-size: 13px;
+    font-family: var(--font-body);
+    cursor: pointer;
+    box-shadow: var(--shadow-md);
+    z-index: 100;
+  }
+
+  /* Light/Dark mode */
+  body.dark-mode {
+    --primary: #2ECC71;
+    --primary-light: #1a3a2a;
+    --surface: #1A1C1E;
+    --surface-card: #242628;
+    --surface-hover: #2F3133;
+    --text-primary: #E8E8E8;
+    --text-secondary: #A0A0A0;
+    --text-muted: #6C6C6C;
+    --border: #333538;
+    --accent: #C4A46C;
+    --accent-light: #2a2418;
+  }
+
+  @media (max-width: 600px) {
+    .container { padding: 20px 12px 60px; }
+    .header h1 { font-size: 24px; }
+    .color-grid { grid-template-columns: repeat(2, 1fr); }
+    .mockup-section { flex-direction: column; align-items: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header__tag">设计方案 v1.0</div>
+  <h1>加班工时记账</h1>
+  <p>工装实用主义 · 专业可靠，打工人自己的工具</p>
+</div>
+
+<div class="container">
+
+  <!-- Aesthetic -->
+  <div class="aesthetic-card">
+    <div class="aesthetic-card__label">审美方向</div>
+    <div class="aesthetic-card__value">工装实用主义</div>
+    <div class="aesthetic-card__desc">
+      灵感来自工人工具包的实用美学。每个设计决策回答一个问题：<strong>这个设计帮打工人更快算清钱了吗？</strong><br>
+      装饰是克制的，信息是优先的。不是消费级精致，是工具级可靠。
+    </div>
+  </div>
+
+  <!-- Color Palette -->
+  <h2 class="section-title">色彩系统</h2>
+  <p class="section-subtitle">主色沉绿 + 黄铜点缀 + 微暖底色</p>
+  <div class="color-grid">
+    <div class="swatch">
+      <div class="swatch__color" style="background:#1B8A5A"></div>
+      <div class="swatch__info">
+        <div class="swatch__name">主色 / 沉绿</div>
+        <div class="swatch__hex">#1B8A5A</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch__color" style="background:#C4A46C"></div>
+      <div class="swatch__info">
+        <div class="swatch__name">强调 / 黄铜</div>
+        <div class="swatch__hex">#C4A46C</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch__color" style="background:#F8F6F2"></div>
+      <div class="swatch__info">
+        <div class="swatch__name">底色 / 米白</div>
+        <div class="swatch__hex">#F8F6F2</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch__color" style="background:#FFFFFF; border: 1px solid #E8E4DC"></div>
+      <div class="swatch__info">
+        <div class="swatch__name">卡片 / 纯白</div>
+        <div class="swatch__hex">#FFFFFF</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch__color" style="background:#1E1E1E"></div>
+      <div class="swatch__info">
+        <div class="swatch__name">文字 / 近黑</div>
+        <div class="swatch__hex">#1E1E1E</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch__color" style="background:#5C5C5C"></div>
+      <div class="swatch__info">
+        <div class="swatch__name">次要文字</div>
+        <div class="swatch__hex">#5C5C5C</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch__color" style="background:#E8E4DC"></div>
+      <div class="swatch__info">
+        <div class="swatch__name">边框 / 米灰</div>
+        <div class="swatch__hex">#E8E4DC</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch__color" style="background:#B85C4A"></div>
+      <div class="swatch__info">
+        <div class="swatch__name">错误 / 砖红</div>
+        <div class="swatch__hex">#B85C4A</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Typography -->
+  <h2 class="section-title">字体系统</h2>
+  <p class="section-subtitle">标题思源宋体 · 正文 Noto Sans · 数字 DM Sans</p>
+
+  <div class="type-specimen">
+    <div class="type-specimen__role">
+      <span class="type-specimen__role-name">标题显示</span>
+      <span class="type-specimen__role-detail">Source Han Serif SC · 700 · 26px</span>
+    </div>
+    <div class="type-specimen__sample display-sample">本月加班 48 小时，实付 ¥1,860</div>
+  </div>
+
+  <div class="type-specimen">
+    <div class="type-specimen__role">
+      <span class="type-specimen__role-name">正文</span>
+      <span class="type-specimen__role-detail">Noto Sans SC · 400 · 15px</span>
+    </div>
+    <div class="type-specimen__sample body-sample">记录每一笔加班工时，自动计算平日、周末、节假日不同时薪。数据本地存储，安全可靠。</div>
+  </div>
+
+  <div class="type-specimen">
+    <div class="type-specimen__role">
+      <span class="type-specimen__role-name">数字／金额</span>
+      <span class="type-specimen__role-detail">DM Sans · tabular-nums · 28px</span>
+    </div>
+    <div class="type-specimen__sample">
+      <div class="number-sample">¥ 3,580.00</div>
+      <div class="number-row" style="margin-top:8px">
+        <span>42.5h</span>
+        <span>128.0h</span>
+        <span>7.5h</span>
+        <span>¥ 680</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- UI Components -->
+  <h2 class="section-title">UI 组件</h2>
+
+  <div class="ui-demo">
+    <h3 style="font-size:14px;font-weight:600;margin-bottom:12px">按钮</h3>
+    <div class="btn-row">
+      <button class="btn btn--primary">记一笔加班</button>
+      <button class="btn btn--secondary">导出数据</button>
+      <button class="btn btn--ghost">取消</button>
+    </div>
+
+    <h3 style="font-size:14px;font-weight:600;margin-bottom:12px">标签</h3>
+    <div class="tag-row">
+      <span class="tag tag--primary">平日 · ¥25/h</span>
+      <span class="tag tag--accent">周末 · ¥32.5/h</span>
+      <span class="tag tag--error">节假日 · ¥50/h</span>
+    </div>
+
+    <h3 style="font-size:14px;font-weight:600;margin-bottom:12px">提示条</h3>
+    <div class="alert alert--success">已保存，共 3.5 小时加班记录</div>
+    <div class="alert alert--warning">本月对账单已生成，点击查看</div>
+    <div class="alert alert--error">网络异常，数据已保存在本地</div>
+    <div class="alert alert--info">周末加班时薪为平日的 1.3 倍</div>
+  </div>
+
+  <div class="ui-demo">
+    <h3 style="font-size:14px;font-weight:600;margin-bottom:12px">信息卡片</h3>
+    <div class="card-demo">
+      <div class="demo-card">
+        <div class="demo-card__label">总工时</div>
+        <div class="demo-card__value">48.5<span class="unit">h</span></div>
+      </div>
+      <div class="demo-card">
+        <div class="demo-card__label">加班费</div>
+        <div class="demo-card__value">¥1,860</div>
+      </div>
+      <div class="demo-card">
+        <div class="demo-card__label">记录数</div>
+        <div class="demo-card__value">23</div>
+      </div>
+      <div class="demo-card">
+        <div class="demo-card__label">日均工时</div>
+        <div class="demo-card__value">3.2<span class="unit">h</span></div>
+      </div>
+    </div>
+
+    <h3 style="font-size:14px;font-weight:600;margin-bottom:12px">表单输入</h3>
+    <div class="form-group">
+      <label class="form-label">时薪（元/小时）</label>
+      <input class="form-input" type="text" placeholder="例如：25" value="25">
+    </div>
+
+    <h3 style="font-size:14px;font-weight:600;margin-bottom:12px">开关</h3>
+    <div class="toggle-row">
+      <span class="toggle-row__label">考勤提醒</span>
+      <div class="toggle"></div>
+    </div>
+  </div>
+
+  <!-- Pay Mode Concept -->
+  <h2 class="section-title">多计薪模式</h2>
+  <p class="section-subtitle">一套系统三种模式：时薪 · 日薪 · 计件</p>
+
+  <div class="aesthetic-card">
+    <div class="aesthetic-card__label">设计思路</div>
+    <div class="aesthetic-card__value">一种工种，一种记法</div>
+    <div class="aesthetic-card__desc">
+      小时工按小时算 → 填起止时间，自动算时长<br>
+      建筑工按天算 → 点一下"上班打卡"，记一天<br>
+      工厂工按件算 → 加减件数，自动算钱<br><br>
+      <strong>统一的对账出口</strong>：不管怎么记的，月底都能跟工资条对比
+    </div>
+  </div>
+
+  <!-- Multi-mode Mockups -->
+  <div class="mockup-section">
+    <!-- 项目编辑 - 选计薪方式 -->
+    <div class="phone-frame">
+      <div class="phone-frame__inner">
+        <div class="phone-frame__status-bar">
+          <span>9:41</span>
+          <span>📶 92%</span>
+        </div>
+        <div class="phone-frame__header">
+          <span style="font-size:13px;opacity:0.8">← 返回</span>
+          <span class="phone-frame__header-title">新建项目</span>
+          <span style="width:30px"></span>
+        </div>
+        <div class="phone-frame__body">
+          <div class="form-group">
+            <label class="form-label">项目名称</label>
+            <div class="form-input" style="padding:8px 14px;color:var(--text-secondary)">xx工地</div>
+          </div>
+          <div style="font-size:13px;font-weight:600;margin:12px 0 8px;color:var(--text-secondary)">计薪方式</div>
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            <div style="flex:1;text-align:center;padding:10px 6px;border-radius:8px;border:1.5px solid var(--border);font-size:12px;color:var(--text-muted)">
+              ⏱<br>时薪
+            </div>
+            <div style="flex:1;text-align:center;padding:10px 6px;border-radius:8px;border:1.5px solid var(--primary);background:var(--primary-light);font-size:12px;color:var(--primary);font-weight:600">
+              📅<br>日薪
+            </div>
+            <div style="flex:1;text-align:center;padding:10px 6px;border-radius:8px;border:1.5px solid var(--border);font-size:12px;color:var(--text-muted)">
+              📦<br>计件
+            </div>
+          </div>
+          <div style="background:var(--primary-light);border-radius:8px;padding:12px">
+            <label class="form-label" style="font-size:13px;margin-bottom:8px">日薪标准</label>
+            <div style="display:flex;align-items:center;gap:4px">
+              <span style="font-size:16px;color:var(--text-muted)">¥</span>
+              <span style="font-size:22px;font-weight:700;font-family:var(--font-number);color:var(--primary)">300</span>
+              <span style="font-size:13px;color:var(--text-muted)">/ 天</span>
+            </div>
+          </div>
+          <div style="margin-top:12px">
+            <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--text-secondary)">颜色</div>
+            <div style="display:flex;gap:10px">
+              <div style="width:28px;height:28px;border-radius:50%;background:#1B8A5A;border:2px solid #1A1C1C;box-shadow:0 0 0 2px white,0 0 0 4px #1A1C1C"></div>
+              <div style="width:28px;height:28px;border-radius:50%;background:#006495"></div>
+              <div style="width:28px;height:28px;border-radius:50%;background:#FF8C00"></div>
+              <div style="width:28px;height:28px;border-radius:50%;background:#BA1A1A"></div>
+            </div>
+          </div>
+          <div style="margin-top:16px">
+            <div style="text-align:center;padding:12px;border-radius:20px;background:var(--primary);color:white;font-weight:600;font-size:16px">保存</div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--text-muted);padding:8px 0 2px">新建项目 · 选日薪模式</div>
+    </div>
+
+    <!-- 日薪打卡 -->
+    <div class="phone-frame">
+      <div class="phone-frame__inner">
+        <div class="phone-frame__status-bar">
+          <span>9:41</span>
+          <span>📶 92%</span>
+        </div>
+        <div class="phone-frame__header">
+          <span style="font-size:13px;opacity:0.8">← 返回</span>
+          <span class="phone-frame__header-title">记录加班</span>
+          <span style="width:30px"></span>
+        </div>
+        <div class="phone-frame__body">
+          <div class="form-group">
+            <label class="form-label">日期</label>
+            <div class="form-input" style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px">
+              <span>2026-05-07 周四</span>
+              <span style="color:var(--text-muted)">›</span>
+            </div>
+          </div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:4px">项目</div>
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface);border-radius:8px;margin-bottom:16px">
+            <div style="width:10px;height:10px;border-radius:50%;background:var(--primary)"></div>
+            <span style="font-size:14px;font-weight:500">xx工地</span>
+            <span style="font-size:11px;color:var(--text-muted);margin-left:auto">📅 日薪 ¥300/天</span>
+          </div>
+          <div style="text-align:center;padding:24px 0 16px;background:var(--surface);border-radius:12px;margin-bottom:12px">
+            <div style="width:72px;height:72px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;box-shadow:0 4px 16px rgba(27,138,90,0.3)">
+              <span style="font-size:32px;color:white">⏱</span>
+            </div>
+            <div style="font-size:15px;font-weight:600;color:var(--text-primary)">上班打卡</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px">今日已记 10 天 · 本月 ¥3,000</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">加班说明（选填）</label>
+            <div class="form-input" style="padding:8px 14px;color:var(--text-secondary)">正常施工</div>
+          </div>
+          <div style="font-size:13px;color:var(--text-muted);text-align:center;margin:8px 0">也可手动修改天数</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:16px">
+            <div style="width:36px;height:36px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--text-muted)">−</div>
+            <span style="font-family:var(--font-number);font-size:24px;font-weight:700;min-width:40px;text-align:center">1</span>
+            <span style="font-size:14px;color:var(--text-muted)">天</span>
+            <div style="width:36px;height:36px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:20px;color:white">+</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--primary-light);border-radius:8px;margin-bottom:12px">
+            <span style="font-size:13px;color:var(--text-secondary)">加班费</span>
+            <span style="font-family:var(--font-number);font-size:20px;font-weight:700;color:var(--primary)">¥300</span>
+          </div>
+          <div style="text-align:center;padding:12px;border-radius:20px;background:var(--primary);color:white;font-weight:600;font-size:16px">保存</div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--text-muted);padding:8px 0 2px">日薪模式 · 一键打卡</div>
+    </div>
+
+    <!-- 计件模式 -->
+    <div class="phone-frame">
+      <div class="phone-frame__inner">
+        <div class="phone-frame__status-bar">
+          <span>9:41</span>
+          <span>📶 92%</span>
+        </div>
+        <div class="phone-frame__header">
+          <span style="font-size:13px;opacity:0.8">← 返回</span>
+          <span class="phone-frame__header-title">记录加班</span>
+          <span style="width:30px"></span>
+        </div>
+        <div class="phone-frame__body">
+          <div class="form-group">
+            <label class="form-label">日期</label>
+            <div class="form-input" style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px">
+              <span>2026-05-07 周四</span>
+              <span style="color:var(--text-muted)">›</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface);border-radius:8px;margin-bottom:12px">
+            <div style="width:10px;height:10px;border-radius:50%;background:#9B59B6"></div>
+            <span style="font-size:14px;font-weight:500">xx工厂</span>
+            <span style="font-size:11px;color:var(--text-muted);margin-left:auto">📦 计件 ¥6/件</span>
+          </div>
+          <div style="text-align:center;font-size:14px;font-weight:600;margin-bottom:12px">今天做了多少？</div>
+          <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px">
+            <div style="padding:8px 14px;border-radius:8px;background:var(--surface);font-size:14px;font-weight:600;color:var(--text-muted)">−10</div>
+            <div style="padding:8px 14px;border-radius:8px;background:var(--surface);font-size:14px;font-weight:600;color:var(--text-muted)">−1</div>
+            <div style="padding:8px 14px;border-radius:8px;background:var(--primary);font-size:14px;font-weight:600;color:white">+1</div>
+            <div style="padding:8px 14px;border-radius:8px;background:var(--surface);font-size:14px;font-weight:600;color:var(--text-muted)">+10</div>
+          </div>
+          <div style="text-align:center;margin-bottom:12px">
+            <span style="font-family:var(--font-number);font-size:42px;font-weight:700;color:var(--text-primary)">50</span>
+            <span style="font-size:16px;color:var(--text-muted);margin-left:4px">件</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--primary-light);border-radius:8px;margin-bottom:12px">
+            <span style="font-size:13px;color:var(--text-secondary)">加班费</span>
+            <span style="font-family:var(--font-number);font-size:20px;font-weight:700;color:var(--primary)">¥300</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">备注（选填）</label>
+            <div class="form-input" style="padding:8px 14px;color:var(--text-secondary)">搬运货物</div>
+          </div>
+          <div style="text-align:center;padding:12px;border-radius:20px;background:var(--primary);color:white;font-weight:600;font-size:16px;margin-top:8px">保存</div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--text-muted);padding:8px 0 2px">计件模式 · 快速加减</div>
+    </div>
+  </div>
+
+  <!-- 对账多模式 -->
+  <div style="background:var(--surface-card);border-radius:var(--radius-lg);padding:24px;box-shadow:var(--shadow-sm);margin-bottom:32px">
+    <h3 style="font-size:16px;font-weight:700;margin-bottom:16px">统一对账 · 按项目分组</h3>
+    <div style="border-left:3px solid var(--primary);padding-left:12px;margin-bottom:16px">
+      <div style="font-size:14px;font-weight:600">xx工地<span style="font-size:11px;color:var(--text-muted);font-weight:400;margin-left:6px">📅 日薪 ¥300/天</span></div>
+      <div style="font-size:12px;color:var(--text-secondary);margin:4px 0">22天 · ¥6,600</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:var(--primary-light);color:var(--primary)">✅ 已结算 20天</span>
+        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:var(--accent-light);color:#8A6F3E">⏳ 未结算 2天</span>
+      </div>
+    </div>
+    <div style="border-left:3px solid #006495;padding-left:12px;margin-bottom:16px">
+      <div style="font-size:14px;font-weight:600">麦当劳兼职<span style="font-size:11px;color:var(--text-muted);font-weight:400;margin-left:6px">⏱ 时薪 ¥25/h</span></div>
+      <div style="font-size:12px;color:var(--text-secondary);margin:4px 0">48.5h · ¥1,212</div>
+      <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:var(--accent-light);color:#8A6F3E">⏳ 全部未结算</span>
+    </div>
+    <div style="border-left:3px solid #9B59B6;padding-left:12px">
+      <div style="font-size:14px;font-weight:600">xx工厂<span style="font-size:11px;color:var(--text-muted);font-weight:400;margin-left:6px">📦 计件 ¥6/件</span></div>
+      <div style="font-size:12px;color:var(--text-secondary);margin:4px 0">110件 · ¥660</div>
+      <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:var(--accent-light);color:#8A6F3E">⏳ 全部未结算</span>
+    </div>
+    <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between">
+      <span style="font-size:13px;font-weight:600">未结算合计</span>
+      <span style="font-family:var(--font-number);font-size:20px;font-weight:700;color:var(--primary)">¥1,872</span>
+    </div>
+  </div>
+
+  <!-- Mockups -->
+  <h2 class="section-title">界面模拟</h2>
+  <p class="section-subtitle">设计系统在原有页面中的效果</p>
+
+  <div class="mockup-section">
+    <!-- 首页记账 -->
+    <div class="phone-frame">
+      <div class="phone-frame__inner">
+        <div class="phone-frame__status-bar">
+          <span>9:41</span>
+          <span>📶 92%</span>
+        </div>
+        <div class="phone-frame__header">
+          <span class="phone-frame__header-title">加班记账</span>
+          <span class="phone-frame__header-right">⚙️</span>
+        </div>
+        <div class="phone-frame__body">
+          <!-- 状态指示器 -->
+          <div class="mockup-status">
+            <div class="mockup-status__dot"></div>
+            <span class="mockup-status__text">当前加班 · 已计时 2h 15min</span>
+          </div>
+          <!-- 月度摘要 -->
+          <div class="mockup-card">
+            <div class="mockup-card__top">
+              <div>
+                <div class="mockup-card__label">本月加班</div>
+                <div class="mockup-card__hours">48.5<span class="unit">h</span></div>
+              </div>
+              <div>
+                <div class="mockup-card__pay-label">预计实付</div>
+                <div class="mockup-card__pay">¥1,860</div>
+              </div>
+            </div>
+            <div class="mockup-card__divider"></div>
+            <div class="mockup-card__breakdown">
+              <div class="mockup-card__breakdown-item">
+                <div class="mockup-card__breakdown-label">平日</div>
+                <div class="mockup-card__breakdown-value">32.5h</div>
+              </div>
+              <div class="mockup-card__breakdown-item">
+                <div class="mockup-card__breakdown-label">周末</div>
+                <div class="mockup-card__breakdown-value">12h</div>
+              </div>
+              <div class="mockup-card__breakdown-item">
+                <div class="mockup-card__breakdown-label">节假日</div>
+                <div class="mockup-card__breakdown-value">4h</div>
+              </div>
+            </div>
+          </div>
+          <!-- 日历 -->
+          <div class="mockup-calendar">
+            <div class="mockup-calendar__header">
+              <span class="mockup-calendar__nav">‹</span>
+              <span class="mockup-calendar__title">2026 年 5 月</span>
+              <span class="mockup-calendar__nav">›</span>
+            </div>
+            <div class="mockup-calendar__weekdays">
+              <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+            </div>
+            <div class="mockup-calendar__grid">
+              <span class="mockup-calendar__cell mockup-calendar__cell--muted">27</span>
+              <span class="mockup-calendar__cell mockup-calendar__cell--muted">28</span>
+              <span class="mockup-calendar__cell mockup-calendar__cell--muted">29</span>
+              <span class="mockup-calendar__cell mockup-calendar__cell--muted">30</span>
+              <span class="mockup-calendar__cell">1</span>
+              <span class="mockup-calendar__cell">2</span>
+              <span class="mockup-calendar__cell mockup-calendar__cell--weekend">3</span>
+              <span class="mockup-calendar__cell">4</span>
+              <span class="mockup-calendar__cell">5</span>
+              <span class="mockup-calendar__cell">6</span>
+              <span class="mockup-calendar__cell mockup-calendar__cell--today" style="position:relative;">7
+                <div class="mockup-calendar__dot" style="background:white;position:absolute;bottom:2px;left:50%;margin-left:-2px;"></div>
+              </span>
+              <span class="mockup-calendar__cell">8</span>
+              <span class="mockup-calendar__cell">9</span>
+              <span class="mockup-calendar__cell mockup-calendar__cell--weekend">10</span>
+              <span class="mockup-calendar__cell">11</span>
+              <span class="mockup-calendar__cell">12</span>
+              <span class="mockup-calendar__cell">13</span>
+              <span class="mockup-calendar__cell">14</span>
+              <span class="mockup-calendar__cell">15</span>
+              <span class="mockup-calendar__cell">16</span>
+              <span class="mockup-calendar__cell mockup-calendar__cell--weekend">17</span>
+              <span class="mockup-calendar__cell">18</span>
+            </div>
+          </div>
+          <!-- TabBar -->
+          <div class="mockup-tabbar">
+            <div class="mockup-tabbar__item mockup-tabbar__item--active">
+              <span class="mockup-tabbar__icon">📋</span>
+              记账
+            </div>
+            <div class="mockup-tabbar__item">
+              <span class="mockup-tabbar__icon">📊</span>
+              统计
+            </div>
+            <div class="mockup-tabbar__item">
+              <span class="mockup-tabbar__icon">👤</span>
+              我的
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--text-muted);padding:8px 0 2px">记账主页 · 首页</div>
+    </div>
+
+    <!-- 统计页 -->
+    <div class="phone-frame">
+      <div class="phone-frame__inner">
+        <div class="phone-frame__status-bar">
+          <span>9:41</span>
+          <span>📶 92%</span>
+        </div>
+        <div class="phone-frame__header">
+          <span class="phone-frame__header-title">统计</span>
+          <span class="phone-frame__header-right">导出</span>
+        </div>
+        <div class="phone-frame__body">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+            <div class="mockup-stat">
+              <div class="mockup-stat__value" style="color:var(--primary)">48.5</div>
+              <div class="mockup-stat__label">总工时</div>
+            </div>
+            <div class="mockup-stat">
+              <div class="mockup-stat__value" style="color:var(--primary)">¥1,860</div>
+              <div class="mockup-stat__label">加班费</div>
+            </div>
+            <div class="mockup-stat">
+              <div class="mockup-stat__value">23</div>
+              <div class="mockup-stat__label">记录数</div>
+            </div>
+          </div>
+          <!-- 环形图占位 -->
+          <div class="mockup-card" style="text-align:center">
+            <div style="font-size:13px;font-weight:600;margin-bottom:10px;text-align:left">加班类型分布</div>
+            <div style="width:120px;height:120px;border-radius:50%;border:8px solid var(--border);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-family:var(--font-number);font-size:13px;color:var(--text-muted);position:relative;">
+              <div style="position:absolute;top:-8px;left:50%;margin-left:-8px;width:16px;height:16px;border-radius:4px 0 0 0;border-top:8px solid var(--primary);border-left:8px solid var(--primary);transform:rotate(45deg);"></div>
+              <span>48.5h</span>
+            </div>
+            <div style="text-align:left">
+              <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0">
+                <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--primary);margin-right:6px;"></span>平日</span>
+                <span style="font-family:var(--font-number)">32.5h · ¥812</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0">
+                <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--accent);margin-right:6px;"></span>周末</span>
+                <span style="font-family:var(--font-number)">12h · ¥390</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0">
+                <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--error);margin-right:6px;"></span>节假日</span>
+                <span style="font-family:var(--font-number)">4h · ¥200</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--text-muted);padding:8px 0 2px">统计页 · Tab 2</div>
+    </div>
+
+    <!-- 记录页 -->
+    <div class="phone-frame">
+      <div class="phone-frame__inner">
+        <div class="phone-frame__status-bar">
+          <span>9:41</span>
+          <span>📶 92%</span>
+        </div>
+        <div class="phone-frame__header">
+          <span style="font-size:13px;opacity:0.8">← 返回</span>
+          <span class="phone-frame__header-title">加班记录</span>
+          <span style="width:30px"></span>
+        </div>
+        <div class="phone-frame__body">
+          <div class="form-group">
+            <label class="form-label">日期</label>
+            <div class="form-input" style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px">
+              <span>2026-05-07 周四</span>
+              <span style="color:var(--text-muted)">›</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-bottom:12px">
+            <div class="form-group" style="flex:1;margin-bottom:0">
+              <label class="form-label">开始</label>
+              <div class="form-input" style="padding:8px 14px;font-family:var(--font-number)">19:00</div>
+            </div>
+            <div class="form-group" style="flex:1;margin-bottom:0">
+              <label class="form-label">结束</label>
+              <div class="form-input" style="padding:8px 14px;font-family:var(--font-number)">22:30</div>
+            </div>
+          </div>
+          <div class="tag-row">
+            <span class="tag tag--primary" style="background:var(--primary);color:white">3.5h</span>
+            <span class="tag tag--primary">平日</span>
+            <span class="tag tag--accent">项目：电商平台</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">备注</label>
+            <div class="form-input" style="padding:8px 14px;color:var(--text-secondary)">修复线上支付超时问题</div>
+          </div>
+          <button class="btn btn--primary" style="width:100%;margin-top:8px">保存</button>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--text-muted);padding:8px 0 2px">记录加班 · 编辑页</div>
+    </div>
+  </div>
+
+  <!-- All Pages Gallery -->
+  <h2 class="section-title">全页面图鉴</h2>
+  <p class="section-subtitle">全部 13 个页面的设计示意</p>
+
+  <div class="mockup-section">
+    <!-- 1. 启动页 -->
+    <div class="phone-frame">
+      <div class="phone-frame__inner">
+        <div style="background:var(--primary);min-height:400px;padding:40px 24px;display:flex;flex-direction:column;align-items:center">
+          <div style="text-align:right;width:100%">
+            <span style="font-size:12px;color:rgba(255,255,255,0.6)">跳过</span>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center">
+            <div style="width:56px;height:56px;border-radius:14px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:12px">⏰</div>
+            <div style="font-size:22px;font-weight:700;color:white">加班工时记账</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.7);margin-top:4px">记的每一分钟，都算数</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:auto">
+            <div style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.4)"></div>
+            <div style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.4)"></div>
+            <div style="width:6px;height:6px;border-radius:50%;background:white"></div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--text-muted);padding:8px 0 2px">启动页</div>
+    </div>
+
+    <!-- 2. 薪资设置 -->
+    <div class="phone-frame">
+      <div class="phone-frame__inner">
+        <div class="phone-frame__status-bar"><span>9:41</span><span>📶 92%</span></div>
+        <div class="phone-frame__header">
+          <span style="font-size:13px;opacity:0.8">← 返回</span>
+          <span class="phone-frame__header-title">加班费设置</span>
+          <span style="width:30px"></span>
+        </div>
+        <div class="phone-frame__body">
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">默认计薪方式</div>
+          <div style="display:flex;gap:6px;margin-bottom:12px">
+            <div style="flex:1;text-align:center;padding:6px 4px;border-radius:6px;border:1.5px solid var(--border);font-size:11px;color:var(--text-muted)">⏱ 时薪</div>
+            <div style="flex:1;text-align:center;padding:6px 4px;border-radius:6px;border:1.5px solid var(--primary);background:var(--primary-light);font-size:11px;color:var(--primary);font-weight:600">📅 日薪</div>
+            <div style="flex:1;text-align:center;padding:6px 4px;border-radius:6px;border:1.5px solid var(--border);font-size:11px;color:var(--text-muted)">📦 计件</div>
+          </div>
+          <div style="background:var(--surface);border-radius:8px;padding:12px;margin-bottom:10px">
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">日薪默认值</div>
+            <div style="display:flex;align-items:center;gap:4px">
+              <span style="color:var(--text-muted)">¥</span>
+              <span style="font-family:var(--font-number);font-size:24px;font-weight:700">300</span>
+              <span style="font-size:12px;color:var(--text-muted)">/ 天</span>
+            </div>
+          </div>
+          <div style="background:var(--surface);border-radius:8px;padding:12px;margin-bottom:10px">
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">时薪默认值（折叠）</div>
+            <div style="font-size:12px;color:var(--text-muted)">平日 ¥25 / 周末 ¥32.5 / 节假日 ¥50</div>
+          </div>
+          <div style="border-top:1px solid var(--border);padding-top:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:13px;color:var(--text-secondary)">结算精度</span>
+              <span style="font-size:13px;color:var(--text-primary)">15 分钟 ›</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--text-muted);padding:8px 0 2px">薪资设置 · 默认日薪模式</div>
+    </div>
+
+    <!-- 3. 项目管理 -->
+    <div class="phone-frame">
+      <div class="phone-frame__inner">
+        <div class="phone-frame__status-bar"><span>9:41</span><span>📶 92%</span></div>
+        <div class="phone-frame__header">
+          <span style="font-size:13px;opacity:0.8">← 返回</span>
+          <span class="phone-frame__header-title">项目管理</span>
+          <span style="width:30px"></span>
+        </div>
+        <div class="phone-frame__body">
+          <div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surface);border-radius:8px;margin-bottom:8px">
+            <div style="width:4px;height:36px;border-radius:2px;background:var(--primary)"></div>
+            <div style="flex:1">
+              <div style="font-size:14px;font-weight:500">xx工地</div>
+              <div style="font-size:11px;color:var(--text-muted)">📅 日薪 ¥300/天 · 已记 22 天</div>
+            </div>
+            <span style="color:var(--text-muted);font-size:16px">›</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surface);border-radius:8px;margin-bottom:8px">
+            <div style="width:4px;height:36px;border-radius:2px;background:#006495"></div>
+            <div style="flex:1">
+              <div style="font-size:14px;font-weight:500">麦当劳兼职</div>
+              <div style="font-size:11px;color:var(--text-muted)">⏱ 时薪 ¥25/h · 已记 48h</div>
+            </div>
+            <span style="color:var(--text-muted);font-size:16px">›</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surface);border-radius:8px;margin-bottom:12px">
+            <div style="width:4px;height:36px;border-radius:2px;background:#9B59B6"></div>
+            <div style="flex:1">
+              <div style="font-size:14px;font-weight:500">xx工厂</div>
+              <div style="font-size:11px;color:var(--text-muted)">📦 计件 ¥6/件 · 已记 200 件</div>
+            </div>
+            <span style="color:var(--text-muted);font-size:16px">›</span>
+          </div>
+          <div style="text-align:center;padding:12px;border-radius:20px;background:var(--primary);color:white;font-weight:600;font-size:14px">+ 新建项目</div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--text-muted);padding:8px 0 2px">项目管理 · 三种模式混排</div>
+    </div>
+
+    <!-- 4. 批量记工时 -->
+    <div class="phone-frame">
+      <div class="phone-frame__inner">
+        <div class="phone-frame__status-bar"><span>9:41</span><span>📶 92%</span></div>
+        <div class="phone-frame__header">
+          <span style="font-size:13px;opacity:0.8">← 返回</span>
+          <span class="phone-frame__header-title">批量记工时</span>
+          <span style="width:30px"></span>
+        </div>
+        <div class="phone-frame__body">
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--text-secondary)">日期范围</div>
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            <div style="flex:1;display:flex;align-items:center;gap:4px;padding:8px 10px;background:var(--surface);border-radius:6px">
+              <span style="font-size:11px;color:var(--text-muted)">从</span>
+              <span style="font-size:12px">05-01</span>
+            </div>
+            <span style="color:var(--text-muted);align-self:center">至</span>
+            <div style="flex:1;display:flex;align-items:center;gap:4px;padding:8px 10px;background:var(--surface);border-radius:6px">
+              <span style="font-size:11px;color:var(--text-muted)">到</span>
+              <span style="font-size:12px">05-07</span>
+            </div>
+          </div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--text-secondary)">统一时间</div>
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            <div style="flex:1;padding:8px 10px;background:var(--surface);border-radius:6px">
+              <div style="font-size:10px;color:var(--text-muted)">开始</div>
+              <div style="font-size:13px;font-family:var(--font-number)">19:00</div>
+            </div>
+            <span style="color:var(--text-muted);align-self:flex-end;padding-bottom:8px">—</span>
+            <div style="flex:1;padding:8px 10px;background:var(--surface);border-radius:6px">
+              <div style="font-size:10px;color:var(--text-muted)">结束</div>
+              <div style="font-size:13px;font-family:var(--font-number)">22:00</div>
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);text-align:center;margin-bottom:12px">每天 3h，共 7 天，合计 21h</div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--text-secondary)">项目</div>
+          <div style="display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--surface);border-radius:6px;margin-bottom:12px">
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--primary)"></div>
+            <span style="font-size:13px">麦当劳兼职</span>
+            <span style="font-size:10px;color:var(--text-muted);margin-left:auto">›</span>
+          </div>
+          <div style="text-align:center;padding:12px;border-radius:20px;background:var(--primary);color:white;font-weight:600;font-size:14px">批量保存 7 条</div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--text-muted);padding:8px 0 2px">批量记工时</div>
+    </div>
+
+    <!-- 5. 考勤提醒 -->
+    <div class="phone-frame">
+      <div class="phone-frame__inner">
+        <div class="phone-frame__status-bar"><span>9:41</span><span>📶 92%</span></div>
+        <div class="phone-frame__header">
+          <span style="font-size:13px;opacity:0.8">← 返回</span>
+          <span class="phone-frame__header-title">考勤提醒</span>
+          <span style="width:30px"></span>
+        </div>
+        <div class="phone-frame__body">
+          <div style="display:flex;align-items:center;gap:10px;padding:14px;background:var(--surface);border-radius:10px;margin-bottom:8px">
+            <span style="font-size:22px">☀️</span>
+            <div style="flex:1">
+              <div style="font-size:14px;font-weight:500">上班提醒</div>
+              <div style="font-size:13px;color:var(--text-primary);font-family:var(--font-number)">08:30</div>
+            </div>
+            <div style="width:40px;height:22px;border-radius:11px;background:var(--primary);position:relative">
+              <div style="width:18px;height:18px;border-radius:50%;background:white;position:absolute;top:2px;right:2px"></div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:14px;background:var(--surface);border-radius:10px;margin-bottom:12px">
+            <span style="font-size:22px">🌙</span>
+            <div style="flex:1">
+              <div style="font-size:14px;font-weight:500">下班提醒</div>
+              <div style="font-size:13px;color:var(--text-muted)">未开启</div>
+            </div>
+            <div style="width:40px;height:22px;border-radius:11px;background:var(--border);position:relative">
+              <div style="width:18px;height:18px;border-radius:50%;background:white;position:absolute;top:2px;left:2px"></div>
+            </div>
+          </div>
+          <div style="border-top:1px solid var(--border);padding-top:10px">
+            <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+              <span style="font-size:13px">重复</span>
+              <span style="font-size:13px;color:var(--text-muted)">工作日 ›</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:10px 0">
+              <span style="font-size:13px">提醒方式</span>
+              <span style="font-size:13px;color:var(--text-muted)">服务通知 ›</span>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:12px">开启后将在设定时间通过服务通知提醒你</div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--text-muted);padding:8px 0 2px">考勤提醒</div>
+    </div>
+
+    <!-- 6. 登录页 -->
+    <div class="phone-frame">
+      <div class="phone-frame__inner">
+        <div style="background:var(--primary);padding:32px 24px 24px;text-align:center">
+          <div style="width:48px;height:48px;border-radius:12px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 8px">⏰</div>
+          <div style="font-size:20px;font-weight:700;color:white">加班工时记账</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:4px">登录后同步您的加班数据</div>
+        </div>
+        <div style="padding:16px">
+          <div style="display:flex;margin-bottom:16px">
+            <div style="flex:1;text-align:center;padding:8px 0;border-bottom:2px solid var(--primary);font-size:13px;font-weight:600">验证码登录</div>
+            <div style="flex:1;text-align:center;padding:8px 0;border-bottom:2px solid var(--border);font-size:13px;color:var(--text-muted)">密码登录</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--surface);border-radius:6px;margin-bottom:12px">
+            <span style="font-size:12px;color:var(--text-muted)">+86</span>
+            <span style="font-size:14px;color:var(--text-muted)">|</span>
+            <span style="font-size:14px;color:var(--text-muted)">请输入手机号</span>
+          </div>
+          <div style="text-align:center;padding:12px;border-radius:20px;background:var(--primary);color:white;font-weight:600;font-size:14px">获取验证码</div>
+          <div style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:16px">登录即代表同意《用户协议》《隐私政策》</div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--text-muted);padding:8px 0 2px">登录页</div>
+    </div>
+
+    <!-- 7. 我的 -->
+    <div class="phone-frame">
+      <div class="phone-frame__inner">
+        <div class="phone-frame__status-bar"><span>9:41</span><span>📶 92%</span></div>
+        <div class="phone-frame__header">
+          <span class="phone-frame__header-title">我的</span>
+          <span style="width:30px"></span>
+        </div>
+        <div class="phone-frame__body">
+          <div style="display:flex;align-items:center;gap:12px;padding:16px 0;border-bottom:1px solid var(--border);margin-bottom:8px">
+            <div style="width:44px;height:44px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:22px">👤</div>
+            <div>
+              <div style="font-size:16px;font-weight:600">加班人</div>
+              <div style="font-size:12px;color:var(--text-muted)">记录每一笔加班</div>
+            </div>
+          </div>
+          <div style="border-radius:8px;overflow:hidden;border:1px solid var(--border)">
+            <div style="display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border)">
+              <span style="font-size:16px;margin-right:10px">🏠</span>
+              <span style="font-size:14px;flex:1">项目管理</span>
+              <span style="color:var(--text-muted)">›</span>
+            </div>
+            <div style="display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border)">
+              <span style="font-size:16px;margin-right:10px">📝</span>
+              <span style="font-size:14px;flex:1">批量记工时</span>
+              <span style="color:var(--text-muted)">›</span>
+            </div>
+            <div style="display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border)">
+              <span style="font-size:16px;margin-right:10px">💰</span>
+              <span style="font-size:14px;flex:1">薪资设置</span>
+              <span style="color:var(--text-muted)">›</span>
+            </div>
+            <div style="display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border)">
+              <span style="font-size:16px;margin-right:10px">⏰</span>
+              <span style="font-size:14px;flex:1">考勤提醒</span>
+              <span style="color:var(--text-muted)">›</span>
+            </div>
+            <div style="display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border)">
+              <span style="font-size:16px;margin-right:10px">📤</span>
+              <span style="font-size:14px;flex:1">导出数据</span>
+              <span style="font-size:11px;color:var(--text-muted);margin-right:8px">备份全部记录</span>
+              <span style="color:var(--text-muted)">›</span>
+            </div>
+            <div style="display:flex;align-items:center;padding:12px 14px">
+              <span style="font-size:16px;margin-right:10px">📥</span>
+              <span style="font-size:14px;flex:1">导入数据</span>
+              <span style="font-size:11px;color:var(--text-muted);margin-right:8px">恢复备份</span>
+              <span style="color:var(--text-muted)">›</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--text-muted);padding:8px 0 2px">我的 · Tab 3</div>
+    </div>
+
+    <!-- 8. 意见反馈 -->
+    <div class="phone-frame">
+      <div class="phone-frame__inner">
+        <div class="phone-frame__status-bar"><span>9:41</span><span>📶 92%</span></div>
+        <div class="phone-frame__header">
+          <span style="font-size:13px;opacity:0.8">← 返回</span>
+          <span class="phone-frame__header-title">意见反馈</span>
+          <span style="width:30px"></span>
+        </div>
+        <div class="phone-frame__body">
+          <div style="padding:14px;background:var(--surface-card);border-radius:8px;border:1px solid var(--border);margin-bottom:12px">
+            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px">标题</div>
+            <div style="font-size:14px;color:var(--text-muted);padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:8px">反馈标题</div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px">内容</div>
+            <div style="font-size:13px;color:var(--text-muted);min-height:60px">请详细描述您的意见或问题...</div>
+          </div>
+          <div style="text-align:center;padding:12px;border-radius:20px;background:var(--primary);color:white;font-weight:600;font-size:14px">提交反馈</div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--text-muted);padding:8px 0 2px">意见反馈</div>
+    </div>
+
+    <!-- 9. 对账多模式版 -->
+    <div class="phone-frame">
+      <div class="phone-frame__inner">
+        <div class="phone-frame__status-bar"><span>9:41</span><span>📶 92%</span></div>
+        <div class="phone-frame__header">
+          <span style="font-size:13px;opacity:0.8">← 返回</span>
+          <span class="phone-frame__header-title">对账</span>
+          <span style="width:30px"></span>
+        </div>
+        <div class="phone-frame__body">
+          <div style="padding:12px;background:var(--surface-card);border-radius:10px;border:1px solid var(--border);margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+              <span style="font-size:12px;color:var(--text-muted)">预估总收入</span>
+              <span style="font-family:var(--font-number);font-size:16px;font-weight:700">¥9,660</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <span style="font-size:12px;color:var(--text-muted)">实发金额</span>
+              <div style="display:flex;align-items:center;gap:2px">
+                <span style="font-size:12px;color:var(--text-muted)">¥</span>
+                <span style="font-size:14px;color:var(--text-muted)">________</span>
+              </div>
+            </div>
+            <div style="border-top:1px solid var(--border);padding-top:6px;display:flex;justify-content:space-between">
+              <span style="font-size:12px;color:var(--text-muted)">差额</span>
+              <span style="font-family:var(--font-number);font-size:16px;font-weight:700;color:var(--primary)">—</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:6px">
+            <div style="width:3px;height:24px;border-radius:2px;background:var(--primary)"></div>
+            <div style="font-size:13px;font-weight:500;flex:1">xx工地</div>
+            <span style="font-size:11px;color:var(--text-muted)">📅 日薪</span>
+            <span style="font-family:var(--font-number);font-size:13px;font-weight:600">22天</span>
+            <span style="font-family:var(--font-number);font-size:13px;font-weight:600">¥6,600</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:6px">
+            <div style="width:3px;height:24px;border-radius:2px;background:#006495"></div>
+            <div style="font-size:13px;font-weight:500;flex:1">麦当劳兼职</div>
+            <span style="font-size:11px;color:var(--text-muted)">⏱ 时薪</span>
+            <span style="font-family:var(--font-number);font-size:13px;font-weight:600">48h</span>
+            <span style="font-family:var(--font-number);font-size:13px;font-weight:600">¥1,212</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 10px">
+            <div style="width:3px;height:24px;border-radius:2px;background:#9B59B6"></div>
+            <div style="font-size:13px;font-weight:500;flex:1">xx工厂</div>
+            <span style="font-size:11px;color:var(--text-muted)">📦 计件</span>
+            <span style="font-family:var(--font-number);font-size:13px;font-weight:600">200件</span>
+            <span style="font-family:var(--font-number);font-size:13px;font-weight:600">¥1,200</span>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--text-muted);padding:8px 0 2px">对账 · 多模式聚合</div>
+    </div>
+  </div>
+
+  <!-- Spacing -->
+  <p class="section-subtitle">4px 基数，卡片圆角分层</p>
+  <div class="border-demo">
+    <div class="border-sample" style="border-radius:var(--radius-sm)">4px</div>
+    <div class="border-sample" style="border-radius:var(--radius-md)">6px</div>
+    <div class="border-sample" style="border-radius:var(--radius-lg)">12px</div>
+    <div class="border-sample" style="border-radius:var(--radius-full)">20px</div>
+  </div>
+
+  <!-- Motion -->
+  <h2 class="section-title">动效</h2>
+  <div class="aesthetic-card">
+    <div class="aesthetic-card__label">Motion Approach</div>
+    <div class="aesthetic-card__value">极简功能型</div>
+    <div class="aesthetic-card__desc">
+      只在有意义的地方使用动效：月份切换、弹窗打开/关闭、页面转场。不做装饰性动画、微交互动画或加载骨架动画。持续时间 150-250ms，缓动 ease-out。
+    </div>
+  </div>
+
+</div>
+
+<button class="dark-mode-toggle" onclick="document.body.classList.toggle('dark-mode')">🌙 切换深色模式</button>
+
+<script>
+  // Update toggle button text based on mode
+  const toggle = document.querySelector('.dark-mode-toggle');
+  toggle.addEventListener('click', () => {
+    const isDark = document.body.classList.contains('dark-mode');
+    toggle.textContent = isDark ? '☀️ 切换浅色模式' : '🌙 切换深色模式';
+  });
+</script>
+
+</body>
+</html>

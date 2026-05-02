@@ -92,9 +92,9 @@
 
 <script>
 import NavBar from '../../components/NavBar.vue'
-import { useOvertimeStore } from '../../stores/overtimeStore'
+import { useWorkStore } from '@/stores/workStore'
 import { useProjectStore } from '../../stores/projectStore'
-import { getOvertimeType } from '../../utils/holidays.js'
+import { useHolidayStore } from '@/stores/holidayStore'
 
 function pad(n) { return String(n).padStart(2, '0') }
 function formatDate(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` }
@@ -138,7 +138,7 @@ export default {
 			let d = new Date(start)
 			while (d <= end) {
 				const dateStr = formatDate(d)
-				const type = getOvertimeType(dateStr)
+				const type = useHolidayStore().getDayType(dateStr)
 				dates.push({ date: dateStr, typeLabel: typeLabels[type] || '平日', hours: h, type })
 				d.setDate(d.getDate() + 1)
 			}
@@ -193,7 +193,7 @@ export default {
 			}
 
 			this.saving = true
-			const store = useOvertimeStore()
+			const store = useWorkStore()
 			const pStore = useProjectStore()
 			const proj = this.selectedProjectId ? pStore.getProjectById(this.selectedProjectId) : null
 			let success = 0

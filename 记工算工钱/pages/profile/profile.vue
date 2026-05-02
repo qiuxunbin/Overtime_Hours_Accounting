@@ -148,11 +148,11 @@
 <script>
 import NavBar from '../../components/NavBar.vue'
 import ThemeToggle from '@/components/ThemeToggle.vue'
-import { useOvertimeStore } from '../../stores/overtimeStore'
+import { useWorkStore } from '@/stores/workStore'
 import { useSalaryStore } from '../../stores/salaryStore'
 import { useUserStore } from '../../stores/userStore'
 import { useProjectStore } from '../../stores/projectStore'
-import { getOvertimeType } from '../../utils/holidays.js'
+import { useHolidayStore } from '@/stores/holidayStore'
 
 function parseCSVLine(line) {
 	const result = []
@@ -360,7 +360,7 @@ export default {
 				const payModeStr = getCol('pay_mode_str')
 				const payMode = PAY_MODE_MAP[payModeStr] || proj?.pay_mode || 'hourly'
 				const typeStr = getCol('overtime_type_str')
-				const overtimeType = TYPE_MAP[typeStr] || getOvertimeType(date)
+				const overtimeType = TYPE_MAP[typeStr] || useHolidayStore().getDayType(date)
 
 				// Parse duration/days/quantity from CSV
 				let duration = 0, days = 0, quantity = 0
@@ -459,7 +459,7 @@ export default {
 					this.importing = true
 					uni.showLoading({ title: '导入中...' })
 
-					const store = useOvertimeStore()
+					const store = useWorkStore()
 					store.loadRecords()
 					const existingKeys = new Set(store.records.map(r =>
 						`${r.date}|${r.project_id || ''}|${r.start_time}|${r.end_time}|${r.pay_mode}`
@@ -548,7 +548,7 @@ export default {
 						uni.hideLoading()
 
 						if (result.result && result.result.code === 0) {
-							const overtimeStore = useOvertimeStore()
+							const overtimeStore = useWorkStore()
 							await overtimeStore.loadRecords()
 							const salaryStore = useSalaryStore()
 							await salaryStore.loadConfig()

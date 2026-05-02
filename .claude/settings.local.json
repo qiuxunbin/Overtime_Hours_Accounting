@@ -4,7 +4,12 @@
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
       "Bash(git remote *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebSearch",
+      "Bash(mkdir -p \"C:/Users/86136/Desktop/Overtime_Hours_Accounting/.claude/skills\")",
+      "Bash(git clone *)"
     ]
   }
 }

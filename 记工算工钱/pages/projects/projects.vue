@@ -59,7 +59,7 @@
 import NavBar from '../../components/NavBar.vue'
 import { useProjectStore } from '../../stores/projectStore'
 import { useSalaryStore } from '../../stores/salaryStore'
-import { useOvertimeStore } from '../../stores/overtimeStore'
+import { useWorkStore } from '@/stores/workStore'
 
 export default {
 	components: { NavBar },
@@ -70,7 +70,7 @@ export default {
 	},
 	onShow() {
 		this.store.loadProjects()
-		const oStore = useOvertimeStore()
+		const oStore = useWorkStore()
 		oStore.loadRecords()
 	},
 	methods: {
@@ -92,7 +92,7 @@ export default {
 		},
 		projectStats(project) {
 			if (!project._id) return ""
-			const oStore = useOvertimeStore()
+			const oStore = useWorkStore()
 			const records = oStore.records.filter(r => r.project_id === project._id)
 			const totalHours = records.reduce((s, r) => s + (r.duration || 0), 0)
 			const totalPay = records.reduce((s, r) => s + (r.pay || 0), 0)

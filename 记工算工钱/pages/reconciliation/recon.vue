@@ -146,7 +146,7 @@
 
 <script>
 import NavBar from '../../components/NavBar.vue'
-import { useOvertimeStore } from '../../stores/overtimeStore'
+import { useWorkStore } from '@/stores/workStore'
 import { useProjectStore } from '../../stores/projectStore'
 
 function pad(n) { return String(n).padStart(2, '0') }
@@ -175,7 +175,7 @@ export default {
 			return `${this.viewYear}-${pad(this.viewMonth)}`
 		},
 		monthRecords() {
-			const store = useOvertimeStore()
+			const store = useWorkStore()
 			return store.records
 				.filter(r => r.date && r.date.startsWith(this.monthPrefix))
 				.sort((a, b) => (b.date || '').localeCompare(a.date || ''))
@@ -264,7 +264,7 @@ export default {
 		}
 	},
 	onShow() {
-		const store = useOvertimeStore()
+		const store = useWorkStore()
 		store.loadRecords()
 	},
 	methods: {
@@ -317,7 +317,7 @@ export default {
 				itemList: [newSettled ? '全部标记已结算' : '全部标记未结算'],
 				success: async (res) => {
 					if (res.tapIndex === 0) {
-						const store = useOvertimeStore()
+						const store = useWorkStore()
 						for (const rec of group.records) {
 							await store.updateRecord(rec.id || rec._id, { settled: newSettled })
 						}

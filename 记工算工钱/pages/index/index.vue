@@ -179,7 +179,7 @@
 </template>
 <script>
 import NavBar from '../../components/NavBar.vue'
-import { useOvertimeStore } from '../../stores/overtimeStore'
+import { useWorkStore } from '@/stores/workStore'
 import { useProjectStore } from '../../stores/projectStore'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 
@@ -211,7 +211,7 @@ export default {
 			return `${this.viewYear}-${pad(this.viewMonth)}`
 		},
 		monthRecords() {
-			const store = useOvertimeStore()
+			const store = useWorkStore()
 			return store.records.filter(r => r.date && r.date.startsWith(this.monthPrefix))
 		},
 		totalHours() {
@@ -240,7 +240,7 @@ export default {
 		},
 		daySheetRecords() {
 			if (!this.daySheetDate) return []
-			const store = useOvertimeStore()
+			const store = useWorkStore()
 			return store.records.filter(r => r.date === this.daySheetDate)
 		},
 		daySheetTotal() {
@@ -250,7 +250,7 @@ export default {
 			const s = recs.reduce((sum, r) => sum + ((r.subsidies ? (r.subsidies.night_shift||0)+(r.subsidies.meal||0)+(r.subsidies.transport||0) : 0) - (r.deduction ? r.deduction.amount||0 : 0)), 0); return h + 'h · ¥' + (p + s).toFixed(0)
 		},
 		recentRecords() {
-			const store = useOvertimeStore()
+			const store = useWorkStore()
 			let list = store.records
 			if (this.settleFilter === 'unsettled') {
 				list = list.filter(r => !r.settled)
@@ -297,7 +297,7 @@ export default {
 		}
 	},
 	onShow() {
-		const store = useOvertimeStore()
+		const store = useWorkStore()
 		store.loadRecords()
 		const now = new Date()
 		this.todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`

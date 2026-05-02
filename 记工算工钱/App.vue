@@ -1,11 +1,11 @@
 <script>
 	import { useUserStore } from './stores/userStore'
-	import { useOvertimeStore } from './stores/overtimeStore'
+	import { useWorkStore } from './stores/workStore'
 	import { useSalaryStore } from './stores/salaryStore'
 	import { collection } from '@/utils/localStore'
 	import { DEFAULT_SALARY_CONFIG } from './utils/constants'
 	import { useProjectStore } from './stores/projectStore'
-	import { fetchFromCloud } from './utils/holidays.js'
+	import { useHolidayStore } from './stores/holidayStore'
 	import { themeState, applyThemeClass } from './utils/theme.js'
 
 	export default {
@@ -30,7 +30,7 @@
 			this.preloadLocalData()
 
 			// 预加载节假日数据（异步，不阻塞）
-			fetchFromCloud()
+			useHolidayStore().fetchFromCloud()
 
 			// 首次安装 → 跳转启动页
 			const hasLaunched = uni.getStorageSync("has_launched")
@@ -50,7 +50,7 @@
 				// 静默登录改为非阻塞，失败不阻碍用户使用本地功能
 				this.silentLogin(userStore).then(() => {
 					if (userStore.isLoggedIn) {
-						const overtimeStore = useOvertimeStore()
+						const overtimeStore = useWorkStore()
 						overtimeStore.mergeOnLogin(userStore.uid)
 					}
 				}).catch(() => {})
@@ -62,7 +62,7 @@
 		methods: {
 			preloadLocalData() {
 				// 从本地存储预加载工时记录
-				const overtimeStore = useOvertimeStore()
+				const overtimeStore = useWorkStore()
 				const localDocs = collection('overtime_records').getAll()
 				overtimeStore.records = localDocs.map(r => ({ ...r, id: r._id }))
 				// 设置当前月份
@@ -155,7 +155,7 @@
 			console.log('App Show')
 			// 每 5 分钟后台同步一次
 			this._syncInterval = setInterval(() => {
-				const overtimeStore = useOvertimeStore()
+				const overtimeStore = useWorkStore()
 				const token = uni.getStorageSync('uni_id_token')
 				if (token) {
 					overtimeStore.flushSyncQueue()

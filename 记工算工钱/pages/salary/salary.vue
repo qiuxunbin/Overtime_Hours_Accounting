@@ -174,7 +174,7 @@
 <script>
 import NavBar from '../../components/NavBar.vue'
 import { useSalaryStore } from '../../stores/salaryStore'
-import { useOvertimeStore } from '../../stores/overtimeStore'
+import { useWorkStore } from '@/stores/workStore'
 import { PAY_MODES, PIECE_UNITS } from '../../utils/constants'
 
 const LEGAL_DAYS = 21.75
@@ -270,7 +270,7 @@ export default {
 							if (calcRes.result && calcRes.result.code === 0) {
 								const n = calcRes.result.data.updated
 								uni.showToast({ title: '已更新 ' + n + ' 条记录', icon: 'success' })
-								const overtimeStore = useOvertimeStore()
+								const overtimeStore = useWorkStore()
 								await overtimeStore.loadRecords()
 							} else {
 								uni.showToast({ title: calcRes.result?.message || '重算失败', icon: 'none' })

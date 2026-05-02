@@ -210,12 +210,12 @@
 
 <script>
 import NavBar from '../../components/NavBar.vue'
-import { useOvertimeStore } from '../../stores/overtimeStore'
+import { useWorkStore } from '@/stores/workStore'
 import { useSalaryStore } from '../../stores/salaryStore'
 import { COMMON_PHRASES } from '../../utils/constants.js'
 import { useProjectStore } from '../../stores/projectStore'
 import { formatDate, calcDuration } from '../../utils/date.js'
-import { getOvertimeType } from '../../utils/holidays.js'
+import { useHolidayStore } from '@/stores/holidayStore'
 
 function pad(n) { return String(n).padStart(2, '0') }
 
@@ -309,14 +309,14 @@ export default {
 		dailyPay() { return (this.dailyDays || 0) * this.projectDailyRate },
 		monthDailyCount() {
 			if (!this.pickerDate) return 0
-			const store = useOvertimeStore()
+			const store = useWorkStore()
 			return store.records.filter(r =>
 				r.date === this.pickerDate && r.project_id === this.selectedProjectId && r.pay_mode === 'daily'
 			).length
 		},
 		monthDailyPay() {
 			if (!this.pickerDate) return 0
-			const store = useOvertimeStore()
+			const store = useWorkStore()
 			return store.records.filter(r =>
 				r.date === this.pickerDate && r.project_id === this.selectedProjectId && r.pay_mode === 'daily'
 			).reduce((s, r) => s + (r.pay || 0), 0)
@@ -335,7 +335,7 @@ export default {
 		if (options.date) this.pickerDate = options.date
 		if (options.id) {
 			this.editId = options.id
-			const store = useOvertimeStore()
+			const store = useWorkStore()
 			const rec = store.records.find(r => r.id === options.id)
 			if (rec) {
 				this.pickerDate = rec.date
@@ -364,7 +364,7 @@ export default {
 			const pStore = useProjectStore()
 			if (pStore.projects.length === 0) pStore.loadProjects()
 		},
-		autoDetectType(date) { this.overtimeType = getOvertimeType(date) },
+		autoDetectType(date) { this.overtimeType = useHolidayStore().getDayType(date) },
 		onStartChange(e) { this.startTime = e.detail.value; this.pickerStartTime = e.detail.value },
 		onEndChange(e) { this.endTime = e.detail.value; this.pickerEndTime = e.detail.value },
 		applyQuickHour(h) {
@@ -403,7 +403,7 @@ export default {
 				title: '确认删除', content: '删除后无法恢复', confirmText: '删除', confirmColor: '#B85C4A',
 				success: (res) => {
 					if (res.confirm) {
-						useOvertimeStore().deleteRecord(this.editId)
+						useWorkStore().deleteRecord(this.editId)
 						uni.showToast({ title: '已删除', icon: 'success' })
 						setTimeout(() => { uni.navigateBack() }, 500)
 					}
@@ -427,7 +427,7 @@ export default {
 		},
 		async handleSave() {
 			if (this.saving) return
-			const store = useOvertimeStore()
+			const store = useWorkStore()
 			const payMode = this.effectivePayMode
 
 			if (payMode === 'hourly') {
@@ -465,7 +465,7 @@ export default {
 				const rate = this.projectDailyRate
 				Object.assign(baseData, {
 					start_time: '', end_time: '', duration: 0,
-					overtime_type: getOvertimeType(this.pickerDate),
+					overtime_type: useHolidayStore().getDayType(this.pickerDate),
 					rate, days: this.dailyDays, daily_rate: rate,
 					pay: this.dailyPay, net_pay: this.netPay
 				})
@@ -473,7 +473,7 @@ export default {
 				const rate = this.projectPieceRate
 				Object.assign(baseData, {
 					start_time: '', end_time: '', duration: 0,
-					overtime_type: getOvertimeType(this.pickerDate),
+					overtime_type: useHolidayStore().getDayType(this.pickerDate),
 					rate, quantity: this.pieceQuantity, piece_rate: rate,
 					piece_unit: this.selectedProject?.piece_unit || '件',
 					pay: this.piecePay, net_pay: this.netPay

@@ -8,7 +8,7 @@
 </template>
 
 <script>
-import { useOvertimeStore } from '@/stores/overtimeStore'
+import { useWorkStore } from '@/stores/workStore'
 
 export default {
 	props: {
@@ -16,13 +16,13 @@ export default {
 	},
 	computed: {
 		status() {
-			const store = useOvertimeStore()
+			const store = useWorkStore()
 			return store.syncStatus
 		}
 	},
 	methods: {
 		handleTap() {
-			const store = useOvertimeStore()
+			const store = useWorkStore()
 			if (this.status === 'error') store.flushSyncQueue()
 			else if (this.status === 'offline') store.pullFromCloud()
 		}

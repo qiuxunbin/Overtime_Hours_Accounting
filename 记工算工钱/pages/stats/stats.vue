@@ -148,7 +148,7 @@
 <script>
 import NavBar from '../../components/NavBar.vue'
 import ThemeToggle from '@/components/ThemeToggle.vue'
-import { useOvertimeStore } from '../../stores/overtimeStore'
+import { useWorkStore } from '@/stores/workStore'
 import { useProjectStore } from '../../stores/projectStore'
 import uCharts from '@qiun/ucharts'
 
@@ -178,7 +178,7 @@ export default {
 			return `${this.viewYear}-${pad(this.viewMonth)}`
 		},
 		allRecords() {
-			const store = useOvertimeStore()
+			const store = useWorkStore()
 			return store.records || []
 		},
 		monthRecords() {
@@ -332,7 +332,7 @@ export default {
 		}
 	},
 	onShow() {
-		const store = useOvertimeStore()
+		const store = useWorkStore()
 		store.loadRecords()
 	},
 	onReady() {
