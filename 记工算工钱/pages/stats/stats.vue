@@ -18,15 +18,23 @@
 				</view>
 			</view>
 
-			<!-- 月汇总 — 3列：总工时/加班费/记录数 -->
+			<!-- 月汇总 — 动态列 -->
 				<view class="summary-card">
-					<view class="summary-card__item">
-						<text class="summary-card__value">{{ totalHours }}h</text>
-						<text class="summary-card__label">总工时</text>
+					<view class="summary-card__item" v-if="totalHours > 0">
+						<text class="summary-card__value">{{ totalHours.toFixed(1) }}h</text>
+						<text class="summary-card__label">工时</text>
+					</view>
+					<view class="summary-card__item" v-if="totalDays > 0">
+						<text class="summary-card__value">{{ totalDays }}天</text>
+						<text class="summary-card__label">天数</text>
+					</view>
+					<view class="summary-card__item" v-if="totalQuantity > 0">
+						<text class="summary-card__value">{{ totalQuantity }}件</text>
+						<text class="summary-card__label">件数</text>
 					</view>
 					<view class="summary-card__item">
 						<text class="summary-card__value">¥{{ totalPay.toFixed(0) }}</text>
-						<text class="summary-card__label">加班费</text>
+						<text class="summary-card__label">工钱</text>
 					</view>
 					<view class="summary-card__item">
 						<text class="summary-card__value">{{ recordCount }}</text>
@@ -37,7 +45,7 @@
 				<!-- 类型分布 - uCharts 环形图 -->
 			<view class="card" v-if="recordCount > 0">
 				<text class="card__title">加班类型分布</text>
-				<view class="chart-wrap chart-wrap--ring" v-if="totalHours > 0">
+				<view class="chart-wrap chart-wrap--ring" v-if="totalPay > 0">
 					<canvas
 						canvas-id="ringChart"
 						id="ringChart"
@@ -48,17 +56,32 @@
 					<view class="breakdown__row">
 						<view class="breakdown__dot breakdown__dot--weekday"></view>
 						<text class="breakdown__name">平日</text>
-						<text class="breakdown__val">{{ weekdayHours > 0 ? weekdayHours + 'h · ' : '' }}¥{{ weekdayPay.toFixed(0) }}</text>
+						<text class="breakdown__val">
+							<text v-if="weekdayHours > 0">时薪{{ weekdayHours }}h </text>
+							<text v-if="weekdayDays > 0">日薪{{ weekdayDays }}天 </text>
+							<text v-if="weekdayQty > 0">计件{{ weekdayQty }}件 </text>
+							¥{{ weekdayPay.toFixed(0) }}
+						</text>
 					</view>
 					<view class="breakdown__row">
 						<view class="breakdown__dot breakdown__dot--weekend"></view>
 						<text class="breakdown__name">周末</text>
-						<text class="breakdown__val">{{ weekendHours > 0 ? weekendHours + 'h · ' : '' }}¥{{ weekendPay.toFixed(0) }}</text>
+						<text class="breakdown__val">
+							<text v-if="weekendHours > 0">时薪{{ weekendHours }}h </text>
+							<text v-if="weekendDays > 0">日薪{{ weekendDays }}天 </text>
+							<text v-if="weekendQty > 0">计件{{ weekendQty }}件 </text>
+							¥{{ weekendPay.toFixed(0) }}
+						</text>
 					</view>
 					<view class="breakdown__row">
 						<view class="breakdown__dot breakdown__dot--holiday"></view>
 						<text class="breakdown__name">节假日</text>
-						<text class="breakdown__val">{{ holidayHours > 0 ? holidayHours + 'h · ' : '' }}¥{{ holidayPay.toFixed(0) }}</text>
+						<text class="breakdown__val">
+							<text v-if="holidayHours > 0">时薪{{ holidayHours }}h </text>
+							<text v-if="holidayDays > 0">日薪{{ holidayDays }}天 </text>
+							<text v-if="holidayQty > 0">计件{{ holidayQty }}件 </text>
+							¥{{ holidayPay.toFixed(0) }}
+						</text>
 					</view>
 				</view>
 			</view>
@@ -121,7 +144,7 @@
 						<view class="project-stat__header">
 							<view class="project-stat__color" :style="{ background: ps.color }"></view>
 							<text class="project-stat__name">{{ ps.name }}</text>
-							<text class="project-stat__hours">{{ ps.hours }}h</text>
+							<text class="project-stat__hours">{{ ps.unitValue }}{{ ps.unitLabel }}</text>
 							<text class="project-stat__pay">¥{{ ps.pay.toFixed(0) }}</text>
 						</view>
 						<view class="project-stat__bar">
@@ -200,13 +223,13 @@ export default {
 			return this.monthRecords.reduce((s, r) => s + (r.quantity || 0), 0)
 		},
 		weekdayRecords() {
-			return this.monthRecords.filter(r => r.overtime_type === 'weekday')
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekday')
 		},
 		weekendRecords() {
-			return this.monthRecords.filter(r => r.overtime_type === 'weekend')
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekend')
 		},
 		holidayRecords() {
-			return this.monthRecords.filter(r => r.overtime_type === 'holiday')
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'holiday')
 		},
 		weekdayHours() {
 			return this.weekdayRecords.reduce((s, r) => s + (r.duration || 0), 0)
@@ -226,6 +249,24 @@ export default {
 		holidayPay() {
 			return this.holidayRecords.reduce((s, r) => s + (r.pay || 0), 0)
 		},
+		weekdayDays() {
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekday').reduce((s, r) => s + (r.days || 0), 0)
+		},
+		weekendDays() {
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekend').reduce((s, r) => s + (r.days || 0), 0)
+		},
+		holidayDays() {
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'holiday').reduce((s, r) => s + (r.days || 0), 0)
+		},
+		weekdayQty() {
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekday').reduce((s, r) => s + (r.quantity || 0), 0)
+		},
+		weekendQty() {
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekend').reduce((s, r) => s + (r.quantity || 0), 0)
+		},
+		holidayQty() {
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'holiday').reduce((s, r) => s + (r.quantity || 0), 0)
+		},
 		weekBars() {
 			if (this.monthRecords.length === 0) return []
 			const weeks = {}
@@ -236,13 +277,13 @@ export default {
 				const wn = Math.ceil(dom / 7)
 				const key = 'W' + wn
 				if (!weeks[key]) weeks[key] = 0
-				weeks[key] += r.duration || 0
+				weeks[key] += r.pay || 0
 			})
-			const maxH = Math.max(...Object.values(weeks), 1)
-			return Object.entries(weeks).sort().map(([k, h]) => ({
+			const maxV = Math.max(...Object.values(weeks), 1)
+			return Object.entries(weeks).sort().map(([k, v]) => ({
 				label: k,
-				hours: Math.round(h * 10) / 10,
-				pct: Math.round((h / maxH) * 100)
+				value: Math.round(v * 10) / 10,
+				pct: Math.round((v / maxV) * 100)
 			}))
 		},
 		yearHours() {
@@ -264,18 +305,35 @@ export default {
 				const groups = {}
 				this.monthRecords.forEach(r => {
 					const key = r.project_id || '__none__'
-					if (!groups[key]) groups[key] = { hours: 0, pay: 0 }
+					if (!groups[key]) groups[key] = { hours: 0, days: 0, quantity: 0, pay: 0 }
 					groups[key].hours += r.duration || 0
+					groups[key].days += r.days || 0
+					groups[key].quantity += r.quantity || 0
 					groups[key].pay += r.pay || 0
 				})
 				let items = Object.entries(groups).map(([id, stats]) => {
 					const proj = id !== '__none__' ? projMap.get(id) : null
+					const payMode = proj ? proj.pay_mode : (stats.days > 0 ? 'daily' : stats.quantity > 0 ? 'piece' : 'hourly')
+					const pieceUnit = proj ? proj.piece_unit : '件'
+					let unitValue, unitLabel
+					if (payMode === 'daily') {
+						unitValue = stats.days
+						unitLabel = '天'
+					} else if (payMode === 'piece') {
+						unitValue = stats.quantity
+						unitLabel = pieceUnit || '件'
+					} else {
+						unitValue = Math.round(stats.hours * 10) / 10
+						unitLabel = 'h'
+					}
 					return {
 						name: proj ? proj.name : '无项目',
 						color: proj ? proj.color : '#9C9C9C',
 						hours: Math.round(stats.hours * 10) / 10,
 						pay: stats.pay,
-						pct: 0
+						pct: 0,
+						unitValue,
+						unitLabel
 					}
 				})
 				const maxPay = Math.max(...items.map(i => i.pay), 1)
@@ -406,7 +464,7 @@ export default {
 				}
 			},
 			renderRingChart() {
-			if (this.totalHours <= 0) {
+			if (this.totalPay <= 0) {
 				this.ringRendered = false
 				return
 			}
@@ -415,9 +473,9 @@ export default {
 			const h = 220 * pr
 
 			const pieData = []
-			if (this.weekdayHours > 0) pieData.push({ name: '平日', value: this.weekdayHours })
-			if (this.weekendHours > 0) pieData.push({ name: '周末', value: this.weekendHours })
-			if (this.holidayHours > 0) pieData.push({ name: '节假日', value: this.holidayHours })
+			if (this.weekdayPay > 0) pieData.push({ name: '平日', value: this.weekdayPay })
+			if (this.weekendPay > 0) pieData.push({ name: '周末', value: this.weekendPay })
+			if (this.holidayPay > 0) pieData.push({ name: '节假日', value: this.holidayPay })
 			if (pieData.length === 0) pieData.push({ name: '无数据', value: 1 })
 
 			try {
@@ -463,7 +521,7 @@ export default {
 				this.barRendered = false
 				return
 			}
-			if (this.weekBars.every(b => (b.hours || 0) === 0)) {
+			if (this.weekBars.every(b => (b.value || 0) === 0)) {
 				this.barRendered = false
 				return
 			}
@@ -472,7 +530,7 @@ export default {
 			const h = 260 * pr
 
 			const categories = this.weekBars.map(b => b.label)
-			const data = this.weekBars.map(b => b.hours)
+			const data = this.weekBars.map(b => b.value)
 
 			try {
 				const ctx = uni.createCanvasContext('barChart', this)
@@ -488,14 +546,14 @@ export default {
 					fontSize: 10,
 					categories: categories,
 					series: [{
-						name: '加班时长',
+						name: '工钱',
 						data: data
 					}],
 					yAxis: {
 						min: 0,
 						disabled: false,
 						showTitle: true,
-						title: 'h',
+						title: '¥',
 						titleFontSize: 10,
 						titleOffsetY: -8,
 						titleOffsetX: 4,
@@ -546,7 +604,7 @@ export default {
 				const deduction = r.deduction ? (r.deduction.amount||0) : 0
 				const payMode = r.pay_mode || "hourly"
 					const qty = payMode === "daily" ? (r.days || 0) + "天" : payMode === "piece" ? (r.quantity || 0) : (r.duration || 0) + "h"
-					const row = [r.date, this.typeLabel(r.overtime_type), payMode, qty, r.pay || 0, r.project_name || "", (r.remark || "").replace(/,/g, ";"), subsidies, deduction].join(",")
+					const row = [r.date, this.typeLabel((r.day_type || r.overtime_type)), payMode, qty, r.pay || 0, r.project_name || "", (r.remark || "").replace(/,/g, ";"), subsidies, deduction].join(",")
 				csv += row + "\n"
 			})
 			const now = new Date()
