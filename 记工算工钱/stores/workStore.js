@@ -1,8 +1,9 @@
 import { defineStore } from 'pinia'
 import { collection } from '@/utils/localStore'
 import { getDeviceId, getOwner } from '@/utils/device'
+import { calcPay, calcNetPay } from '@/utils/calculator'
 
-const col = collection('overtime_records')
+const col = collection('work_records')
 
 function hasToken() {
 	const token = uni.getStorageSync('uni_id_token')
@@ -12,10 +13,10 @@ function hasToken() {
 	return true
 }
 
-async function callOvertime(action, data = {}) {
+async function callWork(action, data = {}) {
 	const token = uni.getStorageSync('uni_id_token')
 	const res = await uniCloud.callFunction({
-		name: 'overtime-calc',
+		name: 'work-calc',
 		data: { action, token, ...data }
 	})
 	if (res.result?.code === 0) return res.result
@@ -23,7 +24,7 @@ async function callOvertime(action, data = {}) {
 	throw new Error(res.result?.message || '操作失败')
 }
 
-export const useOvertimeStore = defineStore('overtime', {
+export const useWorkStore = defineStore('work', {
 	state: () => ({
 		records: [],
 		currentMonth: '',
@@ -56,7 +57,41 @@ export const useOvertimeStore = defineStore('overtime', {
 
 		recordDates: (state) => {
 			return [...new Set(state.records.map(r => r.date))]
-		}
+		},
+
+		monthTotalDays: (state) => {
+			return state.records
+				.filter(r => r.date?.startsWith(state.currentMonth))
+				.reduce((sum, r) => sum + (r.days || 0), 0)
+		},
+
+		monthTotalQuantity: (state) => {
+			return state.records
+				.filter(r => r.date?.startsWith(state.currentMonth))
+				.reduce((sum, r) => sum + (r.quantity || 0), 0)
+		},
+
+		monthTotalPay: (state) => {
+			return state.records
+				.filter(r => r.date?.startsWith(state.currentMonth))
+				.reduce((sum, r) => sum + (r.pay || 0), 0)
+		},
+
+		monthBreakdown: (state) => {
+			const def = () => ({ pay: 0, hours: 0, days: 0, qty: 0 })
+			const bd = { weekday: def(), weekend: def(), holiday: def() }
+			state.records
+				.filter(r => r.date?.startsWith(state.currentMonth))
+				.forEach(r => {
+					const type = r.day_type || r.overtime_type || 'weekday'
+					if (!bd[type]) bd[type] = def()
+					bd[type].pay += r.pay || 0
+					bd[type].hours += r.duration || 0
+					bd[type].days += r.days || 0
+					bd[type].qty += r.quantity || 0
+				})
+			return bd
+		},
 	},
 
 	actions: {
@@ -77,27 +112,6 @@ export const useOvertimeStore = defineStore('overtime', {
 			}
 		},
 
-		/**
-		 * 多模式加班费计算
-		 */
-		calculatePay(record, project, salaryConfig) {
-			const payMode = record.pay_mode || project?.pay_mode || 'hourly'
-			switch (payMode) {
-				case 'daily': {
-					const rate = record.daily_rate || project?.daily_rate || salaryConfig?.daily_rate || 0
-					return (record.days || 1) * rate
-				}
-				case 'piece': {
-					const rate = record.piece_rate || project?.piece_rate || salaryConfig?.piece_rate || 0
-					return (record.quantity || 0) * rate
-				}
-				case 'hourly':
-				default: {
-					const rate = record.rate || 0
-					return (record.duration || 0) * rate
-				}
-			}
-		},
 
 		// ========== 加载 ==========
 
@@ -137,7 +151,6 @@ export const useOvertimeStore = defineStore('overtime', {
 				piece_rate: record.piece_rate || 0,
 				daily_rate: record.daily_rate || 0,
 				...record,
-				pay_mode: payMode,
 				user_id: owner.type === 'user' ? owner.id : null,
 				device_id: owner.type === 'device' ? owner.id : null,
 				created_at: record.created_at || Date.now(),
@@ -204,7 +217,7 @@ export const useOvertimeStore = defineStore('overtime', {
 			this._syncQueue = []
 
 			try {
-				const res = await callOvertime('sync', {
+				const res = await callWork('sync', {
 					operations: batch,
 					device_id: getDeviceId()
 				})
@@ -241,7 +254,7 @@ export const useOvertimeStore = defineStore('overtime', {
 			if (!hasToken()) return
 
 			try {
-				const res = await callOvertime('list')
+				const res = await callWork('list')
 				if (res.data && Array.isArray(res.data)) {
 					const localDocs = col.getAll()
 					const localMap = new Map(localDocs.map(r => [r._id, r]))
