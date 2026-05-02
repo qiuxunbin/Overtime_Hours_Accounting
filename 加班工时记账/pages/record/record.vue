@@ -628,7 +628,7 @@ export default {
 					duration: this.duration,
 					overtime_type: this.overtimeType,
 					rate: this.currentRate,
-					pay: this.estimatedPay
+					pay: this.estimatedPay,
 					net_pay: this.netPay,
 				})
 				pay = this.estimatedPay
@@ -642,7 +642,7 @@ export default {
 					rate: rate,
 					days: this.dailyDays,
 					daily_rate: rate,
-					pay: this.dailyPay
+					pay: this.dailyPay,
 					net_pay: this.netPay,
 				})
 				pay = this.dailyPay
@@ -656,7 +656,7 @@ export default {
 					rate: rate,
 					quantity: this.pieceQuantity,
 					piece_rate: rate,
-					pay: this.piecePay
+					pay: this.piecePay,
 					net_pay: this.netPay,
 				})
 				pay = this.piecePay
