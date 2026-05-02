@@ -13,10 +13,10 @@ function hasToken() {
 	return true
 }
 
-async function callOvertime(action, data = {}) {
+async function callWork(action, data = {}) {
 	const token = uni.getStorageSync('uni_id_token')
 	const res = await uniCloud.callFunction({
-		name: 'overtime-calc',
+		name: 'work-calc',
 		data: { action, token, ...data }
 	})
 	if (res.result?.code === 0) return res.result
@@ -139,7 +139,7 @@ export const useProjectStore = defineStore('project', {
 			this._syncQueue = []
 
 			try {
-				const res = await callOvertime('syncProjects', {
+				const res = await callWork('syncProjects', {
 					operations: batch,
 					device_id: getDeviceId()
 				})
@@ -172,7 +172,7 @@ export const useProjectStore = defineStore('project', {
 			if (!hasToken()) return
 
 			try {
-				const res = await callOvertime('projectList')
+				const res = await callWork('projectList')
 				if (res.data && Array.isArray(res.data)) {
 					const localDocs = col.getAll()
 					const localMap = new Map(localDocs.map(p => [p._id, p]))
@@ -191,7 +191,7 @@ export const useProjectStore = defineStore('project', {
 								_updated_at: undefined
 							})
 						} else if (!localProj || cloudTime >= localTime) {
-							col.update(cloudProj._id, {
+							col.upsert(cloudProj._id, {
 								...cloudProj,
 								_synced: true,
 								_updated_at: cloudProj.updated_at || Date.now()

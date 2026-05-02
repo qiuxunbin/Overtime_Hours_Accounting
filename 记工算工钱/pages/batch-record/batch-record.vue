@@ -205,9 +205,10 @@ export default {
 			for (const item of this.previewDates) {
 				try {
 					const durationVal = parseFloat(this.duration) || 0
-					const rate = proj
-						? (proj[item.type + '_rate'] || 0)
-						: 0
+					const key = item.type + '_rate'
+					const rate = (proj && proj[key] > 0)
+						? proj[key]
+						: (cfg[key] || 0)
 					const pay = Math.round(durationVal * rate * 100) / 100
 					const netPay = pay
 

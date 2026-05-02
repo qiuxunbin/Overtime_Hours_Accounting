@@ -12,7 +12,7 @@ export const PAY_MODES = [
 // 计件单位
 export const PIECE_UNITS = ['件', '㎡', 'm³', '吨']
 
-// 加班类型枚举
+// 日期类型枚举
 export const DAY_TYPES = [
 	{ value: 'weekday', label: '平日' },
 	{ value: 'weekend', label: '周末' },

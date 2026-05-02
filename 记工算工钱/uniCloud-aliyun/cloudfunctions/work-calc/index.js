@@ -84,6 +84,8 @@ async function getMonthlySummary(uid, year, month) {
 
 	const totalHours = records.reduce((s, r) => s + (r.duration || 0), 0)
 	const totalPay = records.reduce((s, r) => s + (r.pay || 0), 0)
+	const totalDays = records.reduce((s, r) => s + (r.days || 0), 0)
+	const totalQuantity = records.reduce((s, r) => s + (r.quantity || 0), 0)
 	const breakdown = { weekday: { hours: 0, pay: 0 }, weekend: { hours: 0, pay: 0 }, holiday: { hours: 0, pay: 0 } }
 	records.forEach(r => { if (breakdown[r.day_type]) { breakdown[r.day_type].hours += r.duration || 0; breakdown[r.day_type].pay += r.pay || 0 } })
 
@@ -122,7 +124,7 @@ async function recalcMonth(uid, year, month) {
 			}
 			case 'hourly':
 			default: {
-				rate = rateMap[rec.day_type] || rec.rate || 0
+				rate = rateMap[rec.day_type || rec.overtime_type] || rec.rate || 0
 				pay = Math.round((rec.duration || 0) * rate * 100) / 100
 				break
 			}
@@ -151,6 +153,8 @@ async function getYearStats(uid, year) {
 		.limit(5000).get()
 	const totalHours = records.reduce((s, r) => s + (r.duration || 0), 0)
 	const totalPay = records.reduce((s, r) => s + (r.pay || 0), 0)
+	const totalDays = records.reduce((s, r) => s + (r.days || 0), 0)
+	const totalQuantity = records.reduce((s, r) => s + (r.quantity || 0), 0)
 	const months = new Set()
 	records.forEach(r => { if (r.date) months.add(r.date.slice(0, 7)) })
 	return { code: 0, data: { year, totalHours: Math.round(totalHours * 100) / 100, totalPay: Math.round(totalPay * 100) / 100, totalDays: Math.round(totalDays * 100) / 100, totalQuantity: Math.round(totalQuantity * 100) / 100, recordCount: records.length, activeMonths: months.size, monthlyBreakdown: [...months].sort() } }

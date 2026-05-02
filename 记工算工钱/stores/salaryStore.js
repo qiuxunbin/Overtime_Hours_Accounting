@@ -24,10 +24,10 @@ function hasToken() {
 	return true
 }
 
-async function callOvertime(action, data = {}) {
+async function callWork(action, data = {}) {
 	const token = uni.getStorageSync('uni_id_token')
 	const res = await uniCloud.callFunction({
-		name: 'overtime-calc',
+		name: 'work-calc',
 		data: { action, token, ...data }
 	})
 	if (res.result?.code === 0) return res.result
@@ -60,7 +60,7 @@ export const useSalaryStore = defineStore('salary', {
 
 			if (!hasToken()) return
 			try {
-				const res = await callOvertime('salaryGet')
+				const res = await callWork('salaryGet')
 				if (res?.data) {
 					this.cloudId = res.data._id
 					this.config = {
@@ -84,7 +84,7 @@ export const useSalaryStore = defineStore('salary', {
 
 			if (!hasToken()) return
 			try {
-				await callOvertime('salarySet', {
+				await callWork('salarySet', {
 					data: {
 						pay_mode: this.config.pay_mode || 'hourly',
 						weekday_rate: this.config.weekday_rate,
