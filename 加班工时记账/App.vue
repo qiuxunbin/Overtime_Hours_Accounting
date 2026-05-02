@@ -47,12 +47,13 @@
 			const token = uni.getStorageSync('uni_id_token')
 			const expired = uni.getStorageSync('uni_id_token_expired')
 			if (!token || (expired && Date.now() > expired)) {
-				await this.silentLogin(userStore)
-				// 静默登录成功后，合并本地数据到云端
-				if (userStore.isLoggedIn) {
-					const overtimeStore = useOvertimeStore()
-					await overtimeStore.mergeOnLogin(userStore.uid)
-				}
+				// 静默登录改为非阻塞，失败不阻碍用户使用本地功能
+				this.silentLogin(userStore).then(() => {
+					if (userStore.isLoggedIn) {
+						const overtimeStore = useOvertimeStore()
+						overtimeStore.mergeOnLogin(userStore.uid)
+					}
+				}).catch(() => {})
 			} else {
 				console.log('[silentLogin] 已有有效 token，跳过登录')
 			}
@@ -103,7 +104,7 @@
 							name: 'user-auth',
 							data: { action: 'loginByWeixin', code: loginRes.code }
 						}),
-						new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 6000))
+						new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
 					])
 					console.log('[silentLogin] 云函数返回 code:', result?.result?.code)
 					if (result && result.result && result.result.code === 0) {
