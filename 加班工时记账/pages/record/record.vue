@@ -500,9 +500,9 @@ export default {
 			this.quickActive = h
 		},
 		// 日薪方法
-t		addOneDay() {
-				this.dailyDays = 1
-			},
+		addOneDay() {
+			this.dailyDays = 1
+		},
 		adjustDays(delta) {
 			const newVal = Math.max(0.5, (this.dailyDays || 1) + delta)
 			this.dailyDays = newVal
@@ -629,7 +629,7 @@ t		addOneDay() {
 					overtime_type: this.overtimeType,
 					rate: this.currentRate,
 					pay: this.estimatedPay
-t				net_pay: this.netPay,
+					net_pay: this.netPay,
 				})
 				pay = this.estimatedPay
 			} else if (payMode === 'daily') {
@@ -643,7 +643,7 @@ t				net_pay: this.netPay,
 					days: this.dailyDays,
 					daily_rate: rate,
 					pay: this.dailyPay
-t				net_pay: this.netPay,
+					net_pay: this.netPay,
 				})
 				pay = this.dailyPay
 			} else if (payMode === 'piece') {
@@ -657,7 +657,7 @@ t				net_pay: this.netPay,
 					quantity: this.pieceQuantity,
 					piece_rate: rate,
 					pay: this.piecePay
-t				net_pay: this.netPay,
+					net_pay: this.netPay,
 				})
 				pay = this.piecePay
 			}
