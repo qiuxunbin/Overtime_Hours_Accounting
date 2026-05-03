@@ -519,7 +519,7 @@ export default {
 					context: ctx,
 					width: logicalW,
 					height: logicalH,
-					pixelRatio: pr,
+					pixelRatio: 1,
 					animation: false,
 					background: '#FFFFFF',
 					fontSize: 10,
@@ -528,7 +528,7 @@ export default {
 					yAxis: { min: 0, max: maxVal, gridColor: '#F0EDE6', fontSize: 9, splitNumber: 3 },
 					xAxis: { fontSize: 9, axisLineColor: '#E8E4DC', disableGrid: true },
 					legend: { show: false },
-					extra: { line: { type: 'curve', width: 2 * pr } },
+					extra: { line: { type: 'curve', width: 2 } },
 					dataLabel: true,
 					color: ['#1B8A5A']
 				})
@@ -557,7 +557,7 @@ export default {
 					context: ctx,
 					width: logicalW,
 					height: logicalH,
-					pixelRatio: pr,
+					pixelRatio: 1,
 					background: '#FFFFFF',
 					fontSize: 11,
 					series: [{ name: '日期类型', data: pieData }],
@@ -566,7 +566,7 @@ export default {
 					extra: {
 						pie: {
 							type: 'ring',
-							ringWidth: 24 * pr,
+							ringWidth: 24,
 							activeOpacity: 0.5,
 							activeRadius: 8,
 							offsetAngle: 0,
@@ -599,7 +599,7 @@ export default {
 			const maxVal = Math.ceil(dataMax * 1.2) || 10
 			try {
 				const ctx = await this._getCanvas2dCtx('barChart', logicalW, logicalH)
-				const colWidth = Math.min(28 * pr, Math.floor((logicalW * pr - 80) / categories.length / 2))
+				const colWidth = Math.min(28, Math.floor((logicalW - 32) / categories.length / 2))
 				new uCharts({
 					$this: this,
 					canvasId: 'barChart',
@@ -608,7 +608,7 @@ export default {
 					context: ctx,
 					width: logicalW,
 					height: logicalH,
-					pixelRatio: pr,
+					pixelRatio: 1,
 					background: '#FFFFFF',
 					fontSize: 10,
 					categories: categories,
