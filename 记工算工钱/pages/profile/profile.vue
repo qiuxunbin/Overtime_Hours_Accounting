@@ -360,7 +360,7 @@ export default {
 				const payModeStr = getCol('pay_mode_str')
 				const payMode = PAY_MODE_MAP[payModeStr] || proj?.pay_mode || 'hourly'
 				const typeStr = getCol('day_type_str')
-				const overtimeType = TYPE_MAP[typeStr] || useHolidayStore().getDayType(date)
+				const dayType = TYPE_MAP[typeStr] || useHolidayStore().getDayType(date)
 
 				// Parse duration/days/quantity from CSV
 				let duration = 0, days = 0, quantity = 0
@@ -405,7 +405,7 @@ export default {
 					project_name: project_name || '',
 					project_id: proj ? proj._id : null,
 					pay_mode: payMode,
-					day_type: overtimeType,
+					day_type: dayType,
 					start_time: getCol('start_time'),
 					end_time: getCol('end_time'),
 					duration,

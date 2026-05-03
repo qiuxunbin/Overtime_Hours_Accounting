@@ -4,7 +4,7 @@ unpackage/dist/
 *.log
 
 # 云函数敏感配置
-加班工时记账/uniCloud-aliyun/cloudfunctions/user-auth/config.js
+记工算工钱/uniCloud-aliyun/cloudfunctions/user-auth/config.js
 
 # 临时脚本
 _temp_*.js

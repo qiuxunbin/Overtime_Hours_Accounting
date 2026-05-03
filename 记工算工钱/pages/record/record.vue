@@ -67,7 +67,7 @@
 						<text class="tag__text">{{ formattedDuration }}h</text>
 					</view>
 					<view class="tag tag--type">
-						<text class="tag__text">{{ overtimeTypeLabel }}</text>
+						<text class="tag__text">{{ dayTypeLabel }}</text>
 					</view>
 				</view>
 
@@ -404,8 +404,8 @@ export default {
 			endTime: '21:00',
 			pickerStartTime: '18:00',
 			pickerEndTime: '21:00',
-			overtimeType: 'weekday',
-			overtimeTypes: [
+			dayType: 'weekday',
+			dayTypes: [
 				{ value: 'weekday', label: '平日' },
 				{ value: 'weekend', label: '周末' },
 				{ value: 'holiday', label: '节假日' }
@@ -461,20 +461,20 @@ export default {
 			if (mode === 'piece') return `计件 ¥${p.piece_rate || 0}/${p.piece_unit || '件'}`
 			return '时薪'
 		},
-		overtimeTypeLabel() {
+		dayTypeLabel() {
 			const map = { weekday: '平日', weekend: '周末', holiday: '节假日' }
-			return map[this.overtimeType] || '平日'
+			return map[this.dayType] || '平日'
 		},
 		// 时薪
 		duration() { return calcDuration(this.startTime, this.endTime) },
 		formattedDuration() { return String(Math.round(this.duration * 100) / 100) },
 		currentRate() {
 			if (this.selectedProject) {
-				const key = this.overtimeType + '_rate'
+				const key = this.dayType + '_rate'
 				const pr = this.selectedProject[key]
 				if (pr && pr > 0) return pr
 			}
-			return useSalaryStore().rateByType(this.overtimeType)
+			return useSalaryStore().rateByType(this.dayType)
 		},
 		estimatedPay() {
 			if (this.duration <= 0 || this.currentRate <= 0) return 0
@@ -520,7 +520,7 @@ export default {
 				this.endTime = rec.end_time
 				this.pickerStartTime = rec.start_time
 				this.pickerEndTime = rec.end_time
-				this.overtimeType = rec.day_type || rec.overtime_type
+				this.dayType = rec.day_type || rec.overtime_type
 				this.remark = rec.remark || ''
 				this.projectName = rec.project_name || ''
 				this.selectedProjectId = rec.project_id || null
@@ -540,7 +540,7 @@ export default {
 			const pStore = useProjectStore()
 			if (pStore.projects.length === 0) pStore.loadProjects()
 		},
-		autoDetectType(date) { this.overtimeType = useHolidayStore().getDayType(date) },
+		autoDetectType(date) { this.dayType = useHolidayStore().getDayType(date) },
 		onStartChange(e) { this.startTime = e.detail.value; this.pickerStartTime = e.detail.value },
 		onEndChange(e) { this.endTime = e.detail.value; this.pickerEndTime = e.detail.value },
 		applyQuickHour(h) {
@@ -640,7 +640,7 @@ export default {
 			if (payMode === 'hourly') {
 				Object.assign(baseData, {
 					start_time: this.startTime, end_time: this.endTime,
-					duration: this.duration, day_type: this.overtimeType,
+					duration: this.duration, day_type: this.dayType,
 					rate: this.currentRate, pay: this.estimatedPay, net_pay: this.netPay
 				})
 			} else if (payMode === 'daily') {

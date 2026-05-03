@@ -87,7 +87,7 @@ async function getMonthlySummary(uid, year, month) {
 	const totalDays = records.reduce((s, r) => s + (r.days || 0), 0)
 	const totalQuantity = records.reduce((s, r) => s + (r.quantity || 0), 0)
 	const breakdown = { weekday: { hours: 0, pay: 0 }, weekend: { hours: 0, pay: 0 }, holiday: { hours: 0, pay: 0 } }
-	records.forEach(r => { if (breakdown[r.day_type]) { breakdown[r.day_type].hours += r.duration || 0; breakdown[r.day_type].pay += r.pay || 0 } })
+	records.forEach(r => { const dt = r.day_type || r.overtime_type; if (dt && breakdown[dt]) { breakdown[dt].hours += r.duration || 0; breakdown[dt].pay += r.pay || 0 } })
 
 	return { code: 0, data: { year, month, recordCount: records.length, totalHours: Math.round(totalHours * 100) / 100, totalPay: Math.round(totalPay * 100) / 100, totalDays: Math.round(totalDays * 100) / 100, totalQuantity: Math.round(totalQuantity * 100) / 100, breakdown, records } }
 }

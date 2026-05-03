@@ -38,10 +38,31 @@
                     "<uses-permission android:name=\"android.permission.FLASHLIGHT\"/>",
                     "<uses-feature android:name=\"android.hardware.camera\"/>",
                     "<uses-permission android:name=\"android.permission.WRITE_SETTINGS\"/>"
-                ]
+                ],
+                "icons" : {
+                    "ldpi" : "static/app-icon-120.png",
+                    "mdpi" : "static/app-icon-144.png",
+                    "hdpi" : "static/app-icon.png",
+                    "xhdpi" : "static/app-icon.png"
+                }
             },
             /* ios打包配置 */
-            "ios" : {},
+            "ios" : {
+                "icons" : {
+                    "appicon" : "static/app-icon-120.png",
+                    "appicon@2x" : "static/app-icon.png",
+                    "spotlight" : "static/app-icon-120.png",
+                    "spotlight@2x" : "static/app-icon.png",
+                    "settings" : "static/app-icon-120.png",
+                    "settings@2x" : "static/app-icon.png",
+                    "notification" : "static/app-icon-120.png",
+                    "notification@2x" : "static/app-icon.png"
+                },
+                "privacyDescription" : {
+                    "NSPhotoLibraryUsageDescription" : "用于上传头像和反馈截图",
+                    "NSCameraUsageDescription" : "用于拍照上传"
+                }
+            },
             /* SDK配置 */
             "sdkConfigs" : {}
         }
@@ -69,5 +90,8 @@
     "uniStatistics" : {
         "enable" : false
     },
-    "vueVersion" : "3"
+    "vueVersion" : "3",
+    "uniCloud" : {
+        "provider" : "aliyun"
+    }
 }

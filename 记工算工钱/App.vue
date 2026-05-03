@@ -3,7 +3,7 @@
 	import { useWorkStore } from './stores/workStore'
 	import { useSalaryStore } from './stores/salaryStore'
 	import { collection } from '@/utils/localStore'
-	import { DEFAULT_SALARY_CONFIG } from './utils/constants'
+	import { DEFAULT_SALARY_CONFIG, DEFAULT_PROJECT_CONFIG } from './utils/constants'
 	import { useProjectStore } from './stores/projectStore'
 	import { useHolidayStore } from './stores/holidayStore'
 	import { themeState, applyThemeClass } from './utils/theme.js'
@@ -64,7 +64,13 @@
 				// 从本地存储预加载工时记录
 				const workStore = useWorkStore()
 				const localDocs = collection('work_records').getAll()
-				workStore.records = localDocs.map(r => ({ ...r, id: r._id }))
+				workStore.records = localDocs.map(r => ({
+						pay_mode: 'hourly', days: 1, quantity: 0,
+						piece_rate: 0, daily_rate: 0,
+						subsidies: { night_shift: 0, meal: 0, transport: 0 },
+						deduction: { amount: 0, note: '' },
+						...r, id: r._id
+					}))
 				// 设置当前月份
 				const now = new Date()
 				const m = String(now.getMonth() + 1).padStart(2, '0')
@@ -73,7 +79,10 @@
 				// 从本地存储预加载项目列表
 				const projectStore = useProjectStore()
 				const projectDocs = collection('projects').getAll()
-				projectStore.projects = projectDocs.map(p => ({ ...p, id: p._id }))
+				projectStore.projects = projectDocs.map(p => ({
+						...DEFAULT_PROJECT_CONFIG,
+						...p, id: p._id
+					}))
 
 				// 从本地存储预加载薪资配置
 				const salaryStore = useSalaryStore()

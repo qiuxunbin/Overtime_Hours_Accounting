@@ -31,7 +31,8 @@ async function callWork(action, data = {}) {
 		data: { action, token, ...data }
 	})
 	if (res.result?.code === 0) return res.result
-	return null
+	if (res.result?.code === 401) throw new Error('NOT_AUTH')
+	throw new Error(res.result?.message || '操作失败')
 }
 
 export const useSalaryStore = defineStore('salary', {

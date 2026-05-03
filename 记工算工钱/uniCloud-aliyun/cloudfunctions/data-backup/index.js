@@ -6,7 +6,7 @@ const db = uniCloud.database()
  * 数据备份恢复服务
  *
  * 动作：
- *   export - 导出用户全部数据（加班记录、薪资配置、反馈）
+ *   export - 导出用户全部数据（记工记录、薪资配置、反馈）
  *   import - 导入恢复数据
  *   backupInfo - 查看备份概况
  */
