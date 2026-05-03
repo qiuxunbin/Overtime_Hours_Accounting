@@ -424,6 +424,10 @@ export default {
 			if (this.viewMonth === 12) { this.viewYear++; this.viewMonth = 1 }
 			else { this.viewMonth++ }
 		},
+		_chartDataSafe(arr) {
+			if (!arr || arr.length === 0) return false
+			return arr.every(v => typeof v === 'number' && isFinite(v))
+		},
 		renderCharts() {
 			this.renderRingChart()
 			this.renderBarChart()
@@ -433,11 +437,12 @@ export default {
 				if (this.trendMonths.length < 2) return
 				const allZero = this.trendMonths.every(m => (m.pay || 0) === 0)
 				if (allZero) return
-				const pr = this.pixelRatio
+				const pr = this.pixelRatio || 2
 				const w = 345 * pr
 				const h = 200 * pr
-				const categories = this.trendMonths.map(m => m.label)
-				const data = this.trendMonths.map(m => Math.round(m.pay * 100) / 100)
+				const categories = this.trendMonths.map(m => String(m.label))
+				const data = this.trendMonths.map(m => Math.round((m.pay || 0) * 100) / 100)
+				if (!this._chartDataSafe(data) || !this._chartDataSafe([categories.length])) return
 				try {
 					const ctx = uni.createCanvasContext("lineChart", this)
 					lineInstance = new uCharts({
@@ -468,7 +473,7 @@ export default {
 				this.ringRendered = false
 				return
 			}
-			const pr = this.pixelRatio
+			const pr = this.pixelRatio || 2
 			const w = 345 * pr
 			const h = 220 * pr
 
@@ -525,13 +530,14 @@ export default {
 				this.barRendered = false
 				return
 			}
-			const pr = this.pixelRatio
+			const pr = this.pixelRatio || 2
 			const w = 345 * pr
 			const h = 260 * pr
 
-			const categories = this.weekBars.map(b => b.label)
-			const data = this.weekBars.map(b => b.value)
+			const categories = this.weekBars.map(b => String(b.label))
+			const data = this.weekBars.map(b => Number(b.value) || 0)
 
+			if (!this._chartDataSafe(data)) return
 			try {
 				const ctx = uni.createCanvasContext('barChart', this)
 				barInstance = new uCharts({
