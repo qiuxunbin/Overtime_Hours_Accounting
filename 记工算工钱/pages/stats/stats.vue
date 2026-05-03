@@ -428,6 +428,16 @@ export default {
 			if (!arr || arr.length === 0) return false
 			return arr.every(v => typeof v === 'number' && isFinite(v))
 		},
+		_safeContext(ctx) {
+			if (!ctx._fillTextWrapped) {
+				const orig = ctx.fillText.bind(ctx)
+				ctx.fillText = function(text, x, y, maxWidth) {
+					return orig(String(text != null ? text : ''), x, y, maxWidth)
+				}
+				ctx._fillTextWrapped = true
+			}
+			return ctx
+		},
 		renderCharts() {
 			this.renderRingChart()
 			this.renderBarChart()
@@ -435,16 +445,18 @@ export default {
 		},
 		renderLineChart() {
 				if (this.trendMonths.length < 2) return
-				const allZero = this.trendMonths.every(m => (m.pay || 0) === 0)
-				if (allZero) return
 				const pr = this.pixelRatio || 2
 				const w = 345 * pr
 				const h = 200 * pr
-				const categories = this.trendMonths.map(m => String(m.label))
-				const data = this.trendMonths.map(m => Math.round((m.pay || 0) * 100) / 100)
-				if (!this._chartDataSafe(data) || !this._chartDataSafe([categories.length])) return
+				const categories = this.trendMonths.map(m => String(m.label || ''))
+				const data = this.trendMonths.map(m => {
+					const v = Math.round((m.pay || 0) * 100) / 100
+					return isFinite(v) ? v : 0
+				})
+				if (!this._chartDataSafe(data)) return
+				const maxVal = Math.ceil(Math.max(...data) * 1.2) || 10
 				try {
-					const ctx = uni.createCanvasContext("lineChart", this)
+					const ctx = this._safeContext(uni.createCanvasContext("lineChart", this))
 					lineInstance = new uCharts({
 						$this: this,
 						canvasId: "lineChart",
@@ -458,7 +470,7 @@ export default {
 						fontSize: 10,
 						categories: categories,
 						series: [{ name: "工钱", data: data }],
-						yAxis: { min: 0, gridColor: "#F0EDE6", fontSize: 9, splitNumber: 3 },
+						yAxis: { min: 0, max: maxVal, gridColor: "#F0EDE6", fontSize: 9, splitNumber: 3 },
 						xAxis: { fontSize: 9, axisLineColor: "#E8E4DC", disableGrid: true },
 						legend: { show: false },
 						extra: { line: { type: "curve", width: 2 * pr } },
@@ -485,7 +497,7 @@ export default {
 			if (pieData.length === 0) pieData.push({ name: '无数据', value: 1 })
 
 			try {
-				const ctx = uni.createCanvasContext('ringChart', this)
+				const ctx = this._safeContext(uni.createCanvasContext('ringChart', this))
 				ringInstance = new uCharts({
 					$this: this,
 					canvasId: 'ringChart',
@@ -528,20 +540,23 @@ export default {
 				this.barRendered = false
 				return
 			}
-			if (this.weekBars.every(b => (b.value || 0) === 0)) {
-				this.barRendered = false
-				return
-			}
 			const pr = this.pixelRatio || 2
 			const w = 345 * pr
 			const h = 260 * pr
 
-			const categories = this.weekBars.map(b => String(b.label))
-			const data = this.weekBars.map(b => Number(b.value) || 0)
+			const categories = this.weekBars.map(b => String(b.label || ''))
+			const data = this.weekBars.map(b => {
+				const v = Number(b.value)
+				return isFinite(v) ? Math.round(v * 100) / 100 : 0
+			})
 
-			if (!this._chartDataSafe(data)) return
+			if (!this._chartDataSafe(data)) {
+				this.barRendered = false
+				return
+			}
+			const maxVal = Math.ceil(Math.max(...data) * 1.2) || 10
 			try {
-				const ctx = uni.createCanvasContext('barChart', this)
+				const ctx = this._safeContext(uni.createCanvasContext('barChart', this))
 				barInstance = new uCharts({
 					$this: this,
 					canvasId: 'barChart',
@@ -560,6 +575,7 @@ export default {
 					}],
 					yAxis: {
 						min: 0,
+						max: maxVal,
 						disabled: false,
 						showTitle: true,
 						title: '¥',
