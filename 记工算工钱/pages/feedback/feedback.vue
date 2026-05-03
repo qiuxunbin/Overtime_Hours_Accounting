@@ -72,8 +72,8 @@ export default {
 		async loadList() {
 			try {
 				const result = await uniCloud.callFunction({
-					name: 'feedback',
-					data: { action: 'list' }
+					name: 'work-calc',
+					data: { action: 'feedbackList', token: uni.getStorageSync('uni_id_token') }
 				})
 				if (result.result && result.result.code === 0) {
 					this.feedbackList = result.result.data.map(item => ({
@@ -105,9 +105,10 @@ export default {
 
 			try {
 				const result = await uniCloud.callFunction({
-					name: 'feedback',
+					name: 'work-calc',
 					data: {
-						action: 'submit',
+						action: 'feedbackSubmit',
+						token: uni.getStorageSync('uni_id_token'),
 						title: this.title.trim(),
 						content: this.content.trim()
 					}

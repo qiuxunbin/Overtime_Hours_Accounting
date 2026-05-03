@@ -175,7 +175,7 @@ export default {
 			this.sending = true
 			try {
 				const result = await uniCloud.callFunction({
-					name: 'user-auth',
+					name: 'work-calc',
 					data: {
 						action: 'sendSmsCode',
 						phone: this.phone
@@ -278,7 +278,7 @@ export default {
 
 			try {
 				const result = await uniCloud.callFunction({
-					name: 'user-auth',
+					name: 'work-calc',
 					data: params
 				})
 

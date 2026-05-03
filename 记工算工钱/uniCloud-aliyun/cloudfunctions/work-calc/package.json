@@ -1,7 +1,7 @@
 {
   "name": "work-calc",
-  "version": "1.0.0",
-  "description": "记工计算云函数 - 服务端批量计算与月汇总",
+  "version": "2.0.0",
+  "description": "记工算工钱统一云函数 - 记工CRUD/薪资/项目/用户认证/节假日/备份/反馈",
   "main": "index.js",
   "dependencies": {}
 }

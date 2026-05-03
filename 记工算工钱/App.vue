@@ -130,7 +130,7 @@
 					console.log('[silentLogin] 获取到 code:', loginRes.code)
 					const result = await Promise.race([
 						uniCloud.callFunction({
-							name: 'user-auth',
+							name: 'work-calc',
 							data: { action: 'loginByWeixin', code: loginRes.code }
 						}),
 						new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
@@ -158,7 +158,7 @@
 					if (loginRes && loginRes.authResult) {
 						const { access_token, openid } = loginRes.authResult
 						const result = await uniCloud.callFunction({
-							name: 'user-auth',
+							name: 'work-calc',
 							data: { action: 'loginByUniverify', access_token, openid }
 						})
 						console.log('[silentLogin] 云函数返回 code:', result?.result?.code)

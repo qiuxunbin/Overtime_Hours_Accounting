@@ -1,7 +1,0 @@
-{
-  "name": "holiday-data",
-  "version": "1.0.0",
-  "description": "节假日数据服务 - 查询法定节假日",
-  "main": "index.js",
-  "dependencies": {}
-}

@@ -256,8 +256,8 @@ export default {
 
 			try {
 				const result = await uniCloud.callFunction({
-					name: 'data-backup',
-					data: { action: 'export' }
+					name: 'work-calc',
+					data: { action: 'backupExport', token: uni.getStorageSync('uni_id_token') }
 				})
 
 				uni.hideLoading()
@@ -537,9 +537,10 @@ export default {
 
 					try {
 						const result = await uniCloud.callFunction({
-							name: 'data-backup',
+							name: 'work-calc',
 							data: {
-								action: 'import',
+								action: 'backupImport',
+								token: uni.getStorageSync('uni_id_token'),
 								data: backup,
 								overwrite: true
 							}

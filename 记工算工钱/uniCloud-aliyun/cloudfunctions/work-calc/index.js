@@ -3,17 +3,32 @@
 const crypto = require('crypto')
 const db = uniCloud.database()
 const cmd = db.command
-const SECRET = 'work-app-jwt-secret-change-in-production'
 
-// ========== JWT 验证 ==========
+// ========== 配置 ==========
+const SECRET = 'work-app-jwt-secret-change-in-production'
+const TOKEN_EXPIRES_IN = 604800
+const WEXIN_APPID = 'wxed059ca24650f6c3'
+const WEXIN_APPSECRET = 'b86f314d2c3c0b75f495888e8b5be07e'
+const PASSWORD_SECRET = [{ type: 'hmac-sha256', version: 1 }]
+
+// ========== JWT 工具 ==========
 function b64d(str) {
 	str = str.replace(/-/g, '+').replace(/_/g, '/')
 	while (str.length % 4) str += '='
 	return Buffer.from(str, 'base64').toString('utf-8')
 }
+function b64e(str) {
+	return Buffer.from(str).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
+}
 function hmac(data, secret) {
 	return crypto.createHmac('sha256', secret).update(data).digest('base64')
 		.replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
+}
+function createToken(payload) {
+	const header = b64e(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
+	const now = Math.floor(Date.now() / 1000)
+	const body = b64e(JSON.stringify({ ...payload, iat: now, exp: now + TOKEN_EXPIRES_IN }))
+	return header + '.' + body + '.' + hmac(header + '.' + body, SECRET)
 }
 function getUidFromEvent(event) {
 	const token = event.token || ''
@@ -26,53 +41,84 @@ function getUidFromEvent(event) {
 	return pl.exp * 1000 < Date.now() ? null : pl.uid
 }
 
+// ========== 主入口 ==========
 exports.main = async (event, context) => {
-	const uid = getUidFromEvent(event)
+	const noAuthActions = [
+		'loginByWeixin', 'loginByPassword', 'loginByUniverify',
+		'register', 'sendSmsCode', 'loginBySms',
+		'holidayQuery', 'holidayCheck'
+	]
 
-	// sync 动作允许无 token（使用 device_id）
-	if (event.action === 'sync') {
-		return await syncRecords(uid, event)
+	if (noAuthActions.includes(event.action)) {
+		return await handlePublicAction(event)
 	}
 
+	// sync 允许匿名设备（无 token）
+	if (event.action === 'sync') {
+		return await syncRecords(getUidFromEvent(event), event)
+	}
+	if (event.action === 'syncProjects') {
+		return await syncProjects(getUidFromEvent(event), event)
+	}
+
+	const uid = getUidFromEvent(event)
 	if (!uid) {
 		return { code: 401, message: '请先登录' }
-
 	}
 
 	switch (event.action) {
-		case 'summary':
-			return await getMonthlySummary(uid, event.year, event.month)
-		case 'recalc':
-			return await recalcMonth(uid, event.year, event.month)
-		case 'yearStats':
-			return await getYearStats(uid, event.year)
-		case 'list':
-			return await listRecords(uid)
-		case 'add':
-			return await addRecord(uid, event.data)
-		case 'update':
-			return await updateRecord(uid, event.id, event.data)
-		case 'delete':
-			return await deleteRecord(uid, event.id)
-		case 'salaryGet':
-			return await getSalaryConfig(uid)
-		case 'salarySet':
-			return await setSalaryConfig(uid, event.data)
+		// 记工记录
+		case 'summary':       return await getMonthlySummary(uid, event.year, event.month)
+		case 'recalc':        return await recalcMonth(uid, event.year, event.month)
+		case 'yearStats':     return await getYearStats(uid, event.year)
+		case 'list':          return await listRecords(uid)
+		case 'add':           return await addRecord(uid, event.data)
+		case 'update':        return await updateRecord(uid, event.id, event.data)
+		case 'delete':        return await deleteRecord(uid, event.id)
+		// 薪资配置
+		case 'salaryGet':     return await getSalaryConfig(uid)
+		case 'salarySet':     return await setSalaryConfig(uid, event.data)
+		// 项目管理
+		case 'projectList':   return await listProjects(uid)
+		case 'projectAdd':    return await addProject(uid, event.data)
+		case 'projectUpdate': return await updateProject(uid, event.id, event.data)
+		case 'projectDelete': return await deleteProject(uid, event.id)
+		// 用户
+		case 'refreshToken':  return await refreshToken(uid)
+		case 'logout':        return await logout(uid)
+		case 'getUserInfo':   return await getUserInfo(uid)
+		case 'updateUserInfo':return await updateUserInfo(uid, event)
+		// 数据备份
+		case 'backupExport':  return await exportAll(uid)
+		case 'backupImport':  return await importAll(uid, event)
+		case 'backupInfo':    return await backupInfo(uid)
+		// 意见反馈
+		case 'feedbackSubmit': return await submitFeedback(uid, event)
+		case 'feedbackList':  return await listFeedback(uid, event)
+		case 'feedbackDetail':return await getFeedbackDetail(uid, event)
+		// 节假日
+		case 'holidayQuery':  return await queryHolidays(event.year)
+		case 'holidayCheck':  return await checkHoliday(event.date)
 
-		case 'projectList':
-			return await listProjects(uid)
-		case 'projectAdd':
-			return await addProject(uid, event.data)
-		case 'projectUpdate':
-			return await updateProject(uid, event.id, event.data)
-		case 'projectDelete':
-			return await deleteProject(uid, event.id)
-		case 'syncProjects':
-			return await syncProjects(uid, event)
-		default:
-			return { code: 400, message: '未知动作' }
+		default: return { code: 400, message: '未知动作' }
 	}
 }
+
+async function handlePublicAction(event) {
+	switch (event.action) {
+		case 'loginByWeixin':    return await loginByWeixin(event)
+		case 'loginByPassword':  return await loginByPassword(event)
+		case 'loginByUniverify': return await loginByUniverify(event)
+		case 'register':         return await register(event)
+		case 'sendSmsCode':      return { code: -1, message: '短信登录功能暂未开放' }
+		case 'loginBySms':       return { code: -1, message: '短信登录功能暂未开放' }
+		case 'holidayQuery':     return await queryHolidays(event.year)
+		case 'holidayCheck':     return await checkHoliday(event.date)
+		default: return { code: 400, message: '未知动作' }
+	}
+}
+
+// ========== 记工记录 ==========
 
 async function getMonthlySummary(uid, year, month) {
 	const prefix = `${year}-${String(month).padStart(2, '0')}`
@@ -98,7 +144,6 @@ async function recalcMonth(uid, year, month) {
 	const cfg = configs[0] || {}
 	const rateMap = { weekday: cfg.weekday_rate || 0, weekend: cfg.weekend_rate || 0, holiday: cfg.holiday_rate || 0 }
 
-	// 读取项目配置用于多模式费率
 	const { data: projects } = await db.collection('project-config').where({ user_id: uid }).limit(100).get()
 	const projMap = {}
 	projects.forEach(p => { projMap[p._id] = p })
@@ -130,7 +175,6 @@ async function recalcMonth(uid, year, month) {
 			}
 		}
 
-		// 计算 net_pay（补贴嵌套结构 {night_shift, meal, transport} / 扣款嵌套结构 {amount, note}）
 		const subsidies = typeof rec.subsidies === 'object'
 			? ((rec.subsidies.night_shift || 0) + (rec.subsidies.meal || 0) + (rec.subsidies.transport || 0))
 			: (rec.subsidies || 0)
@@ -191,14 +235,12 @@ async function addRecord(uid, record) {
 	const errors = validateRecord(record)
 	if (errors.length > 0) return { code: 400, message: errors.join('; ') }
 
-	// 非时薪模式不检测时间段重叠
 	if (payMode === 'daily' || payMode === 'piece') {
 		const data = { ...record, user_id: uid, created_at: Date.now() }
 		const res = await db.collection('work-record').add(data)
 		return { code: 0, id: res.id, data: { ...data, _id: res.id }, duplicated: false }
 	}
 
-	// 时薪模式检测时间段重叠
 	const dup = await db.collection('work-record')
 		.where({
 			user_id: uid,
@@ -216,11 +258,9 @@ async function addRecord(uid, record) {
 async function updateRecord(uid, id, record) {
 	const { data: exist } = await db.collection('work-record').where({ _id: id, user_id: uid }).limit(1).get()
 	if (!exist.length) return { code: 404, message: '记录不存在' }
-	// 验证模式相关字段
 	const merged = { ...exist[0], ...record }
 	const modeErrors = validateRecord(merged)
 	if (modeErrors.length > 0) return { code: 400, message: modeErrors.join('; ') }
-	// 改时间时也要检测重叠（排除自身）
 	if (record.date || record.start_time || record.end_time) {
 		const date = record.date || exist[0].date
 		const st = record.start_time || exist[0].start_time
@@ -246,6 +286,8 @@ async function deleteRecord(uid, id) {
 	return { code: 0 }
 }
 
+// ========== 薪资配置 ==========
+
 async function getSalaryConfig(uid) {
 	const { data } = await db.collection('salary-config').where({ user_id: uid }).limit(1).get()
 	return { code: 0, data: data[0] || null }
@@ -261,7 +303,7 @@ async function setSalaryConfig(uid, config) {
 	return { code: 0 }
 }
 
-// ========== 批量同步（支持匿名设备） ==========
+// ========== 批量同步 ==========
 
 async function syncRecords(uid, event) {
 	const { operations, device_id } = event
@@ -275,12 +317,8 @@ async function syncRecords(uid, event) {
 			switch (op.action) {
 				case 'add': {
 					const doc = { ...op.data }
-					delete doc._id
-					delete doc.id
-					delete doc._synced
-					delete doc._updated_at
+					delete doc._id; delete doc.id; delete doc._synced; delete doc._updated_at
 
-					// 有用户登录则使用 user_id，否则用 device_id
 					if (realUid) {
 						doc.user_id = realUid
 						doc.device_id = null
@@ -313,10 +351,7 @@ async function syncRecords(uid, event) {
 					}
 
 					const updateData = { ...op.data }
-					delete updateData._id
-					delete updateData.id
-					delete updateData._synced
-					delete updateData._updated_at
+					delete updateData._id; delete updateData.id; delete updateData._synced; delete updateData._updated_at
 					updateData.updated_at = Date.now()
 
 					await collection.doc(op.id).update(updateData)
@@ -338,15 +373,10 @@ async function syncRecords(uid, event) {
 		}
 	}
 
-	return {
-		code: 0,
-		id_mappings: idMappings,
-		conflicts: conflicts,
-		server_time: Date.now()
-	}
+	return { code: 0, id_mappings: idMappings, conflicts: conflicts, server_time: Date.now() }
 }
 
-// ========== 项目管理 CRUD ==========
+// ========== 项目管理 ==========
 
 async function listProjects(uid) {
 	const { data } = await db.collection('project-config')
@@ -374,8 +404,6 @@ async function deleteProject(uid, id) {
 	return { code: 0 }
 }
 
-// ========== 项目批量同步（支持匿名设备） ==========
-
 async function syncProjects(uid, event) {
 	const { operations, device_id } = event
 	const collection = db.collection('project-config')
@@ -388,10 +416,7 @@ async function syncProjects(uid, event) {
 			switch (op.action) {
 				case 'add': {
 					const doc = { ...op.data }
-					delete doc._id
-					delete doc.id
-					delete doc._synced
-					delete doc._updated_at
+					delete doc._id; delete doc.id; delete doc._synced; delete doc._updated_at
 
 					if (realUid) {
 						doc.user_id = realUid
@@ -418,10 +443,7 @@ async function syncProjects(uid, event) {
 						continue
 					}
 					const updateData = { ...op.data }
-					delete updateData._id
-					delete updateData.id
-					delete updateData._synced
-					delete updateData._updated_at
+					delete updateData._id; delete updateData.id; delete updateData._synced; delete updateData._updated_at
 					updateData.updated_at = Date.now()
 					await collection.doc(op.id).update(updateData)
 					break
@@ -443,4 +465,280 @@ async function syncProjects(uid, event) {
 	}
 
 	return { code: 0, id_mappings: idMappings, conflicts: conflicts, server_time: Date.now() }
+}
+
+// ========== 用户认证 ==========
+
+async function loginByWeixin(event) {
+	const { code } = event
+	if (!code) return { code: 400, message: '缺少 code' }
+	try {
+		const https = require('https')
+		const wxUrl = `https://api.weixin.qq.com/sns/jscode2session?appid=${WEXIN_APPID}&secret=${WEXIN_APPSECRET}&js_code=${code}&grant_type=authorization_code`
+		const wxRes = await new Promise((resolve, reject) => {
+			https.get(wxUrl, (res) => {
+				let data = ''
+				res.on('data', chunk => data += chunk)
+				res.on('end', () => resolve(data))
+			}).on('error', reject)
+		})
+		const wxData = JSON.parse(wxRes)
+		if (wxData.errcode) return { code: -1, message: '微信登录失败: ' + (wxData.errmsg || '') }
+		const { openid, unionid } = wxData
+		const { data } = await db.collection('uni-id-users').where({ wx_openid: openid }).limit(1).get()
+		let uid, isNewUser = false
+		if (data.length > 0) {
+			uid = data[0]._id
+		} else {
+			const addRes = await db.collection('uni-id-users').add({
+				wx_openid: openid, wx_unionid: unionid || '',
+				nickname: '微信用户', register_date: Date.now()
+			})
+			uid = addRes.id; isNewUser = true
+		}
+		const token = createToken({ uid })
+		return {
+			code: 0, message: '登录成功',
+			data: { uid, token, tokenExpired: Date.now() + TOKEN_EXPIRES_IN * 1000, isNewUser }
+		}
+	} catch (e) {
+		console.log('[work-calc] loginByWeixin error:', e)
+		return { code: -1, message: '登录异常: ' + (e.message || '') }
+	}
+}
+
+async function loginByPassword(event) {
+	const { username, password } = event
+	if (!username || !password) return { code: 400, message: '缺少用户名或密码' }
+	try {
+		const { data } = await db.collection('uni-id-users').where({ username }).limit(1).get()
+		if (!data.length) return { code: -1, message: '用户不存在' }
+		const user = data[0]
+		const secret = PASSWORD_SECRET[0]
+		const expected = crypto.createHmac('sha256', password + secret.version).update(password).digest('hex')
+		if (user.password !== password && user.password !== expected) return { code: -1, message: '密码错误' }
+		const token = createToken({ uid: user._id })
+		return {
+			code: 0, message: '登录成功',
+			data: { uid: user._id, token, tokenExpired: Date.now() + TOKEN_EXPIRES_IN * 1000, isNewUser: false }
+		}
+	} catch (e) {
+		console.log('[work-calc] loginByPassword error:', e)
+		return { code: -1, message: '登录异常: ' + (e.message || '') }
+	}
+}
+
+async function loginByUniverify(event) {
+	return { code: -1, message: '一键登录功能暂未开放' }
+}
+
+async function register(event) {
+	const { username, password } = event
+	if (!username || !password) return { code: 400, message: '缺少用户名或密码' }
+	if (!/^[a-zA-Z0-9]{3,20}$/.test(username)) return { code: 400, message: '用户名需3-20位字母或数字' }
+	if (password.length < 6 || password.length > 20) return { code: 400, message: '密码需6-20位' }
+	try {
+		const { data: exist } = await db.collection('uni-id-users').where({ username }).limit(1).get()
+		if (exist.length) return { code: -1, message: '用户名已存在' }
+		const secret = PASSWORD_SECRET[0]
+		const hashed = crypto.createHmac('sha256', password + secret.version).update(password).digest('hex')
+		const addRes = await db.collection('uni-id-users').add({ username, password: hashed, nickname: username, register_date: Date.now() })
+		const token = createToken({ uid: addRes.id })
+		return {
+			code: 0, message: '注册成功',
+			data: { uid: addRes.id, token, tokenExpired: Date.now() + TOKEN_EXPIRES_IN * 1000, isNewUser: true }
+		}
+	} catch (e) {
+		console.log('[work-calc] register error:', e)
+		return { code: -1, message: '注册异常: ' + (e.message || '') }
+	}
+}
+
+async function refreshToken(uid) {
+	const token = createToken({ uid })
+	return { code: 0, data: { token, tokenExpired: Date.now() + TOKEN_EXPIRES_IN * 1000 } }
+}
+
+async function logout(uid) {
+	await db.collection('uni-id-users').doc(uid).update({ token: [] })
+	return { code: 0, message: '已登出' }
+}
+
+async function getUserInfo(uid) {
+	const { data } = await db.collection('uni-id-users').where({ _id: uid }).limit(1).get()
+	return data.length ? { code: 0, data: data[0] } : { code: 404, message: '用户不存在' }
+}
+
+async function updateUserInfo(uid, event) {
+	const ud = {}
+	if (event.nickname) ud.nickname = event.nickname
+	if (event.avatar) ud.avatar_file = event.avatar
+	if (!Object.keys(ud).length) return { code: 400, message: '没有要更新的字段' }
+	await db.collection('uni-id-users').doc(uid).update(ud)
+	return { code: 0, message: '更新成功' }
+}
+
+// ========== 节假日 ==========
+
+async function queryHolidays(year) {
+	const collection = db.collection('holiday-data')
+	const { data } = await collection
+		.where({ year: parseInt(year) })
+		.limit(1)
+		.get()
+
+	if (data.length === 0) {
+		return { code: 0, data: { year, holidays: [], message: '暂无该年份的节假日数据' } }
+	}
+	return { code: 0, data: data[0] }
+}
+
+async function checkHoliday(date) {
+	if (!date) return { code: 400, message: '请提供日期 date (YYYY-MM-DD)' }
+
+	const year = parseInt(date.slice(0, 4))
+	const collection = db.collection('holiday-data')
+	const { data } = await collection.where({ year }).limit(1).get()
+
+	if (data.length === 0 || !data[0].holidays) {
+		return { code: 0, data: { date, isHoliday: false, name: '' } }
+	}
+
+	const holiday = data[0].holidays.find(h => h.date === date)
+	return { code: 0, data: { date, isHoliday: !!holiday, name: holiday ? holiday.name : '' } }
+}
+
+// ========== 数据备份 ==========
+
+async function exportAll(uid) {
+	const collections = ['work-record', 'salary-config', 'feedback']
+	const backup = { version: 1, exported_at: new Date().toISOString(), user_id: uid, data: {} }
+
+	for (const colName of collections) {
+		const { data } = await db.collection(colName)
+			.where({ user_id: uid })
+			.limit(10000)
+			.get()
+		backup.data[colName] = data.map(record => {
+			const { _id, ...rest } = record
+			return rest
+		})
+	}
+	return { code: 0, data: backup }
+}
+
+async function importAll(uid, event) {
+	const { data: backupData, overwrite = false } = event
+	if (!backupData || !backupData.data) {
+		return { code: 400, message: '无效的备份数据格式' }
+	}
+
+	const collections = ['work-record', 'salary-config', 'feedback']
+	const result = { imported: {}, skipped: {} }
+
+	for (const colName of collections) {
+		const records = backupData.data[colName]
+		if (!records || !Array.isArray(records) || records.length === 0) {
+			result.skipped[colName] = 0
+			continue
+		}
+
+		const collection = db.collection(colName)
+
+		if (overwrite) {
+			const { deleted } = await collection.where({ user_id: uid }).remove()
+			result.skipped[colName] = deleted
+		}
+
+		let imported = 0
+		for (let i = 0; i < records.length; i += 50) {
+			const batch = records.slice(i, i + 50).map(record => ({
+				...record,
+				user_id: uid,
+				created_at: record.created_at || Date.now(),
+				updated_at: Date.now()
+			}))
+			await collection.add(batch)
+			imported += batch.length
+		}
+		result.imported[colName] = imported
+	}
+
+	return { code: 0, message: '数据导入完成', data: result }
+}
+
+async function backupInfo(uid) {
+	const collections = ['work-record', 'salary-config', 'feedback']
+	const info = {}
+
+	for (const colName of collections) {
+		const { data } = await db.collection(colName)
+			.where({ user_id: uid })
+			.limit(10000)
+			.get()
+		info[colName] = data.length
+	}
+
+	return {
+		code: 0,
+		data: {
+			info,
+			totalRecords: info['work-record'] || 0,
+			hasSalaryConfig: (info['salary-config'] || 0) > 0,
+			feedbackCount: info['feedback'] || 0
+		}
+	}
+}
+
+// ========== 意见反馈 ==========
+
+async function submitFeedback(uid, event) {
+	const { title, content, images } = event
+	if (!title || !title.trim()) return { code: 400, message: '请输入反馈标题' }
+	if (!content || !content.trim()) return { code: 400, message: '请输入反馈内容' }
+
+	const { id } = await db.collection('feedback').add({
+		user_id: uid,
+		title: title.trim(),
+		content: content.trim(),
+		images: images || [],
+		status: 'pending',
+		created_at: Date.now()
+	})
+
+	return { code: 0, message: '反馈提交成功', data: { id } }
+}
+
+async function listFeedback(uid, event) {
+	const { skip = 0, limit = 50 } = event || {}
+	const { data } = await db.collection('feedback')
+		.where({ user_id: uid })
+		.orderBy('created_at', 'desc')
+		.skip(skip)
+		.limit(Math.min(limit, 100))
+		.get()
+
+	return {
+		code: 0,
+		data: data.map(item => ({
+			id: item._id,
+			title: item.title,
+			content: item.content,
+			status: item.status,
+			created_at: item.created_at
+		}))
+	}
+}
+
+async function getFeedbackDetail(uid, event) {
+	const { feedbackId } = event
+	if (!feedbackId) return { code: 400, message: '请提供 feedbackId' }
+
+	const { data } = await db.collection('feedback')
+		.where({ _id: feedbackId, user_id: uid })
+		.limit(1)
+		.get()
+
+	if (data.length === 0) return { code: 404, message: '反馈不存在' }
+	return { code: 0, data: data[0] }
 }

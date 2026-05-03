@@ -80,8 +80,8 @@ export const useHolidayStore = defineStore('holiday', {
 
       try {
         const result = await uniCloud.callFunction({
-          name: 'holiday-data',
-          data: { action: 'query', year: this.year }
+          name: 'work-calc',
+          data: { action: 'holidayQuery', year: this.year }
         })
         if (result.result && result.result.code === 0) {
           const data = result.result.data

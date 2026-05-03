@@ -1,7 +1,0 @@
-{
-  "name": "data-backup",
-  "version": "1.0.0",
-  "description": "数据备份恢复服务 - 导出导入用户全部数据",
-  "main": "index.js",
-  "dependencies": {}
-}
