@@ -47,7 +47,7 @@
 				<text class="card__title">日期类型分布</text>
 				<view class="chart-wrap chart-wrap--ring" v-if="totalPay > 0">
 					<canvas
-						canvas-id="ringChart"
+						type="2d"
 						id="ringChart"
 						class="chart-canvas chart-canvas--ring"
 					></canvas>
@@ -91,7 +91,7 @@
 				<text class="card__title">每周趋势</text>
 				<view class="chart-wrap chart-wrap--bar">
 					<canvas
-						canvas-id="barChart"
+						type="2d"
 						id="barChart"
 						class="chart-canvas chart-canvas--bar"
 					></canvas>
@@ -103,7 +103,7 @@
 				<text class="card__title">近6月收入趋势</text>
 				<view class="chart-wrap chart-wrap--line">
 					<canvas
-						canvas-id="lineChart"
+						type="2d"
 						id="lineChart"
 						class="chart-canvas chart-canvas--line"
 					></canvas>
@@ -177,10 +177,6 @@ import uCharts from '@qiun/ucharts'
 
 function pad(n) { return String(n).padStart(2, '0') }
 
-let ringInstance = null
-let barInstance = null
-let lineInstance = null
-
 export default {
 	components: { NavBar, ThemeToggle },
 	data() {
@@ -188,9 +184,7 @@ export default {
 		return {
 			viewYear: now.getFullYear(),
 			viewMonth: now.getMonth() + 1,
-			pixelRatio: 2,
-			ringRendered: false,
-			barRendered: false
+			pixelRatio: 2
 		}
 	},
 	computed: {
@@ -385,6 +379,7 @@ export default {
 	async onShow() {
 		const store = useWorkStore()
 		await store.loadRecords()
+		console.log('[stats] onShow, records loaded:', store.records.length)
 		this._scheduleRender(350)
 	},
 	onReady() {
@@ -394,12 +389,11 @@ export default {
 		} catch (e) {
 			this.pixelRatio = 2
 		}
+		console.log('[stats] onReady, pixelRatio:', this.pixelRatio)
+		this._scheduleRender(500)
 	},
 	beforeDestroy() {
 		if (this._renderTimer) clearTimeout(this._renderTimer)
-		ringInstance = null
-		barInstance = null
-		lineInstance = null
 	},
 	methods: {
 		monthPayTotal(monthPrefix) {
@@ -415,6 +409,34 @@ export default {
 			if (this.viewMonth === 12) { this.viewYear++; this.viewMonth = 1 }
 			else { this.viewMonth++ }
 		},
+
+		/* ---- Canvas 2D 帮助函数 ---- */
+
+		async _getCanvas2dCtx(canvasId, logicalW, logicalH) {
+			return new Promise((resolve, reject) => {
+				const query = uni.createSelectorQuery().in(this)
+				query.select('#' + canvasId)
+					.fields({ node: true, size: true })
+					.exec((res) => {
+						console.log('[canvas2d]', canvasId, 'query result:', res ? (res[0] ? 'node OK' : 'res[0] null') : 'res null')
+						if (!res || !res[0] || !res[0].node) {
+							console.log('[canvas2d]', canvasId, 'FAILED - canvas node not found in DOM')
+							reject(new Error('Canvas node not found: ' + canvasId))
+							return
+						}
+						const canvas = res[0].node
+						const pr = this.pixelRatio || 2
+						canvas.width = logicalW * pr
+						canvas.height = logicalH * pr
+						const ctx = canvas.getContext('2d')
+						ctx.scale(pr, pr)
+						this._safeContext(ctx)
+						console.log('[canvas2d]', canvasId, 'OK, canvas size:', canvas.width, 'x', canvas.height, ', ctx:', !!ctx)
+						resolve(ctx)
+					})
+			})
+		},
+
 		_scheduleRender(delay) {
 			if (this._renderTimer) clearTimeout(this._renderTimer)
 			this._renderTimer = setTimeout(() => {
@@ -422,10 +444,12 @@ export default {
 				this.renderCharts()
 			}, delay)
 		},
+
 		_chartDataSafe(arr) {
 			if (!arr || arr.length === 0) return false
 			return arr.every(v => typeof v === 'number' && isFinite(v))
 		},
+
 		_safeContext(ctx) {
 			if (!ctx._fillTextWrapped) {
 				const orig = ctx.fillText.bind(ctx)
@@ -436,87 +460,91 @@ export default {
 			}
 			return ctx
 		},
-		renderCharts() {
-			// 停止旧实例的动画，防止多实例冲突
-			if (ringInstance && ringInstance.animationInstance) ringInstance.animationInstance.stop()
-			if (barInstance && barInstance.animationInstance) barInstance.animationInstance.stop()
-			if (lineInstance && lineInstance.animationInstance) lineInstance.animationInstance.stop()
-			this.renderRingChart()
-			this.renderBarChart()
-			this.renderLineChart()
+
+		/* ---- 图表渲染（全部 async + Canvas 2D）---- */
+
+		async renderCharts() {
+			console.log('[renderCharts] called. recordCount:', this.recordCount, 'totalPay:', this.totalPay, 'weekBars:', this.weekBars.length, 'trendMonths:', this.trendMonths.length)
+			try {
+				await Promise.all([
+					this.renderRingChart(),
+					this.renderBarChart(),
+					this.renderLineChart()
+				])
+				console.log('[renderCharts] all done')
+			} catch (e) {
+				console.log('[renderCharts] error:', e)
+			}
 		},
-		renderLineChart() {
-			if (this.trendMonths.length < 2) return
+
+		async renderLineChart() {
+			if (this.trendMonths.length < 2) { console.log('[lineChart] skip: need >=2 months, have', this.trendMonths.length); return }
+			const logicalW = 345, logicalH = 200
 			const pr = this.pixelRatio || 2
-			const w = 345 * pr
-			const h = 200 * pr
 			const categories = this.trendMonths.map(m => String(m.label || ''))
 			const data = this.trendMonths.map(m => {
 				const v = Math.round((m.pay || 0) * 100) / 100
 				return isFinite(v) ? v : 0
 			})
-			if (!this._chartDataSafe(data)) return
+			if (!this._chartDataSafe(data)) { console.log('[lineChart] skip: unsafe data'); return }
 			const dataMax = Math.max(...data)
-			if (dataMax <= 0) return
+			if (dataMax <= 0) { console.log('[lineChart] skip: all zero data'); return }
 			const maxVal = Math.ceil(dataMax * 1.2) || 10
+			console.log('[lineChart] rendering with data:', data, 'maxVal:', maxVal)
 			try {
-				const ctx = this._safeContext(uni.createCanvasContext("lineChart", this))
-				lineInstance = new uCharts({
+				const ctx = await this._getCanvas2dCtx('lineChart', logicalW, logicalH)
+				console.log('[lineChart] got ctx, constructing uCharts...')
+				new uCharts({
 					$this: this,
-					canvasId: "lineChart",
-					type: "line",
+					canvasId: 'lineChart',
+					type: 'line',
 					context: ctx,
-					width: w,
-					height: h,
+					width: logicalW,
+					height: logicalH,
 					pixelRatio: pr,
 					animation: false,
-					background: "#FFFFFF",
+					background: '#FFFFFF',
 					fontSize: 10,
 					categories: categories,
-					series: [{ name: "工钱", data: data }],
-					yAxis: { min: 0, max: maxVal, gridColor: "#F0EDE6", fontSize: 9, splitNumber: 3 },
-					xAxis: { fontSize: 9, axisLineColor: "#E8E4DC", disableGrid: true },
+					series: [{ name: '工钱', data: data }],
+					yAxis: { min: 0, max: maxVal, gridColor: '#F0EDE6', fontSize: 9, splitNumber: 3 },
+					xAxis: { fontSize: 9, axisLineColor: '#E8E4DC', disableGrid: true },
 					legend: { show: false },
-					extra: { line: { type: "curve", width: 2 * pr } },
+					extra: { line: { type: 'curve', width: 2 * pr } },
 					dataLabel: true,
-					color: ["#1B8A5A"]
+					color: ['#1B8A5A']
 				})
+				console.log('[lineChart] uCharts instance created')
 			} catch (e) {
-				console.log("lineChart error:", e)
+				console.log('[lineChart] error:', e)
 			}
 		},
-		renderRingChart() {
-			if (this.totalPay <= 0) {
-				this.ringRendered = false
-				return
-			}
-			const pr = this.pixelRatio || 2
-			const w = 345 * pr
-			const h = 220 * pr
 
+		async renderRingChart() {
+			if (this.totalPay <= 0) { console.log('[ringChart] skip: totalPay <= 0'); return }
+			const logicalW = 345, logicalH = 220
+			const pr = this.pixelRatio || 2
 			const pieData = []
 			if (this.weekdayPay > 0) pieData.push({ name: '平日', value: this.weekdayPay })
 			if (this.weekendPay > 0) pieData.push({ name: '周末', value: this.weekendPay })
 			if (this.holidayPay > 0) pieData.push({ name: '节假日', value: this.holidayPay })
 			if (pieData.length === 0) pieData.push({ name: '无数据', value: 1 })
-
+			console.log('[ringChart] rendering with pieData:', JSON.stringify(pieData))
 			try {
-				const ctx = this._safeContext(uni.createCanvasContext('ringChart', this))
-				ringInstance = new uCharts({
+				const ctx = await this._getCanvas2dCtx('ringChart', logicalW, logicalH)
+				console.log('[ringChart] got ctx, constructing uCharts...')
+				new uCharts({
 					$this: this,
 					canvasId: 'ringChart',
 					type: 'pie',
 					animation: false,
 					context: ctx,
-					width: w,
-					height: h,
+					width: logicalW,
+					height: logicalH,
 					pixelRatio: pr,
 					background: '#FFFFFF',
 					fontSize: 11,
-					series: [{
-						name: '日期类型',
-						data: pieData
-					}],
+					series: [{ name: '日期类型', data: pieData }],
 					legend: { show: false },
 					dataLabel: true,
 					extra: {
@@ -534,54 +562,43 @@ export default {
 					},
 					color: ['#1B8A5A', '#C4A46C', '#B85C4A']
 				})
-				this.ringRendered = true
+				console.log('[ringChart] uCharts instance created')
 			} catch (e) {
-				this.ringRendered = false
+				console.log('[ringChart] error:', e)
 			}
 		},
-		renderBarChart() {
-			if (this.weekBars.length === 0) {
-				this.barRendered = false
-				return
-			}
-			const pr = this.pixelRatio || 2
-			const w = 345 * pr
-			const h = 260 * pr
 
+		async renderBarChart() {
+			if (this.weekBars.length === 0) { console.log('[barChart] skip: no weekBars'); return }
+			const logicalW = 345, logicalH = 260
+			const pr = this.pixelRatio || 2
 			const categories = this.weekBars.map(b => String(b.label || ''))
 			const data = this.weekBars.map(b => {
 				const v = Number(b.value)
 				return isFinite(v) ? Math.round(v * 100) / 100 : 0
 			})
-
-			if (!this._chartDataSafe(data)) {
-				this.barRendered = false
-				return
-			}
+			if (!this._chartDataSafe(data)) { console.log('[barChart] skip: unsafe data'); return }
 			const dataMax = Math.max(...data)
-			if (dataMax <= 0) {
-				this.barRendered = false
-				return
-			}
+			if (dataMax <= 0) { console.log('[barChart] skip: all zero data'); return }
 			const maxVal = Math.ceil(dataMax * 1.2) || 10
+			console.log('[barChart] rendering with categories:', categories, 'data:', data, 'maxVal:', maxVal)
 			try {
-				const ctx = this._safeContext(uni.createCanvasContext('barChart', this))
-				barInstance = new uCharts({
+				const ctx = await this._getCanvas2dCtx('barChart', logicalW, logicalH)
+				console.log('[barChart] got ctx, constructing uCharts...')
+				const colWidth = Math.min(28 * pr, Math.floor((logicalW * pr - 80) / categories.length / 2))
+				new uCharts({
 					$this: this,
 					canvasId: 'barChart',
 					type: 'column',
 					animation: false,
 					context: ctx,
-					width: w,
-					height: h,
+					width: logicalW,
+					height: logicalH,
 					pixelRatio: pr,
 					background: '#FFFFFF',
 					fontSize: 10,
 					categories: categories,
-					series: [{
-						name: '工钱',
-						data: data
-					}],
+					series: [{ name: '工钱', data: data }],
 					yAxis: {
 						min: 0,
 						max: maxVal,
@@ -606,7 +623,7 @@ export default {
 					extra: {
 						column: {
 							type: 'group',
-							width: Math.min(28 * pr, (w - 80) / categories.length / 2),
+							width: colWidth,
 							activeBgColor: '#000000',
 							activeBgOpacity: 0.08,
 							linearType: 'none',
@@ -615,44 +632,46 @@ export default {
 					},
 					color: ['#1B8A5A']
 				})
-				this.barRendered = true
+				console.log('[barChart] uCharts instance created')
 			} catch (e) {
-				this.barRendered = false
+				console.log('[barChart] error:', e)
 			}
 		},
+
 		typeLabel(type) {
-			const m = { weekday: "平日", weekend: "周末", holiday: "节假日" }
-			return m[type] || "平日"
+			const m = { weekday: '平日', weekend: '周末', holiday: '节假日' }
+			return m[type] || '平日'
 		},
+
 		handleExportCSV() {
 			const records = this.allRecords
 			if (records.length === 0) {
-				uni.showToast({ title: "无数据", icon: "none" })
+				uni.showToast({ title: '无数据', icon: 'none' })
 				return
 			}
-			let csv = "﻿日期,类型,计薪方式,时长/天数/件数,工钱,项目,备注,补贴,扣款\n"
+			let csv = '﻿日期,类型,计薪方式,时长/天数/件数,工钱,项目,备注,补贴,扣款\n'
 			records.forEach(r => {
 				const subsidies = r.subsidies ? ((r.subsidies.night_shift||0)+(r.subsidies.meal||0)+(r.subsidies.transport||0)) : 0
 				const deduction = r.deduction ? (r.deduction.amount||0) : 0
-				const payMode = r.pay_mode || "hourly"
-				const qty = payMode === "daily" ? (r.days || 0) + "天" : payMode === "piece" ? (r.quantity || 0) : (r.duration || 0) + "h"
-				const row = [r.date, this.typeLabel((r.day_type || r.overtime_type)), payMode, qty, r.pay || 0, r.project_name || "", (r.remark || "").replace(/,/g, ";"), subsidies, deduction].join(",")
-				csv += row + "\n"
+				const payMode = r.pay_mode || 'hourly'
+				const qty = payMode === 'daily' ? (r.days || 0) + '天' : payMode === 'piece' ? (r.quantity || 0) : (r.duration || 0) + 'h'
+				const row = [r.date, this.typeLabel((r.day_type || r.overtime_type)), payMode, qty, r.pay || 0, r.project_name || '', (r.remark || '').replace(/,/g, ';'), subsidies, deduction].join(',')
+				csv += row + '\n'
 			})
 			const now = new Date()
-			const fileName = "记工统计_" + now.getFullYear() + "-" + pad(now.getMonth()+1) + "-" + pad(now.getDate()) + ".csv"
+			const fileName = '记工统计_' + now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate()) + '.csv'
 			// #ifdef MP-WEIXIN
 			try {
 				const fd = uni.getFileSystemManager()
-				const tmpPath = wx.env.USER_DATA_PATH + "/" + fileName
-				fd.writeFileSync(tmpPath, csv, "utf8")
+				const tmpPath = wx.env.USER_DATA_PATH + '/' + fileName
+				fd.writeFileSync(tmpPath, csv, 'utf8')
 				uni.shareFileMessage({ filePath: tmpPath })
 			} catch (e) {
-				uni.setClipboardData({ data: csv, success: () => uni.showToast({ title: "CSV已复制", icon: "success" }) })
+				uni.setClipboardData({ data: csv, success: () => uni.showToast({ title: 'CSV已复制', icon: 'success' }) })
 			}
 			// #endif
 			// #ifndef MP-WEIXIN
-			uni.setClipboardData({ data: csv, success: () => uni.showToast({ title: "CSV已复制", icon: "success" }) })
+			uni.setClipboardData({ data: csv, success: () => uni.showToast({ title: 'CSV已复制', icon: 'success' }) })
 			// #endif
 		}
 	}
