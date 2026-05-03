@@ -164,7 +164,7 @@
 			<view class="page-stats__spacer"></view>
 		</view>
 		<ThemeToggle />
-	
+
 	</view>
 </template>
 
@@ -273,7 +273,7 @@ export default {
 			this.monthRecords.forEach(r => {
 				const d = new Date(r.date)
 				const dom = d.getDate()
-				if (isNaN(dom)) return  // 跳过无效日期
+				if (isNaN(dom)) return
 				const wn = Math.ceil(dom / 7)
 				const key = 'W' + wn
 				if (!weeks[key]) weeks[key] = 0
@@ -299,64 +299,62 @@ export default {
 				.reduce((s, r) => s + (r.pay || 0), 0)
 		},
 		projectStats() {
-				if (this.monthRecords.length === 0) return []
-				const pStore = useProjectStore()
-				const projMap = new Map(pStore.projects.map(p => [p._id, p]))
-				const groups = {}
-				this.monthRecords.forEach(r => {
-					const key = r.project_id || '__none__'
-					if (!groups[key]) groups[key] = { hours: 0, days: 0, quantity: 0, pay: 0 }
-					groups[key].hours += r.duration || 0
-					groups[key].days += r.days || 0
-					groups[key].quantity += r.quantity || 0
-					groups[key].pay += r.pay || 0
-				})
-				let items = Object.entries(groups).map(([id, stats]) => {
-					const proj = id !== '__none__' ? projMap.get(id) : null
-					const payMode = proj ? proj.pay_mode : (stats.days > 0 ? 'daily' : stats.quantity > 0 ? 'piece' : 'hourly')
-					const pieceUnit = proj ? proj.piece_unit : '件'
-					let unitValue, unitLabel
-					if (payMode === 'daily') {
-						unitValue = stats.days
-						unitLabel = '天'
-					} else if (payMode === 'piece') {
-						unitValue = stats.quantity
-						unitLabel = pieceUnit || '件'
-					} else {
-						unitValue = Math.round(stats.hours * 10) / 10
-						unitLabel = 'h'
-					}
-					return {
-						name: proj ? proj.name : '无项目',
-						color: proj ? proj.color : '#9C9C9C',
-						hours: Math.round(stats.hours * 10) / 10,
-						pay: stats.pay,
-						pct: 0,
-						unitValue,
-						unitLabel
-					}
-				})
-				const maxPay = Math.max(...items.map(i => i.pay), 1)
-				items = items.map(i => ({ ...i, pct: Math.round((i.pay / maxPay) * 100) }))
-				return items.sort((a, b) => b.pay - a.pay)
-			},
-
-			trendMonths() {
-				const months = []
-				const now = new Date()
-				for (let i = 5; i >= 0; i--) {
-					const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-					const key = d.getFullYear() + '-' + pad(d.getMonth() + 1)
-					const label = pad(d.getMonth() + 1) + '月'
-					const pay = this.allRecords
-						.filter(r => r.date && r.date.startsWith(key))
-						.reduce((s, r) => s + (r.pay || 0), 0)
-					months.push({ key, label, pay })
+			if (this.monthRecords.length === 0) return []
+			const pStore = useProjectStore()
+			const projMap = new Map(pStore.projects.map(p => [p._id, p]))
+			const groups = {}
+			this.monthRecords.forEach(r => {
+				const key = r.project_id || '__none__'
+				if (!groups[key]) groups[key] = { hours: 0, days: 0, quantity: 0, pay: 0 }
+				groups[key].hours += r.duration || 0
+				groups[key].days += r.days || 0
+				groups[key].quantity += r.quantity || 0
+				groups[key].pay += r.pay || 0
+			})
+			let items = Object.entries(groups).map(([id, stats]) => {
+				const proj = id !== '__none__' ? projMap.get(id) : null
+				const payMode = proj ? proj.pay_mode : (stats.days > 0 ? 'daily' : stats.quantity > 0 ? 'piece' : 'hourly')
+				const pieceUnit = proj ? proj.piece_unit : '件'
+				let unitValue, unitLabel
+				if (payMode === 'daily') {
+					unitValue = stats.days
+					unitLabel = '天'
+				} else if (payMode === 'piece') {
+					unitValue = stats.quantity
+					unitLabel = pieceUnit || '件'
+				} else {
+					unitValue = Math.round(stats.hours * 10) / 10
+					unitLabel = 'h'
 				}
-				return months
-			},
-
-			yearMonths() {
+				return {
+					name: proj ? proj.name : '无项目',
+					color: proj ? proj.color : '#9C9C9C',
+					hours: Math.round(stats.hours * 10) / 10,
+					pay: stats.pay,
+					pct: 0,
+					unitValue,
+					unitLabel
+				}
+			})
+			const maxPay = Math.max(...items.map(i => i.pay), 1)
+			items = items.map(i => ({ ...i, pct: Math.round((i.pay / maxPay) * 100) }))
+			return items.sort((a, b) => b.pay - a.pay)
+		},
+		trendMonths() {
+			const months = []
+			const now = new Date()
+			for (let i = 5; i >= 0; i--) {
+				const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+				const key = d.getFullYear() + '-' + pad(d.getMonth() + 1)
+				const label = pad(d.getMonth() + 1) + '月'
+				const pay = this.allRecords
+					.filter(r => r.date && r.date.startsWith(key))
+					.reduce((s, r) => s + (r.pay || 0), 0)
+				months.push({ key, label, pay })
+			}
+			return months
+		},
+		yearMonths() {
 			const year = String(this.viewYear)
 			const months = new Set()
 			this.allRecords.forEach(r => {
@@ -380,30 +378,14 @@ export default {
 		}
 	},
 	watch: {
-		// 月份切换后重新渲染图表
 		viewMonth() {
-			this.$nextTick(() => {
-				setTimeout(() => {
-					this.renderCharts()
-				}, 200)
-			})
-		},
-		recordCount() {
-			this.$nextTick(() => {
-				setTimeout(() => {
-					this.renderCharts()
-				}, 300)
-			})
+			this._scheduleRender(250)
 		}
 	},
 	async onShow() {
 		const store = useWorkStore()
 		await store.loadRecords()
-		this.$nextTick(() => {
-			setTimeout(() => {
-				this.renderCharts()
-			}, 300)
-		})
+		this._scheduleRender(350)
 	},
 	onReady() {
 		try {
@@ -412,22 +394,19 @@ export default {
 		} catch (e) {
 			this.pixelRatio = 2
 		}
-		// 延迟渲染确保 canvas 就绪
-		setTimeout(() => {
-			this.renderCharts()
-		}, 400)
 	},
 	beforeDestroy() {
+		if (this._renderTimer) clearTimeout(this._renderTimer)
 		ringInstance = null
 		barInstance = null
 		lineInstance = null
 	},
 	methods: {
-			monthPayTotal(monthPrefix) {
-				return this.allRecords
-					.filter(r => r.date && r.date.startsWith(monthPrefix))
-					.reduce((s, r) => s + (r.pay || 0), 0)
-			},
+		monthPayTotal(monthPrefix) {
+			return this.allRecords
+				.filter(r => r.date && r.date.startsWith(monthPrefix))
+				.reduce((s, r) => s + (r.pay || 0), 0)
+		},
 		prevMonth() {
 			if (this.viewMonth === 1) { this.viewYear--; this.viewMonth = 12 }
 			else { this.viewMonth-- }
@@ -435,6 +414,13 @@ export default {
 		nextMonth() {
 			if (this.viewMonth === 12) { this.viewYear++; this.viewMonth = 1 }
 			else { this.viewMonth++ }
+		},
+		_scheduleRender(delay) {
+			if (this._renderTimer) clearTimeout(this._renderTimer)
+			this._renderTimer = setTimeout(() => {
+				this._renderTimer = null
+				this.renderCharts()
+			}, delay)
 		},
 		_chartDataSafe(arr) {
 			if (!arr || arr.length === 0) return false
@@ -451,49 +437,55 @@ export default {
 			return ctx
 		},
 		renderCharts() {
+			// 停止旧实例的动画，防止多实例冲突
+			if (ringInstance && ringInstance.animationInstance) ringInstance.animationInstance.stop()
+			if (barInstance && barInstance.animationInstance) barInstance.animationInstance.stop()
+			if (lineInstance && lineInstance.animationInstance) lineInstance.animationInstance.stop()
 			this.renderRingChart()
 			this.renderBarChart()
 			this.renderLineChart()
 		},
 		renderLineChart() {
-				if (this.trendMonths.length < 2) return
-				const pr = this.pixelRatio || 2
-				const w = 345 * pr
-				const h = 200 * pr
-				const categories = this.trendMonths.map(m => String(m.label || ''))
-				const data = this.trendMonths.map(m => {
-					const v = Math.round((m.pay || 0) * 100) / 100
-					return isFinite(v) ? v : 0
+			if (this.trendMonths.length < 2) return
+			const pr = this.pixelRatio || 2
+			const w = 345 * pr
+			const h = 200 * pr
+			const categories = this.trendMonths.map(m => String(m.label || ''))
+			const data = this.trendMonths.map(m => {
+				const v = Math.round((m.pay || 0) * 100) / 100
+				return isFinite(v) ? v : 0
+			})
+			if (!this._chartDataSafe(data)) return
+			const dataMax = Math.max(...data)
+			if (dataMax <= 0) return
+			const maxVal = Math.ceil(dataMax * 1.2) || 10
+			try {
+				const ctx = this._safeContext(uni.createCanvasContext("lineChart", this))
+				lineInstance = new uCharts({
+					$this: this,
+					canvasId: "lineChart",
+					type: "line",
+					context: ctx,
+					width: w,
+					height: h,
+					pixelRatio: pr,
+					animation: false,
+					background: "#FFFFFF",
+					fontSize: 10,
+					categories: categories,
+					series: [{ name: "工钱", data: data }],
+					yAxis: { min: 0, max: maxVal, gridColor: "#F0EDE6", fontSize: 9, splitNumber: 3 },
+					xAxis: { fontSize: 9, axisLineColor: "#E8E4DC", disableGrid: true },
+					legend: { show: false },
+					extra: { line: { type: "curve", width: 2 * pr } },
+					dataLabel: true,
+					color: ["#1B8A5A"]
 				})
-				if (!this._chartDataSafe(data)) return
-				const maxVal = Math.ceil(Math.max(...data) * 1.2) || 10
-				try {
-					const ctx = this._safeContext(uni.createCanvasContext("lineChart", this))
-					lineInstance = new uCharts({
-						$this: this,
-						canvasId: "lineChart",
-						type: "line",
-						context: ctx,
-						width: w,
-						height: h,
-						pixelRatio: pr,
-						animation: false,
-						background: "#FFFFFF",
-						fontSize: 10,
-						categories: categories,
-						series: [{ name: "工钱", data: data }],
-						yAxis: { min: 0, max: maxVal, gridColor: "#F0EDE6", fontSize: 9, splitNumber: 3 },
-						xAxis: { fontSize: 9, axisLineColor: "#E8E4DC", disableGrid: true },
-						legend: { show: false },
-						extra: { line: { type: "curve", width: 2 * pr } },
-						dataLabel: true,
-						color: ["#1B8A5A"]
-					})
-				} catch (e) {
-					console.log("lineChart error:", e)
-				}
-			},
-			renderRingChart() {
+			} catch (e) {
+				console.log("lineChart error:", e)
+			}
+		},
+		renderRingChart() {
 			if (this.totalPay <= 0) {
 				this.ringRendered = false
 				return
@@ -566,7 +558,12 @@ export default {
 				this.barRendered = false
 				return
 			}
-			const maxVal = Math.ceil(Math.max(...data) * 1.2) || 10
+			const dataMax = Math.max(...data)
+			if (dataMax <= 0) {
+				this.barRendered = false
+				return
+			}
+			const maxVal = Math.ceil(dataMax * 1.2) || 10
 			try {
 				const ctx = this._safeContext(uni.createCanvasContext('barChart', this))
 				barInstance = new uCharts({
@@ -617,18 +614,16 @@ export default {
 						}
 					},
 					color: ['#1B8A5A']
-					})
-					this.barRendered = true
-				} catch (e) {
-					this.barRendered = false
-				}
-			},
-
+				})
+				this.barRendered = true
+			} catch (e) {
+				this.barRendered = false
+			}
+		},
 		typeLabel(type) {
 			const m = { weekday: "平日", weekend: "周末", holiday: "节假日" }
 			return m[type] || "平日"
 		},
-
 		handleExportCSV() {
 			const records = this.allRecords
 			if (records.length === 0) {
@@ -640,8 +635,8 @@ export default {
 				const subsidies = r.subsidies ? ((r.subsidies.night_shift||0)+(r.subsidies.meal||0)+(r.subsidies.transport||0)) : 0
 				const deduction = r.deduction ? (r.deduction.amount||0) : 0
 				const payMode = r.pay_mode || "hourly"
-					const qty = payMode === "daily" ? (r.days || 0) + "天" : payMode === "piece" ? (r.quantity || 0) : (r.duration || 0) + "h"
-					const row = [r.date, this.typeLabel((r.day_type || r.overtime_type)), payMode, qty, r.pay || 0, r.project_name || "", (r.remark || "").replace(/,/g, ";"), subsidies, deduction].join(",")
+				const qty = payMode === "daily" ? (r.days || 0) + "天" : payMode === "piece" ? (r.quantity || 0) : (r.duration || 0) + "h"
+				const row = [r.date, this.typeLabel((r.day_type || r.overtime_type)), payMode, qty, r.pay || 0, r.project_name || "", (r.remark || "").replace(/,/g, ";"), subsidies, deduction].join(",")
 				csv += row + "\n"
 			})
 			const now = new Date()
