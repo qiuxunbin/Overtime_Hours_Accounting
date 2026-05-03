@@ -147,18 +147,20 @@
 <script>
 import NavBar from '../../components/NavBar.vue'
 import { useProjectStore } from '../../stores/projectStore'
+import { useSalaryStore } from '../../stores/salaryStore'
 import { PROJECT_COLORS, PAY_MODES, PIECE_UNITS } from '../../utils/constants'
 
 export default {
 	components: { NavBar },
 	data() {
+		const defaultPayMode = useSalaryStore().config?.pay_mode || 'hourly'
 		return {
 			editId: null,
 			form: {
 				name: '',
 				color: '#1B8A5A',
 				sort_order: 0,
-				pay_mode: 'hourly',
+				pay_mode: defaultPayMode,
 				weekday_rate: 0,
 				weekend_rate: 0,
 				holiday_rate: 0,
@@ -190,7 +192,7 @@ export default {
 					name: proj.name || '',
 					color: proj.color || '#1B8A5A',
 					sort_order: proj.sort_order || 0,
-					pay_mode: proj.pay_mode || 'hourly',
+					pay_mode: proj.pay_mode || useSalaryStore().config?.pay_mode || 'hourly',
 					weekday_rate: proj.weekday_rate || 0,
 					weekend_rate: proj.weekend_rate || 0,
 					holiday_rate: proj.holiday_rate || 0,

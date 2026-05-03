@@ -22,7 +22,7 @@
 				</view>
 				<text class="project-row__placeholder" v-else>选项目</text>
 				<view class="project-row__right">
-					<text class="project-row__mode" v-if="selectedProject">{{ payModeIcon }} {{ payModeLabel }}</text>
+					<text class="project-row__mode">{{ payModeIcon }} {{ payModeLabel || '时薪' }}</text>
 					<text class="project-row__arrow">›</text>
 				</view>
 			</view>
@@ -446,7 +446,8 @@ export default {
 			return pStore.getProjectById(this.selectedProjectId)
 		},
 		effectivePayMode() {
-			return this.selectedProject?.pay_mode || 'hourly'
+			if (this.selectedProject?.pay_mode) return this.selectedProject.pay_mode
+			return useSalaryStore().config?.pay_mode || 'hourly'
 		},
 		payModeIcon() {
 			const icons = { hourly: '⏱', daily: '📅', piece: '📦' }
@@ -455,10 +456,9 @@ export default {
 		payModeLabel() {
 			const labels = { hourly: '时薪', daily: '日薪', piece: '计件' }
 			const p = this.selectedProject
-			if (!p) return ''
 			const mode = this.effectivePayMode
-			if (mode === 'daily') return `日薪 ¥${p.daily_rate || 0}/天`
-			if (mode === 'piece') return `计件 ¥${p.piece_rate || 0}/${p.piece_unit || '件'}`
+			if (mode === 'daily') return `日薪 ¥${p?.daily_rate || 0}/天`
+			if (mode === 'piece') return `计件 ¥${p?.piece_rate || 0}/${p?.piece_unit || '件'}`
 			return '时薪'
 		},
 		dayTypeLabel() {
@@ -481,7 +481,10 @@ export default {
 			return round2(this.duration * this.currentRate)
 		},
 		// 日薪
-		projectDailyRate() { return this.selectedProject?.daily_rate || 0 },
+		projectDailyRate() {
+			if (this.selectedProject?.daily_rate > 0) return this.selectedProject.daily_rate
+			return useSalaryStore().config?.daily_rate || 0
+		},
 		dailyPay() { return round2((this.dailyDays || 0) * this.projectDailyRate) },
 		monthDailyCount() {
 			if (!this.pickerDate) return 0
@@ -498,7 +501,10 @@ export default {
 			).reduce((s, r) => s + (r.pay || 0), 0)
 		},
 		// 计件
-		projectPieceRate() { return this.selectedProject?.piece_rate || 0 },
+		projectPieceRate() {
+			if (this.selectedProject?.piece_rate > 0) return this.selectedProject.piece_rate
+			return useSalaryStore().config?.piece_rate || 0
+		},
 		piecePay() { return round2((this.pieceQuantity || 0) * this.projectPieceRate) },
 		// 通用
 		basePay() { return this.estimatedPay || this.dailyPay || this.piecePay || 0 },
@@ -614,13 +620,13 @@ export default {
 				uni.showToast({ title: '请输入天数', icon: 'none' }); return
 			}
 			if (payMode === 'daily' && this.projectDailyRate <= 0) {
-				uni.showToast({ title: '该项目未设置日薪金额，请前往薪资设置', icon: 'none' }); return
+				uni.showToast({ title: '未设置日薪金额，请前往薪资设置', icon: 'none' }); return
 			}
 			if (payMode === 'piece' && (!this.pieceQuantity || this.pieceQuantity <= 0)) {
 				uni.showToast({ title: '请输入数量', icon: 'none' }); return
 			}
 			if (payMode === 'piece' && this.projectPieceRate <= 0) {
-				uni.showToast({ title: '该项目未设置计件单价，请前往薪资设置', icon: 'none' }); return
+				uni.showToast({ title: '未设置计件单价，请前往薪资设置', icon: 'none' }); return
 			}
 
 			this.saving = true
@@ -657,7 +663,7 @@ export default {
 					start_time: '', end_time: '', duration: 0,
 					day_type: useHolidayStore().getDayType(this.pickerDate),
 					rate, quantity: this.pieceQuantity, piece_rate: rate,
-					piece_unit: this.selectedProject?.piece_unit || '件',
+					piece_unit: this.selectedProject?.piece_unit || useSalaryStore().config?.piece_unit || '件',
 					pay: this.piecePay, net_pay: this.netPay
 				})
 			}

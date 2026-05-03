@@ -44,7 +44,7 @@
 				<text class="section__hint">每天 {{ duration }}h，共 {{ previewDates.length }} 天，合计 {{ totalPreviewHours }}h</text>
 			</view>
 
-			<!-- 项目选择（仅时薪项目） -->
+			<!-- 项目选择 -->
 			<view class="section">
 				<text class="section__title">项目</text>
 				<view class="field-row" @tap="showProjectPicker">
@@ -171,14 +171,22 @@ export default {
 			const pStore = useProjectStore()
 			pStore.loadProjects()
 			setTimeout(() => {
-				const hourlyProjects = pStore.activeProjects.filter(p => p.pay_mode === 'hourly')
 				const items = [{ text: '无项目', value: null },
-					...hourlyProjects.map(p => ({ text: p.name, value: p._id }))
+					...pStore.activeProjects.map(p => ({ text: p.name + (p.pay_mode !== 'hourly' ? ' (非时薪)' : ''), value: p._id }))
 				]
 				uni.showActionSheet({
 					itemList: items.map(i => i.text),
 					success: (res) => {
-						this.selectedProjectId = items[res.tapIndex].value
+						const picked = items[res.tapIndex]
+						if (picked.value) {
+							const proj = pStore.getProjectById(picked.value)
+							if (proj && proj.pay_mode !== 'hourly') {
+								uni.showToast({ title: '非时薪项目请去记工页单独添加', icon: 'none', duration: 2000 })
+								this.selectedProjectId = null
+								return
+							}
+						}
+						this.selectedProjectId = picked.value
 					}
 				})
 			}, 100)
