@@ -58,8 +58,8 @@
 						<view class="breakdown__dot breakdown__dot--weekday"></view>
 						<text class="breakdown__name">平日</text>
 						<text class="breakdown__val">
-							<text v-if="weekdayHours > 0">时薪{{ weekdayHours }}h </text>
-							<text v-if="weekdayDays > 0">日薪{{ weekdayDays }}天 </text>
+							<text v-if="weekdayHours > 0">{{ weekdayHours }}h </text>
+							<text v-if="weekdayDays > 0">{{ weekdayDays }}天 </text>
 							<text v-if="weekdayQty > 0">计件{{ weekdayQty }}件 </text>
 							¥{{ weekdayPay.toFixed(0) }}
 						</text>
@@ -68,8 +68,8 @@
 						<view class="breakdown__dot breakdown__dot--weekend"></view>
 						<text class="breakdown__name">周末</text>
 						<text class="breakdown__val">
-							<text v-if="weekendHours > 0">时薪{{ weekendHours }}h </text>
-							<text v-if="weekendDays > 0">日薪{{ weekendDays }}天 </text>
+							<text v-if="weekendHours > 0">{{ weekendHours }}h </text>
+							<text v-if="weekendDays > 0">{{ weekendDays }}天 </text>
 							<text v-if="weekendQty > 0">计件{{ weekendQty }}件 </text>
 							¥{{ weekendPay.toFixed(0) }}
 						</text>
@@ -78,8 +78,8 @@
 						<view class="breakdown__dot breakdown__dot--holiday"></view>
 						<text class="breakdown__name">节假日</text>
 						<text class="breakdown__val">
-							<text v-if="holidayHours > 0">时薪{{ holidayHours }}h </text>
-							<text v-if="holidayDays > 0">日薪{{ holidayDays }}天 </text>
+							<text v-if="holidayHours > 0">{{ holidayHours }}h </text>
+							<text v-if="holidayDays > 0">{{ holidayDays }}天 </text>
 							<text v-if="holidayQty > 0">计件{{ holidayQty }}件 </text>
 							¥{{ holidayPay.toFixed(0) }}
 						</text>
@@ -232,10 +232,10 @@ export default {
 			return this.monthRecords.reduce((s, r) => s + (r.pay || 0), 0)
 		},
 		totalDays() {
-			return this.monthRecords.reduce((s, r) => s + (r.days || 0), 0)
+			return this.monthRecords.filter(r => r.pay_mode === 'daily').reduce((s, r) => s + (r.days || 0), 0)
 		},
 		totalQuantity() {
-			return this.monthRecords.reduce((s, r) => s + (r.quantity || 0), 0)
+			return this.monthRecords.filter(r => r.pay_mode === 'piece').reduce((s, r) => s + (r.quantity || 0), 0)
 		},
 		weekdayRecords() {
 			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekday')
@@ -382,13 +382,13 @@ export default {
 		yearDays() {
 			const year = String(this.viewYear)
 			return this.allRecords
-				.filter(r => r.date && r.date.startsWith(year))
+				.filter(r => r.date && r.date.startsWith(year) && r.pay_mode === 'daily')
 				.reduce((s, r) => s + (r.days || 0), 0)
 		},
 		yearQuantity() {
 			const year = String(this.viewYear)
 			return this.allRecords
-				.filter(r => r.date && r.date.startsWith(year))
+				.filter(r => r.date && r.date.startsWith(year) && r.pay_mode === 'piece')
 				.reduce((s, r) => s + (r.quantity || 0), 0)
 		}
 	},
@@ -528,7 +528,7 @@ export default {
 					yAxis: { min: 0, max: maxVal, gridColor: '#F0EDE6', fontSize: 8, splitNumber: 3 },
 					xAxis: { fontSize: 8, axisLineColor: '#E8E4DC', disableGrid: true },
 					legend: { show: false },
-					extra: { line: { type: 'curve', width: 2 } },
+					extra: { line: { type: 'straight', width: 2 } },
 					dataLabel: false,
 					color: ['#1B8A5A']
 				})
@@ -562,7 +562,7 @@ export default {
 					fontSize: 10,
 					series: [{ name: '日期类型', data: pieData }],
 					legend: { show: false },
-					dataLabel: true,
+					dataLabel: false,
 					extra: {
 						pie: {
 							type: 'ring',
