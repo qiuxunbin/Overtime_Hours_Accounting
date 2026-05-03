@@ -49,7 +49,8 @@
 					<canvas
 						type="2d"
 						id="ringChart"
-						class="chart-canvas chart-canvas--ring"
+						class="chart-canvas"
+							:style="{ width: chartWidth + 'px', height: ringChartH + 'px' }"
 					></canvas>
 				</view>
 				<view class="breakdown-rows">
@@ -93,7 +94,8 @@
 					<canvas
 						type="2d"
 						id="barChart"
-						class="chart-canvas chart-canvas--bar"
+						class="chart-canvas"
+							:style="{ width: chartWidth + 'px', height: barChartH + 'px' }"
 					></canvas>
 				</view>
 			</view>
@@ -105,7 +107,8 @@
 					<canvas
 						type="2d"
 						id="lineChart"
-						class="chart-canvas chart-canvas--line"
+						class="chart-canvas"
+							:style="{ width: chartWidth + 'px', height: lineChartH + 'px' }"
 					></canvas>
 				</view>
 			</view>
@@ -181,10 +184,16 @@ export default {
 	components: { NavBar, ThemeToggle },
 	data() {
 		const now = new Date()
+		let windowWidth = 375
+		try {
+			const sysInfo = uni.getSystemInfoSync()
+			windowWidth = sysInfo.windowWidth || 375
+		} catch (e) {}
 		return {
 			viewYear: now.getFullYear(),
 			viewMonth: now.getMonth() + 1,
-			pixelRatio: 2
+			pixelRatio: 2,
+			windowWidth
 		}
 	},
 	computed: {
@@ -193,6 +202,18 @@ export default {
 		},
 		monthPrefix() {
 			return `${this.viewYear}-${pad(this.viewMonth)}`
+		},
+		chartWidth() {
+			return Math.floor(this.windowWidth - 64)
+		},
+		ringChartH() {
+			return Math.round(this.chartWidth * 0.65)
+		},
+		barChartH() {
+			return Math.round(this.chartWidth * 0.78)
+		},
+		lineChartH() {
+			return Math.round(this.chartWidth * 0.58)
 		},
 		allRecords() {
 			const store = useWorkStore()
@@ -386,11 +407,12 @@ export default {
 		try {
 			const sysInfo = uni.getSystemInfoSync()
 			this.pixelRatio = sysInfo.pixelRatio || 2
+			this.windowWidth = sysInfo.windowWidth || 375
 		} catch (e) {
 			this.pixelRatio = 2
 		}
-		console.log('[stats] onReady, pixelRatio:', this.pixelRatio)
-		this._scheduleRender(500)
+		console.log('[stats] onReady, pixelRatio:', this.pixelRatio, 'windowWidth:', this.windowWidth, 'chartWidth:', this.chartWidth)
+		this._scheduleRender(600)
 	},
 	beforeDestroy() {
 		if (this._renderTimer) clearTimeout(this._renderTimer)
@@ -410,7 +432,7 @@ export default {
 			else { this.viewMonth++ }
 		},
 
-		/* ---- Canvas 2D 帮助函数 ---- */
+		/* ---- Canvas 2D ---- */
 
 		async _getCanvas2dCtx(canvasId, logicalW, logicalH) {
 			return new Promise((resolve, reject) => {
@@ -418,9 +440,7 @@ export default {
 				query.select('#' + canvasId)
 					.fields({ node: true, size: true })
 					.exec((res) => {
-						console.log('[canvas2d]', canvasId, 'query result:', res ? (res[0] ? 'node OK' : 'res[0] null') : 'res null')
 						if (!res || !res[0] || !res[0].node) {
-							console.log('[canvas2d]', canvasId, 'FAILED - canvas node not found in DOM')
 							reject(new Error('Canvas node not found: ' + canvasId))
 							return
 						}
@@ -431,7 +451,6 @@ export default {
 						const ctx = canvas.getContext('2d')
 						ctx.scale(pr, pr)
 						this._safeContext(ctx)
-						console.log('[canvas2d]', canvasId, 'OK, canvas size:', canvas.width, 'x', canvas.height, ', ctx:', !!ctx)
 						resolve(ctx)
 					})
 			})
@@ -461,39 +480,38 @@ export default {
 			return ctx
 		},
 
-		/* ---- 图表渲染（全部 async + Canvas 2D）---- */
+		/* ---- 图表渲染 ---- */
 
 		async renderCharts() {
-			console.log('[renderCharts] called. recordCount:', this.recordCount, 'totalPay:', this.totalPay, 'weekBars:', this.weekBars.length, 'trendMonths:', this.trendMonths.length)
+			console.log('[renderCharts] recordCount:', this.recordCount, 'totalPay:', this.totalPay, 'weekBars:', this.weekBars.length, 'trendMonths:', this.trendMonths.length)
 			try {
 				await Promise.all([
 					this.renderRingChart(),
 					this.renderBarChart(),
 					this.renderLineChart()
 				])
-				console.log('[renderCharts] all done')
+				console.log('[renderCharts] done')
 			} catch (e) {
 				console.log('[renderCharts] error:', e)
 			}
 		},
 
 		async renderLineChart() {
-			if (this.trendMonths.length < 2) { console.log('[lineChart] skip: need >=2 months, have', this.trendMonths.length); return }
-			const logicalW = 345, logicalH = 200
+			if (this.trendMonths.length < 2) return
+			const logicalW = this.chartWidth
+			const logicalH = this.lineChartH
 			const pr = this.pixelRatio || 2
 			const categories = this.trendMonths.map(m => String(m.label || ''))
 			const data = this.trendMonths.map(m => {
 				const v = Math.round((m.pay || 0) * 100) / 100
 				return isFinite(v) ? v : 0
 			})
-			if (!this._chartDataSafe(data)) { console.log('[lineChart] skip: unsafe data'); return }
+			if (!this._chartDataSafe(data)) return
 			const dataMax = Math.max(...data)
-			if (dataMax <= 0) { console.log('[lineChart] skip: all zero data'); return }
+			if (dataMax <= 0) return
 			const maxVal = Math.ceil(dataMax * 1.2) || 10
-			console.log('[lineChart] rendering with data:', data, 'maxVal:', maxVal)
 			try {
 				const ctx = await this._getCanvas2dCtx('lineChart', logicalW, logicalH)
-				console.log('[lineChart] got ctx, constructing uCharts...')
 				new uCharts({
 					$this: this,
 					canvasId: 'lineChart',
@@ -514,25 +532,23 @@ export default {
 					dataLabel: true,
 					color: ['#1B8A5A']
 				})
-				console.log('[lineChart] uCharts instance created')
 			} catch (e) {
 				console.log('[lineChart] error:', e)
 			}
 		},
 
 		async renderRingChart() {
-			if (this.totalPay <= 0) { console.log('[ringChart] skip: totalPay <= 0'); return }
-			const logicalW = 345, logicalH = 220
+			if (this.totalPay <= 0) return
+			const logicalW = this.chartWidth
+			const logicalH = this.ringChartH
 			const pr = this.pixelRatio || 2
 			const pieData = []
 			if (this.weekdayPay > 0) pieData.push({ name: '平日', value: this.weekdayPay })
 			if (this.weekendPay > 0) pieData.push({ name: '周末', value: this.weekendPay })
 			if (this.holidayPay > 0) pieData.push({ name: '节假日', value: this.holidayPay })
 			if (pieData.length === 0) pieData.push({ name: '无数据', value: 1 })
-			console.log('[ringChart] rendering with pieData:', JSON.stringify(pieData))
 			try {
 				const ctx = await this._getCanvas2dCtx('ringChart', logicalW, logicalH)
-				console.log('[ringChart] got ctx, constructing uCharts...')
 				new uCharts({
 					$this: this,
 					canvasId: 'ringChart',
@@ -562,29 +578,27 @@ export default {
 					},
 					color: ['#1B8A5A', '#C4A46C', '#B85C4A']
 				})
-				console.log('[ringChart] uCharts instance created')
 			} catch (e) {
 				console.log('[ringChart] error:', e)
 			}
 		},
 
 		async renderBarChart() {
-			if (this.weekBars.length === 0) { console.log('[barChart] skip: no weekBars'); return }
-			const logicalW = 345, logicalH = 260
+			if (this.weekBars.length === 0) return
+			const logicalW = this.chartWidth
+			const logicalH = this.barChartH
 			const pr = this.pixelRatio || 2
 			const categories = this.weekBars.map(b => String(b.label || ''))
 			const data = this.weekBars.map(b => {
 				const v = Number(b.value)
 				return isFinite(v) ? Math.round(v * 100) / 100 : 0
 			})
-			if (!this._chartDataSafe(data)) { console.log('[barChart] skip: unsafe data'); return }
+			if (!this._chartDataSafe(data)) return
 			const dataMax = Math.max(...data)
-			if (dataMax <= 0) { console.log('[barChart] skip: all zero data'); return }
+			if (dataMax <= 0) return
 			const maxVal = Math.ceil(dataMax * 1.2) || 10
-			console.log('[barChart] rendering with categories:', categories, 'data:', data, 'maxVal:', maxVal)
 			try {
 				const ctx = await this._getCanvas2dCtx('barChart', logicalW, logicalH)
-				console.log('[barChart] got ctx, constructing uCharts...')
 				const colWidth = Math.min(28 * pr, Math.floor((logicalW * pr - 80) / categories.length / 2))
 				new uCharts({
 					$this: this,
@@ -632,7 +646,6 @@ export default {
 					},
 					color: ['#1B8A5A']
 				})
-				console.log('[barChart] uCharts instance created')
 			} catch (e) {
 				console.log('[barChart] error:', e)
 			}
@@ -649,14 +662,16 @@ export default {
 				uni.showToast({ title: '无数据', icon: 'none' })
 				return
 			}
-			let csv = '﻿日期,类型,计薪方式,时长/天数/件数,工钱,项目,备注,补贴,扣款\n'
+			let csv = '﻿日期,类型,计薪方式,时长/天数/件数,工钱,项目,备注,补贴,扣款
+'
 			records.forEach(r => {
 				const subsidies = r.subsidies ? ((r.subsidies.night_shift||0)+(r.subsidies.meal||0)+(r.subsidies.transport||0)) : 0
 				const deduction = r.deduction ? (r.deduction.amount||0) : 0
 				const payMode = r.pay_mode || 'hourly'
 				const qty = payMode === 'daily' ? (r.days || 0) + '天' : payMode === 'piece' ? (r.quantity || 0) : (r.duration || 0) + 'h'
 				const row = [r.date, this.typeLabel((r.day_type || r.overtime_type)), payMode, qty, r.pay || 0, r.project_name || '', (r.remark || '').replace(/,/g, ';'), subsidies, deduction].join(',')
-				csv += row + '\n'
+				csv += row + '
+'
 			})
 			const now = new Date()
 			const fileName = '记工统计_' + now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate()) + '.csv'
@@ -731,7 +746,8 @@ export default {
 	background: var(--surface-card);
 	border: 1px solid var(--border);
 	border-radius: 12px;
-	padding: 20px;
+	box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+	padding: 16px;
 	margin-bottom: 16px;
 
 	&__item {
@@ -758,7 +774,8 @@ export default {
 	background: var(--surface-card);
 	border: 1px solid var(--border);
 	border-radius: 12px;
-	padding: 20px;
+	box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+	padding: 16px;
 	margin-bottom: 16px;
 
 	&__title {
@@ -787,35 +804,10 @@ export default {
 	display: flex;
 	justify-content: center;
 	overflow: hidden;
-
-	&--ring {
-		height: 220px;
-	}
-
-	&--bar {
-		height: 260px;
-	}
-
-	&--line {
-		height: 200px;
-	}
 }
 
 .chart-canvas {
-	&--ring {
-		width: 345px;
-		height: 220px;
-	}
-
-	&--bar {
-		width: 345px;
-		height: 260px;
-	}
-
-	&--line {
-		width: 345px;
-		height: 200px;
-	}
+	display: block;
 }
 
 /* 类型分布图例 */
