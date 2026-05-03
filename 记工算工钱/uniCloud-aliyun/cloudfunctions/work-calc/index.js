@@ -5,7 +5,7 @@ const db = uniCloud.database()
 const cmd = db.command
 
 // ========== 配置 ==========
-const SECRET = 'work-app-jwt-secret-change-in-production'
+const SECRET = 'overtime-app-jwt-secret-change-in-production'
 const TOKEN_EXPIRES_IN = 604800
 const WEXIN_APPID = 'wxed059ca24650f6c3'
 const WEXIN_APPSECRET = 'b86f314d2c3c0b75f495888e8b5be07e'
