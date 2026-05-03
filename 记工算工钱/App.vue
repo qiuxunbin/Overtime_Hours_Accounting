@@ -133,7 +133,7 @@
 							name: 'work-calc',
 							data: { action: 'loginByWeixin', code: loginRes.code }
 						}),
-						new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+						new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000))
 					])
 					console.log('[silentLogin] 云函数返回 code:', result?.result?.code)
 					if (result && result.result && result.result.code === 0) {
