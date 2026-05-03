@@ -207,13 +207,13 @@ export default {
 			return Math.floor(this.windowWidth - 64)
 		},
 		ringChartH() {
-			return Math.round(this.chartWidth * 0.65)
+			return Math.round(this.chartWidth * 0.72)
 		},
 		barChartH() {
-			return Math.round(this.chartWidth * 0.78)
+			return Math.round(this.chartWidth * 0.85)
 		},
 		lineChartH() {
-			return Math.round(this.chartWidth * 0.58)
+			return Math.round(this.chartWidth * 0.65)
 		},
 		allRecords() {
 			const store = useWorkStore()
@@ -522,14 +522,14 @@ export default {
 					pixelRatio: 1,
 					animation: false,
 					background: '#FFFFFF',
-					fontSize: 10,
+					fontSize: 9,
 					categories: categories,
 					series: [{ name: '工钱', data: data }],
-					yAxis: { min: 0, max: maxVal, gridColor: '#F0EDE6', fontSize: 9, splitNumber: 3 },
-					xAxis: { fontSize: 9, axisLineColor: '#E8E4DC', disableGrid: true },
+					yAxis: { min: 0, max: maxVal, gridColor: '#F0EDE6', fontSize: 8, splitNumber: 3 },
+					xAxis: { fontSize: 8, axisLineColor: '#E8E4DC', disableGrid: true },
 					legend: { show: false },
 					extra: { line: { type: 'curve', width: 2 } },
-					dataLabel: true,
+					dataLabel: false,
 					color: ['#1B8A5A']
 				})
 			} catch (e) {
@@ -559,7 +559,7 @@ export default {
 					height: logicalH,
 					pixelRatio: 1,
 					background: '#FFFFFF',
-					fontSize: 11,
+					fontSize: 10,
 					series: [{ name: '日期类型', data: pieData }],
 					legend: { show: false },
 					dataLabel: true,
@@ -599,7 +599,7 @@ export default {
 			const maxVal = Math.ceil(dataMax * 1.2) || 10
 			try {
 				const ctx = await this._getCanvas2dCtx('barChart', logicalW, logicalH)
-				const colWidth = Math.min(28, Math.floor((logicalW - 32) / categories.length / 2))
+				const colWidth = Math.min(36, Math.floor((logicalW - 24) / categories.length / 2))
 				new uCharts({
 					$this: this,
 					canvasId: 'barChart',
@@ -610,7 +610,7 @@ export default {
 					height: logicalH,
 					pixelRatio: 1,
 					background: '#FFFFFF',
-					fontSize: 10,
+					fontSize: 9,
 					categories: categories,
 					series: [{ name: '工钱', data: data }],
 					yAxis: {
@@ -624,11 +624,11 @@ export default {
 						titleOffsetX: 4,
 						splitNumber: 4,
 						gridColor: '#F0EDE6',
-						fontSize: 9
+						fontSize: 8
 					},
 					xAxis: {
 						disableGrid: true,
-						fontSize: 10,
+						fontSize: 9,
 						axisLineColor: '#E8E4DC',
 						boundaryGap: 'center'
 					},
