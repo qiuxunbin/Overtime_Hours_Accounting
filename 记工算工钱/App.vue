@@ -60,6 +60,26 @@
 			console.log('App Ready')
 		},
 		methods: {
+			_scheduleSync(intervalMs) {
+				if (this._syncInterval) clearInterval(this._syncInterval)
+				this._syncInterval = setInterval(() => {
+					this._doBackgroundSync()
+				}, intervalMs)
+			},
+			_doBackgroundSync() {
+				// 防止并发
+				if (this._syncPending) return
+				const workStore = useWorkStore()
+				const token = uni.getStorageSync('uni_id_token')
+				if (!token) return
+				this._syncPending = true
+				Promise.all([
+					workStore.flushSyncQueue(),
+					workStore.pullFromCloud()
+				]).finally(() => {
+					this._syncPending = false
+				})
+			},
 			preloadLocalData() {
 				// 从本地存储预加载工时记录
 				const workStore = useWorkStore()
@@ -162,19 +182,29 @@
 		},
 		onShow: function() {
 			console.log('App Show')
-			// 每 5 分钟后台同步一次
-			this._syncInterval = setInterval(() => {
-				const workStore = useWorkStore()
-				const token = uni.getStorageSync('uni_id_token')
-				if (token) {
-					workStore.flushSyncQueue()
-					workStore.pullFromCloud()
-				}
-			}, 300000)
+			// 清除旧定时器防止泄漏（每次 onShow 都会创建新的）
+			if (this._syncInterval) {
+				clearInterval(this._syncInterval)
+				this._syncInterval = null
+			}
+			// 清除上次的防抖标记
+			this._syncPending = false
+			// 首次同步等待 30 秒（给登录留时间），之后每 30 分钟同步一次
+			this._syncTimer = setTimeout(() => {
+				this._scheduleSync(30 * 60 * 1000)
+				this._doBackgroundSync()
+			}, 30000)
 		},
 		onHide: function() {
 			console.log('App Hide')
-			clearInterval(this._syncInterval)
+			if (this._syncInterval) {
+				clearInterval(this._syncInterval)
+				this._syncInterval = null
+			}
+			if (this._syncTimer) {
+				clearTimeout(this._syncTimer)
+				this._syncTimer = null
+			}
 		}
 	}
 </script>
