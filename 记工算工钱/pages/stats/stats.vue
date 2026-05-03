@@ -387,11 +387,23 @@ export default {
 					this.renderCharts()
 				}, 200)
 			})
+		},
+		recordCount() {
+			this.$nextTick(() => {
+				setTimeout(() => {
+					this.renderCharts()
+				}, 300)
+			})
 		}
 	},
-	onShow() {
+	async onShow() {
 		const store = useWorkStore()
-		store.loadRecords()
+		await store.loadRecords()
+		this.$nextTick(() => {
+			setTimeout(() => {
+				this.renderCharts()
+			}, 300)
+		})
 	},
 	onReady() {
 		try {
