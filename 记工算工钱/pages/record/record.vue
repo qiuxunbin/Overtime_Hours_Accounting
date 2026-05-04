@@ -472,12 +472,17 @@ export default {
 		duration() { return calcDuration(this.startTime, this.endTime) },
 		formattedDuration() { return String(Math.round(this.duration * 100) / 100) },
 		currentRate() {
-			if (this.selectedProject) {
-				const key = this.dayType + '_rate'
-				const pr = this.selectedProject[key]
-				if (pr && pr > 0) return pr
-			}
-			return 0
+			if (!this.selectedProject) return 0
+			const t = this.dayType
+			const mode = this.effectivePayMode
+			let key
+			if (mode === 'daily') key = 'daily_' + t + '_rate'
+			else if (mode === 'piece') key = 'piece_' + t + '_rate'
+			else key = t + '_rate'
+			const pr = this.selectedProject[key]
+			if (pr > 0) return pr
+			const fb = mode === 'daily' ? this.selectedProject.daily_rate : mode === 'piece' ? this.selectedProject.piece_rate : 0
+			return fb || 0
 		},
 		rateSourceLabel() {
 			if (this.selectedProject) {
