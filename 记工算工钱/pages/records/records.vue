@@ -141,7 +141,7 @@ export default {
 		emptyText() {
 			if (this.settleFilter !== 'all' || this.projectFilter) return '当前筛选条件下无记录'
 			return '本月没有记工记录'
-		}
+		},
 		selectedCount() {
 			return Object.keys(this.selectedMap).length
 		},
