@@ -14,16 +14,23 @@
 				</view>
 			</picker>
 
-			<!-- 公共：项目行 -->
-			<view class="project-row" @tap="showProjectSelector">
+			<!-- 公共：工作行 — 无工作时引导创建 -->
+			<view class="project-row project-row--warn" v-if="!hasProjects" @tap="goCreateProject">
+				<view class="project-row__left">
+					<text class="project-row__name" style="color: #C4A46C;">请先创建工作</text>
+				</view>
+				<view class="project-row__right">
+					<text class="project-row__mode" style="color: #C4A46C;">前往设置 ›</text>
+				</view>
+			</view>
+			<view class="project-row" v-else @tap="showProjectSelector">
 				<view class="project-row__left" v-if="selectedProject">
 					<view class="project-row__dot" :style="{ background: selectedProject.color }"></view>
 					<text class="project-row__name">{{ selectedProject.name }}</text>
 				</view>
-				<text class="project-row__placeholder" v-else>选项目</text>
+				<text class="project-row__placeholder" v-else>选工作</text>
 				<view class="project-row__right">
-					<text class="project-row__mode">{{ payModeIcon }} {{ payModeLabel || '时薪' }}</text>
-					<text class="project-row__arrow">›</text>
+					<text class="project-row__mode">{{ payModeIcon }} {{ payModeLabel }}</text>
 				</view>
 			</view>
 
@@ -75,9 +82,9 @@
 				<view class="pay-card" v-if="estimatedPay > 0">
 					<text class="pay-card__label">工钱</text>
 					<text class="pay-card__amount">¥{{ estimatedPay.toFixed(0) }}</text>
-					<text class="pay-card__detail">{{ formattedDuration }}h × ¥{{ currentRate }}/h</text>
+					<text class="pay-card__detail">{{ payFormula }}</text>
 				</view>
-				<view class="pay-card pay-card--warn" v-else-if="duration > 0" @tap="showRateSheet = true">
+				<view class="pay-card pay-card--warn" v-else-if="duration > 0" @tap="goEditProject">
 					<text class="pay-card__warn-text">暂未设置该类型的记工时薪，点击设置</text>
 				</view>
 
@@ -175,20 +182,7 @@
 					>{{ p }}</text>
 				</view>
 
-				<!-- 也可手动修改天数 -->
-				<text class="mode-hint">也可手动修改天数</text>
 
-				<!-- 天数步进器 -->
-				<view class="day-stepper">
-					<view class="stepper-circle" @tap="adjustDays(-1)">
-						<text class="stepper-circle__text">−</text>
-					</view>
-					<text class="day-stepper__num">{{ dailyDays }}</text>
-					<text class="day-stepper__unit">天</text>
-					<view class="stepper-circle stepper-circle--primary" @tap="adjustDays(1)">
-						<text class="stepper-circle__text stepper-circle__text--white">+</text>
-					</view>
-				</view>
 
 				<!-- 工钱 -->
 				<view class="pay-card" v-if="dailyPay > 0">
@@ -358,39 +352,17 @@
 			</view>
 			<view class="bottom-bar__safe"></view>
 		</view>
-
-		<!-- 时薪设置弹窗（零费率时弹出） -->
-		<view class="rate-sheet" v-if="showRateSheet" @tap="showRateSheet = false">
-			<view class="rate-sheet__panel" @tap.stop>
-				<text class="rate-sheet__title">这一小时工钱多少？</text>
-				<text class="rate-sheet__desc">填一个数就行，其他类型会自动沿用</text>
-				<view class="rate-sheet__input-row">
-					<text class="rate-sheet__prefix">¥</text>
-					<input class="rate-sheet__input" type="digit" v-model="quickRate" placeholder="30" focus />
-					<text class="rate-sheet__suffix">/ 小时</text>
-				</view>
-				<view class="rate-sheet__apply" v-if="quickRate > 0">
-					<text class="rate-sheet__apply-text">保存 ¥{{ quickRate }}/h 并应用到已有的记工记录</text>
-				</view>
-				<view class="rate-sheet__btns">
-					<view class="rate-sheet__btn rate-sheet__btn--confirm" @tap="applyQuickRate">
-						<text class="rate-sheet__btn-confirm-text">确认</text>
-					</view>
-				</view>
-			</view>
-		</view>
 	</view>
 </template>
 
 <script>
 import NavBar from '../../components/NavBar.vue'
 import { useWorkStore } from '@/stores/workStore'
-import { useSalaryStore } from '../../stores/salaryStore'
 import { COMMON_PHRASES } from '../../utils/constants.js'
 import { useProjectStore } from '../../stores/projectStore'
 import { formatDate, calcDuration } from '../../utils/date.js'
 import { useHolidayStore } from '@/stores/holidayStore'
-import { round2 } from '@/utils/calculator'
+import { round2, getPayFormula } from '@/utils/calculator'
 
 function pad(n) { return String(n).padStart(2, '0') }
 
@@ -416,8 +388,6 @@ export default {
 			editId: null,
 			pageReady: false,
 			saving: false,
-			showRateSheet: false,
-			quickRate: '',
 			quickHours: [0.5, 1, 1.5, 2, 3],
 			quickActive: null,
 			showPhrases: false,
@@ -431,6 +401,10 @@ export default {
 		}
 	},
 	computed: {
+		hasProjects() {
+			const pStore = useProjectStore()
+			return pStore.activeProjects.length > 0
+		},
 		todayStr() {
 			const n = new Date()
 			return `${n.getFullYear()}-${pad(n.getMonth() + 1)}-${pad(n.getDate())}`
@@ -447,14 +421,14 @@ export default {
 		},
 		effectivePayMode() {
 			if (this.selectedProject?.pay_mode) return this.selectedProject.pay_mode
-			return useSalaryStore().config?.pay_mode || 'hourly'
+			return this.selectedProject?.pay_mode || 'hourly'
 		},
 		payModeIcon() {
 			const icons = { hourly: '⏱', daily: '📅', piece: '📦' }
-			return icons[this.effectivePayMode] || '⏱'
+			if (!this.selectedProjectId) return ''; return icons[this.effectivePayMode] || '⏱'
 		},
 		payModeLabel() {
-			const labels = { hourly: '时薪', daily: '日薪', piece: '计件' }
+			const labels = { hourly: '时薪', daily: '日薪', piece: '计件' }; if (!this.selectedProjectId) return ''
 			const p = this.selectedProject
 			const mode = this.effectivePayMode
 			if (mode === 'daily') return `日薪 ¥${p?.daily_rate || 0}/天`
@@ -474,16 +448,30 @@ export default {
 				const pr = this.selectedProject[key]
 				if (pr && pr > 0) return pr
 			}
-			return useSalaryStore().rateByType(this.dayType)
+			return 0
+		},
+		rateSourceLabel() {
+			if (this.selectedProject) {
+				const key = this.dayType + '_rate'
+				if (this.selectedProject[key] > 0) return this.selectedProject.name
+			}
+			return this.selectedProject ? this.selectedProject.name : '未设置'
 		},
 		estimatedPay() {
 			if (this.duration <= 0 || this.currentRate <= 0) return 0
 			return round2(this.duration * this.currentRate)
 		},
+		// 公式显示
+		payFormula() {
+			if (this.effectivePayMode !== 'hourly' || this.duration <= 0) return ''
+			const rec = { duration: this.duration, pay_mode: 'hourly', day_type: this.dayType, rate: this.currentRate }
+			const project = this.selectedProject
+			return getPayFormula(rec, project)
+		},
 		// 日薪
 		projectDailyRate() {
 			if (this.selectedProject?.daily_rate > 0) return this.selectedProject.daily_rate
-			return useSalaryStore().config?.daily_rate || 0
+			return 0
 		},
 		dailyPay() { return round2((this.dailyDays || 0) * this.projectDailyRate) },
 		monthDailyCount() {
@@ -503,12 +491,12 @@ export default {
 		// 计件
 		projectPieceRate() {
 			if (this.selectedProject?.piece_rate > 0) return this.selectedProject.piece_rate
-			return useSalaryStore().config?.piece_rate || 0
+			return 0
 		},
 		piecePay() { return round2((this.pieceQuantity || 0) * this.projectPieceRate) },
 		// 通用
 		basePay() { return this.estimatedPay || this.dailyPay || this.piecePay || 0 },
-		totalSubsidies() { return (this.subsidies.night_shift || 0) + (this.subsidies.meal || 0) + (this.subsidies.transport || 0) },
+		totalSubsidies() { return Number(this.subsidies.night_shift || 0) + Number(this.subsidies.meal || 0) + Number(this.subsidies.transport || 0) },
 		deductionAmount() { return Number(this.deduction.amount) || 0 },
 		netPay() { return this.basePay + this.totalSubsidies - this.deductionAmount }
 	},
@@ -516,6 +504,7 @@ export default {
 	onLoad(options) {
 		if (options.date) this.pickerDate = options.date
 		this.loadProjectPicker()
+		this.autoSelectProject()
 		if (options.id) {
 			this.editId = options.id
 			const store = useWorkStore()
@@ -542,13 +531,41 @@ export default {
 	},
 	methods: {
 		onDateChange(e) { this.pickerDate = e.detail.value; this.autoDetectType(e.detail.value) },
+		goCreateProject() {
+			uni.navigateTo({ url: '/pages/project-edit/project-edit' })
+		},
+		autoSelectProject() {
+			const pStore = useProjectStore()
+			const wStore = useWorkStore()
+			const activeProjects = pStore.activeProjects
+			if (activeProjects.length === 0) return
+			// 1. 优先选最近记工记录用过的工作
+			const sortedRecords = [...wStore.records].sort((a, b) => {
+				const da = a.date || '', db = b.date || ''
+				if (da !== db) return db.localeCompare(da)
+				return (b.created_at || 0) - (a.created_at || 0)
+			})
+			const lastUsedId = sortedRecords[0]?.project_id
+			if (lastUsedId && activeProjects.some(p => p._id === lastUsedId)) {
+				this.selectedProjectId = lastUsedId
+				const proj = pStore.getProjectById(lastUsedId)
+				this.projectName = proj ? proj.name : ''
+				return
+			}
+			// 2. 否则选第一个工作（最近创建的排前面）
+			const first = activeProjects[0]
+			if (first) {
+				this.selectedProjectId = first._id
+				this.projectName = first.name
+			}
+		},
 		loadProjectPicker() {
 			const pStore = useProjectStore()
 			if (pStore.projects.length === 0) pStore.loadProjects()
 		},
 		autoDetectType(date) { this.dayType = useHolidayStore().getDayType(date) },
-		onStartChange(e) { this.startTime = e.detail.value; this.pickerStartTime = e.detail.value },
-		onEndChange(e) { this.endTime = e.detail.value; this.pickerEndTime = e.detail.value },
+		onStartChange(e) { this.startTime = e.detail.value; this.pickerStartTime = e.detail.value; this._syncQuickHour() },
+		onEndChange(e) { this.endTime = e.detail.value; this.pickerEndTime = e.detail.value; this._syncQuickHour() },
 		applyQuickHour(h) {
 			const [hh, mm] = this.startTime.split(':').map(Number)
 			const totalMinutes = hh * 60 + mm + Math.round(h * 60)
@@ -558,16 +575,28 @@ export default {
 			this.pickerEndTime = this.endTime
 			this.quickActive = h
 		},
+		_syncQuickHour() {
+			const dur = this.duration
+			if (dur <= 0) { this.quickActive = null; return }
+			const closest = this.quickHours.reduce((prev, curr) =>
+				Math.abs(curr - dur) < Math.abs(prev - dur) ? curr : prev
+			)
+			this.quickActive = closest
+		},
 		addOneDay() { this.dailyDays = 1 },
-		adjustDays(delta) { this.dailyDays = Math.max(0.5, (this.dailyDays || 1) + delta) },
 		adjustQty(delta) { this.pieceQuantity = Math.max(0, (this.pieceQuantity || 0) + delta) },
 		showProjectSelector() {
 			const pStore = useProjectStore()
 			pStore.loadProjects()
 			setTimeout(() => {
+				const activeProjects = pStore.activeProjects
+				if (activeProjects.length === 0) {
+					this.goCreateProject()
+					return
+				}
 				const items = [
-					{ text: '无项目', value: null },
-					...pStore.activeProjects.map(p => ({ text: p.name, value: p._id }))
+					{ text: '无工作', value: null },
+					...activeProjects.map(p => ({ text: p.name, value: p._id }))
 				]
 				uni.showActionSheet({
 					itemList: items.map(i => i.text),
@@ -592,29 +621,24 @@ export default {
 				}
 			})
 		},
-		async applyQuickRate() {
-			if (!this.quickRate || parseInt(this.quickRate) <= 0) return
-			const rate = parseInt(this.quickRate)
-			const salaryStore = useSalaryStore()
-			const cfg = salaryStore.config
-			try {
-				await salaryStore.updateConfig({
-					weekday_rate: cfg.weekday_rate > 0 ? cfg.weekday_rate : rate,
-					weekend_rate: cfg.weekend_rate > 0 ? cfg.weekend_rate : Math.round(rate * 1.5),
-					holiday_rate: cfg.holiday_rate > 0 ? cfg.holiday_rate : Math.round(rate * 3)
-				})
-			} catch (e) { /* 云端不可用 */ }
-			this.showRateSheet = false
-			uni.showToast({ title: '时薪已设置', icon: 'success' })
-		},
+		goEditProject() {
+				if (!this.selectedProjectId) {
+					uni.navigateTo({ url: '/pages/project-edit/project-edit' })
+					return
+				}
+				uni.navigateTo({ url: '/pages/project-edit/project-edit?id=' + this.selectedProjectId })
+			},
 		async handleSave() {
 			if (this.saving) return
 			const store = useWorkStore()
 			const payMode = this.effectivePayMode
 
+			if (!this.selectedProjectId) {
+				uni.showToast({ title: '请先选择工作', icon: 'none' }); this.saving = false; return
+			}
 			if (payMode === 'hourly') {
 				if (this.duration <= 0) { uni.showToast({ title: '请设置起止时间', icon: 'none' }); return }
-				if (this.currentRate <= 0) { this.showRateSheet = true; return }
+				if (this.currentRate <= 0) { this.goEditProject(); return }
 			}
 			if (payMode === 'daily' && (!this.dailyDays || this.dailyDays <= 0)) {
 				uni.showToast({ title: '请输入天数', icon: 'none' }); return
@@ -639,8 +663,8 @@ export default {
 				project_id: this.selectedProjectId,
 				photos: [],
 				settled: this.settled,
-				subsidies: { ...this.subsidies },
-				deduction: { ...this.deduction }
+				subsidies: { night_shift: Number(this.subsidies.night_shift) || 0, meal: Number(this.subsidies.meal) || 0, transport: Number(this.subsidies.transport) || 0 },
+				deduction: { amount: Number(this.deduction.amount) || 0, note: this.deduction.note }
 			}
 
 			if (payMode === 'hourly') {
@@ -654,7 +678,7 @@ export default {
 				Object.assign(baseData, {
 					start_time: '', end_time: '', duration: 0,
 					day_type: useHolidayStore().getDayType(this.pickerDate),
-					rate, days: this.dailyDays, daily_rate: rate,
+					rate, days: 1, daily_rate: rate,
 					pay: this.dailyPay, net_pay: this.netPay
 				})
 			} else if (payMode === 'piece') {
@@ -663,7 +687,7 @@ export default {
 					start_time: '', end_time: '', duration: 0,
 					day_type: useHolidayStore().getDayType(this.pickerDate),
 					rate, quantity: this.pieceQuantity, piece_rate: rate,
-					piece_unit: this.selectedProject?.piece_unit || useSalaryStore().config?.piece_unit || '件',
+					piece_unit: this.selectedProject?.piece_unit || '件',
 					pay: this.piecePay, net_pay: this.netPay
 				})
 			}
@@ -703,13 +727,13 @@ export default {
 	padding: 14px 16px; background: var(--surface-card); border-radius: 12px;
 	border: 1px solid var(--border); margin-top: 12px;
 
-	&__label { font-size: 15px; color: var(--text-primary); }
+	&__label { font-size: 16px; color: var(--text-primary); font-weight: 500; }
 	&__right { display: flex; align-items: center; }
 	&__value { font-size: 14px; color: var(--text-secondary); }
 	&__arrow { font-size: 18px; color: var(--text-muted); margin-left: 4px; }
 }
 
-/* ===== 公共：项目行 ===== */
+/* ===== 公共：工作行 ===== */
 .project-row {
 	display: flex; align-items: center; justify-content: space-between;
 	padding: 12px 14px; background: var(--surface); border-radius: 8px;
@@ -717,10 +741,10 @@ export default {
 
 	&__left { display: flex; align-items: center; gap: 8px; }
 	&__dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-	&__name { font-size: 14px; font-weight: 500; color: var(--text-primary); }
-	&__placeholder { font-size: 14px; color: var(--text-muted); }
+	&__name { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+	&__placeholder { font-size: 15px; color: var(--text-muted); }
 	&__right { display: flex; align-items: center; }
-	&__mode { font-size: 11px; color: var(--text-muted); margin-right: 4px; }
+	&__mode { font-size: 12px; color: var(--text-muted); margin-right: 4px; }
 	&__arrow { font-size: 16px; color: var(--text-muted); }
 }
 
@@ -768,9 +792,9 @@ export default {
 	display: flex; align-items: center; justify-content: space-between;
 	padding: 12px 14px; background: var(--primary-light); border-radius: 8px; margin-top: 12px;
 
-	&__label { font-size: 13px; color: var(--text-secondary); }
+	&__label { font-size: 14px; color: var(--text-secondary); }
 	&__amount { font-size: 20px; font-weight: 700; color: var(--primary); font-family: var(--font-number); }
-	&__detail { font-size: 11px; color: var(--text-muted); }
+	&__detail { font-size: 12px; color: var(--text-muted); }
 	&--warn { background: #FFFBF0; justify-content: center; }
 	&__warn-text { font-size: 14px; color: #E5A100; }
 }

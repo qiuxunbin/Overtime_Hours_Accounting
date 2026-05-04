@@ -41,18 +41,19 @@
 						</view>
 					</picker>
 				</view>
-				<text class="section__hint">每天 {{ duration }}h，共 {{ previewDates.length }} 天，合计 {{ totalPreviewHours }}h</text>
+				<text class="section__hint" v-if="startDate !== endDate">每天 {{ duration }}h，共 {{ previewDates.length }} 天，合计 {{ totalPreviewHours }}h</text>
+				<text class="section__hint" v-else>起止日期相同，只生成 <text class="section__hint--highlight">1</text> 条记工记录</text>
 			</view>
 
-			<!-- 项目选择 -->
+			<!-- 工作选择 -->
 			<view class="section">
-				<text class="section__title">项目</text>
+				<text class="section__title">工作</text>
 				<view class="field-row" @tap="showProjectPicker">
 					<view class="field-row__left" v-if="selectedProject">
 						<view class="field-row__dot" :style="{ background: selectedProject.color }"></view>
 						<text class="field-row__value">{{ selectedProject.name }}</text>
 					</view>
-					<text class="field-row__value" v-else style="color: #9C9C9C;">选项目（选填）</text>
+					<text class="field-row__value" v-else style="color: #9C9C9C;">选工作（选填）</text>
 					<text class="field-row__arrow">›</text>
 				</view>
 			</view>
@@ -60,17 +61,19 @@
 			<!-- 备注 -->
 			<view class="section">
 				<text class="section__title">备注（选填）</text>
-				<input class="batch-remark" type="text" v-model="remark" placeholder="所有记录共用此备注" />
+				<textarea class="batch-remark" v-model="remark" placeholder="所有记录共用此备注" placeholder-style="color: var(--text-muted); font-size: 14px;" />
 			</view>
 
 			<!-- 预览 -->
 			<view class="section" v-if="previewDates.length > 0">
 				<text class="section__title">预览（共 {{ previewDates.length }} 条）</text>
+					<text class="section__summary" v-if="previewDates.length > 0">工作 {{ previewDates.length }} 天 · 预估工钱 ¥{{ estimatedTotalPay }}</text>
 				<view class="preview-list">
 					<view class="preview-item" v-for="(d, idx) in previewDates" :key="idx">
 						<text class="preview-item__date">{{ d.date }}</text>
 						<text class="preview-item__type">{{ d.typeLabel }}</text>
 						<text class="preview-item__hours">{{ d.hours }}h</text>
+						<text class="preview-item__pay" v-if="d.pay > 0">¥{{ d.pay }}</text>
 					</view>
 				</view>
 			</view>
@@ -95,7 +98,7 @@ import NavBar from '../../components/NavBar.vue'
 import { useWorkStore } from '@/stores/workStore'
 import { useProjectStore } from '../../stores/projectStore'
 import { useHolidayStore } from '@/stores/holidayStore'
-import { useSalaryStore } from '@/stores/salaryStore'
+
 
 function pad(n) { return String(n).padStart(2, '0') }
 function formatDate(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` }
@@ -140,7 +143,7 @@ export default {
 			while (d <= end) {
 				const dateStr = formatDate(d)
 				const type = useHolidayStore().getDayType(dateStr)
-				dates.push({ date: dateStr, typeLabel: typeLabels[type] || '平日', hours: h, type })
+				const proj = this.selectedProject; const key = type + '_rate'; const rate = (proj && proj[key] > 0) ? proj[key] : 0; const dayPay = rate > 0 ? Math.round(h * rate) : 0; dates.push({ date: dateStr, typeLabel: typeLabels[type] || '平日', hours: h, type, pay: dayPay })
 				d.setDate(d.getDate() + 1)
 			}
 			return dates
@@ -153,6 +156,9 @@ export default {
 		totalPreviewHours() {
 			const h = parseFloat(this.duration) || 0
 			return (h * this.previewDates.length).toFixed(1)
+		},
+		estimatedTotalPay() {
+			return this.previewDates.reduce(function(s, d) { return s + (d.pay || 0); }, 0).toFixed(0)
 		},
 	},
 	onShow() {
@@ -171,7 +177,7 @@ export default {
 			const pStore = useProjectStore()
 			pStore.loadProjects()
 			setTimeout(() => {
-				const items = [{ text: '无项目', value: null },
+				const items = [{ text: '无工作', value: null },
 					...pStore.activeProjects.map(p => ({ text: p.name + (p.pay_mode !== 'hourly' ? ' (非时薪)' : ''), value: p._id }))
 				]
 				uni.showActionSheet({
@@ -181,7 +187,7 @@ export default {
 						if (picked.value) {
 							const proj = pStore.getProjectById(picked.value)
 							if (proj && proj.pay_mode !== 'hourly') {
-								uni.showToast({ title: '非时薪项目请去记工页单独添加', icon: 'none', duration: 2000 })
+								uni.showToast({ title: '非时薪工作请去记工页单独添加', icon: 'none', duration: 2000 })
 								this.selectedProjectId = null
 								return
 							}
@@ -204,9 +210,7 @@ export default {
 			this.saving = true
 			const store = useWorkStore()
 			const pStore = useProjectStore()
-			const salaryStore = useSalaryStore()
 			const proj = this.selectedProjectId ? pStore.getProjectById(this.selectedProjectId) : null
-			const cfg = salaryStore.config
 			let success = 0
 			let fail = 0
 
@@ -214,9 +218,7 @@ export default {
 				try {
 					const durationVal = parseFloat(this.duration) || 0
 					const key = item.type + '_rate'
-					const rate = (proj && proj[key] > 0)
-						? proj[key]
-						: (cfg[key] || 0)
+					const rate = (proj && proj[key] > 0) ? proj[key] : 0
 					const pay = Math.round(durationVal * rate * 100) / 100
 					const netPay = pay
 
@@ -404,6 +406,7 @@ export default {
 
 .batch-remark {
 	width: 100%;
+	min-height: 80px;
 	padding: 14px 16px;
 	background: var(--surface-card);
 	border-radius: 12px;
@@ -490,5 +493,25 @@ export default {
 		height: constant(safe-area-inset-bottom);
 		height: env(safe-area-inset-bottom);
 	}
+}
+
+/* 批量记工新增样式 */
+.section__summary {
+	font-size: 12px;
+	color: var(--primary);
+	display: block;
+	margin-top: 4px;
+	font-weight: 500;
+}
+.section__hint--highlight {
+	color: var(--primary);
+	font-weight: 700;
+}
+.preview-item__pay {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--primary);
+	flex: 0 0 60px;
+	text-align: right;
 }
 </style>

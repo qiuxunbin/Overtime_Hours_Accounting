@@ -23,8 +23,7 @@
 					<text class="alarm-card__icon">&#x1F319;</text>
 					<view class="alarm-card__info">
 						<text class="alarm-card__label">下班提醒</text>
-						<text class="alarm-card__time" v-if="!offDutyEnabled" style="color: var(--text-muted);">未开启</text>
-		<picker mode="time" :value="offDutyTime" @change="offDutyTimeChange" v-else>
+						<text class="alarm-card__time" v-if="!offDutyEnabled" style="color: var(--text-muted);">未开启</text><picker mode="time" :value="offDutyTime" @change="offDutyTimeChange" v-else>
 							<text class="alarm-card__time">{{ offDutyTime }}</text>
 						</picker>
 					</view>
@@ -34,7 +33,7 @@
 
 			<!-- 设置 -->
 			<view class="settings-group">
-				<view class="settings-item">
+				<view class="settings-item" @tap="showRepeatPicker">
 					<text class="settings-item__label">重复</text>
 					<view class="settings-item__right">
 						<text class="settings-item__value">{{ repeatLabel }}</text>
@@ -159,6 +158,40 @@ export default {
 		offDutyTimeChange(e) {
 			this.offDutyTime = e.detail.value
 			this.save()
+		},
+				showRepeatPicker() {
+			uni.showActionSheet({
+				itemList: ['不重复', '每天', '周一至周五', '周末', '自定义'],
+				success: (res) => {
+					switch (res.tapIndex) {
+						case 0: this.repeatDays = []; break
+						case 1: this.repeatDays = [0,1,2,3,4,5,6]; break
+						case 2: this.repeatDays = [1,2,3,4,5]; break
+						case 3: this.repeatDays = [0,6]; break
+						case 4: this.pickCustomDays(); break
+					}
+					this.save()
+				}
+			})
+		},
+		pickCustomDays() {
+			const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+			uni.showActionSheet({
+				itemList: days.map((d, i) => (this.repeatDays.includes(i) ? '☑' : '☐') + ' ' + d),
+				success: (res) => {
+					const idx = res.tapIndex
+					if (this.repeatDays.includes(idx)) {
+						this.repeatDays = this.repeatDays.filter(d => d !== idx)
+					} else {
+						this.repeatDays = [...this.repeatDays, idx].sort()
+					}
+					if (this.repeatDays.length > 0) {
+						this.pickCustomDays()
+					} else {
+						this.save()
+					}
+				}
+			})
 		},
 		requestNotification() {
 			// #ifdef MP-WEIXIN

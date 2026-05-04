@@ -43,7 +43,7 @@
 				</view>
 			</view>
 
-			<!-- 明细列表（按项目分组） -->
+			<!-- 明细列表（按工作分组） -->
 			<view class="detail-section" v-if="monthRecords.length > 0">
 				<text class="detail-section__title">本月记录</text>
 				<view
@@ -154,6 +154,8 @@ import NavBar from '../../components/NavBar.vue'
 import { useWorkStore } from '@/stores/workStore'
 import { useProjectStore } from '../../stores/projectStore'
 
+import { getPayFormula } from '@/utils/calculator'
+
 function pad(n) { return String(n).padStart(2, '0') }
 
 const CANVAS_WIDTH = 345
@@ -193,7 +195,7 @@ export default {
 			this.monthRecords.forEach(r => {
 				const key = r.project_id || '__none__'
 				if (!groups[key]) groups[key] = {
-					name: key === '__none__' ? '无项目' : (projMap.get(key)?.name || '未知项目'),
+					name: key === '__none__' ? '无工作' : (projMap.get(key)?.name || '未知工作'),
 					color: key === '__none__' ? '#9C9C9C' : (projMap.get(key)?.color || '#9C9C9C'),
 					payMode: r.pay_mode || 'hourly',
 					rateSummary: '',
@@ -314,15 +316,9 @@ export default {
 			return (rec.start_time || '') + '-' + (rec.end_time || '')
 		},
 		recordFormulaStr(rec) {
-			if (rec.pay_mode === 'daily') {
-				const rate = rec.daily_rate || 0
-				return (rec.days || 1) + '天 x ' + rate + '/天'
-			}
-			if (rec.pay_mode === 'piece') {
-				const rate = rec.piece_rate || 0
-				return (rec.quantity || 0) + ' x ' + rate
-			}
-			return (rec.duration || 0) + 'h x ' + (rec.rate || 0) + '/h'
+			const pStore = useProjectStore()
+			const project = rec.project_id ? pStore.getProjectById(rec.project_id) : null
+			return getPayFormula(rec, project)
 		},
 		typeLabel(type) {
 			const m = { weekday: '平日', weekend: '周末', holiday: '节假日' }
@@ -362,7 +358,7 @@ export default {
 			list.forEach(r => {
 				const detail = this.recordDetailStr(r)
 				const formula = this.recordFormulaStr(r)
-				text += this.shortDate(r.date) + ' ' + this.modeLabel(r.pay_mode) + ' ' + detail + ' ' + formula + ' = ¥' + (r.pay || 0).toFixed(0) + '\n'
+				text += this.shortDate(r.date) + ' ' + this.modeLabel(r.pay_mode) + ' ' + detail + ' ' + formula + '\n'
 			})
 			text += '─'.repeat(20) + '\n'
 			const _h = this.monthRecords.reduce((s,r) => s + (r.duration || 0), 0)
@@ -397,7 +393,7 @@ export default {
 			return
 			}
 			// Build CSV with BOM for Excel compat — 15 columns matching import COLUMN_MAP
-			const header = '﻿日期,项目,计薪方式,类型,开始时间,结束时间,时长,天数,件数,单价,工钱,备注,是否结算,补贴,扣款'
+			const header = '﻿日期,工作,计薪方式,类型,开始时间,结束时间,时长,天数,件数,单价,工钱,备注,是否结算,补贴,扣款'
 			let csv = header + '\n'
 			list.forEach(r => {
 			const subsidies = r.subsidies ? ((r.subsidies.night_shift || 0) + (r.subsidies.meal || 0) + (r.subsidies.transport || 0)) : 0
@@ -957,7 +953,7 @@ export default {
 	z-index: -1;
 }
 
-/* 项目分组 */
+/* 工作分组 */
 .project-group {
 	margin-bottom: 20px;
 }

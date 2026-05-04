@@ -7,7 +7,14 @@
 			<view class="clock-status" @tap="toggleClock">
 				<view class="clock-status__dot" :class="{ 'clock-status__dot--active': isClockedIn }"></view>
 				<text class="clock-status__text" v-if="isClockedIn">当前记工 · 已计时 {{ clockElapsed }}</text>
-				<text class="clock-status__text clock-status__text--idle" v-else>未在记工，点击计时</text>
+				<text class="clock-status__text clock-status__text--idle" v-else-if="monthRecords.length === 0">未在记工，点击计时</text>
+				<text class="clock-status__text clock-status__text--idle" v-else>本月已记 {{ monthRecords.length }} 条，点击计时</text>
+			</view>
+
+			<!-- 同步状态 -->
+			<view class="sync-status" v-if="syncStatusText" @tap="onSyncTap">
+				<view class="sync-status__dot" :class="'sync-status__dot--' + syncStatus"></view>
+				<text class="sync-status__text">{{ syncStatusText }}</text>
 			</view>
 
 			<!-- 月度摘要 -->
@@ -33,17 +40,23 @@
 					<view class="summary-card__breakdown-item">
 						<text class="summary-card__breakdown-label">平日</text>
 						<text class="summary-card__breakdown-value">{{ weekdayHours }}h</text>
-							<text class="summary-card__breakdown-pay" v-if="weekdayPay > 0">¥{{ weekdayPay.toFixed(0) }}</text>
+						<text class="summary-card__breakdown-value summary-card__breakdown-value--dim" v-if="weekdayDays > 0">{{ weekdayDays }}天</text>
+						<text class="summary-card__breakdown-value summary-card__breakdown-value--dim" v-if="weekdayQty > 0">{{ weekdayQty }}件</text>
+						<text class="summary-card__breakdown-pay" v-if="weekdayPay > 0">¥{{ weekdayPay.toFixed(0) }}</text>
 					</view>
 					<view class="summary-card__breakdown-item">
 						<text class="summary-card__breakdown-label">周末</text>
 						<text class="summary-card__breakdown-value">{{ weekendHours }}h</text>
-							<text class="summary-card__breakdown-pay" v-if="weekendPay > 0">¥{{ weekendPay.toFixed(0) }}</text>
+						<text class="summary-card__breakdown-value summary-card__breakdown-value--dim" v-if="weekendDays > 0">{{ weekendDays }}天</text>
+						<text class="summary-card__breakdown-value summary-card__breakdown-value--dim" v-if="weekendQty > 0">{{ weekendQty }}件</text>
+						<text class="summary-card__breakdown-pay" v-if="weekendPay > 0">¥{{ weekendPay.toFixed(0) }}</text>
 					</view>
 					<view class="summary-card__breakdown-item">
 						<text class="summary-card__breakdown-label">节假日</text>
 						<text class="summary-card__breakdown-value">{{ holidayHours }}h</text>
-							<text class="summary-card__breakdown-pay" v-if="holidayPay > 0">¥{{ holidayPay.toFixed(0) }}</text>
+						<text class="summary-card__breakdown-value summary-card__breakdown-value--dim" v-if="holidayDays > 0">{{ holidayDays }}天</text>
+						<text class="summary-card__breakdown-value summary-card__breakdown-value--dim" v-if="holidayQty > 0">{{ holidayQty }}件</text>
+						<text class="summary-card__breakdown-pay" v-if="holidayPay > 0">¥{{ holidayPay.toFixed(0) }}</text>
 					</view>
 				</view>
 			</view>
@@ -81,26 +94,27 @@
 						@tap="cell.day ? onCellTap(cell) : null"
 					>
 						<text class="calendar__day">{{ cell.day || '' }}</text>
-						<view v-if="cell.hasRecord && cell.day" class="calendar__dot"></view>
+						<view v-if="cell.hasRecord && cell.day" class="calendar__badge"><text class="calendar__badge-text">{{ cell.recordCount }}</text></view>
 					</view>
 				</view>
 			</view>
 
 			<!-- 最近记录 -->
-			<view class="records-section" v-if="recentRecords.length > 0">
+			<view class="records-section">
 				<view class="records-section__header">
 					<text class="records-section__title">最近记录</text>
 					<view class="records-section__filters">
 						<view class="filter-chip" @tap="showProjectFilter">
-							<text class="filter-chip__text" :style="{ color: selectedProjectFilter ? '#1B8A5A' : '#9C9C9C' }">{{ selectedProjectFilter ? getProjectName(selectedProjectFilter) : '所有项目' }}</text>
+							<text class="filter-chip__text" :style="{ color: selectedProjectFilter ? '#1B8A5A' : '#9C9C9C' }">{{ selectedProjectFilter ? getProjectName(selectedProjectFilter) : '所有工作' }}</text>
 							<text class="filter-chip__arrow">›</text>
 						</view>
-						<text class="filter-chip" :class="{ 'filter-chip--active': settleFilter === 'all' }" @tap="settleFilter = 'all'">全部</text>
+						<text class="filter-chip__sep">|</text>
+							<text class="filter-chip" :class="{ 'filter-chip--active': settleFilter === 'all' }" @tap="settleFilter = 'all'">全部</text>
 						<text class="filter-chip" :class="{ 'filter-chip--active': settleFilter === 'unsettled' }" @tap="settleFilter = 'unsettled'">未结算</text>
 						<text class="filter-chip" :class="{ 'filter-chip--active': settleFilter === 'settled' }" @tap="settleFilter = 'settled'">已结算</text>
 					</view>
 				</view>
-				<view class="records-section__list">
+				<view class="records-section__list" v-if="recentRecords.length > 0">
 					<view
 						v-for="(rec, idx) in recentRecords"
 						:key="rec.id"
@@ -129,13 +143,18 @@
 				</view>
 			</view>
 
+				<!-- 查看全部 -->
+				<view class="view-all" v-if="showViewAll" @tap="goStatsRecords">
+					<text class="view-all__text">查看全部 ›</text>
+				</view>
+
 			<!-- 空状态 -->
-			<view class="empty-wrap" v-else>
+			<view class="empty-wrap" v-if="recentRecords.length === 0">
 				<view class="empty-wrap__icon">
 					<text class="empty-wrap__icon-text">&#x1F4C5;</text>
 				</view>
-				<text class="empty-wrap__title">还没有记工记录</text>
-				<text class="empty-wrap__desc">点击下方 + 开始记录第一笔记工</text>
+				<text class="empty-wrap__title">{{ emptyTitle }}</text>
+				<text class="empty-wrap__desc">{{ emptyDesc }}</text>
 			</view>
 		</view>
 
@@ -223,12 +242,12 @@ export default {
 		totalPay() {
 			return this.monthRecords.reduce((s, r) => s + (r.pay || 0), 0)
 		},
-			totalDays() {
-				return this.monthRecords.reduce((s, r) => s + (r.days || 0), 0)
-			},
-			totalQuantity() {
-				return this.monthRecords.reduce((s, r) => s + (r.quantity || 0), 0)
-			},
+		totalDays() {
+			return this.monthRecords.filter(r => r.pay_mode === 'daily').reduce((s, r) => s + (r.days || 0), 0)
+		},
+		totalQuantity() {
+			return this.monthRecords.filter(r => r.pay_mode === 'piece').reduce((s, r) => s + (r.quantity || 0), 0)
+		},
 		weekdayHours() {
 			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekday').reduce((s, r) => s + (r.duration || 0), 0)
 		},
@@ -238,15 +257,33 @@ export default {
 		holidayHours() {
 			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'holiday').reduce((s, r) => s + (r.duration || 0), 0)
 		},
-			weekdayPay() {
-				return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekday').reduce((s, r) => s + (r.pay || 0), 0)
-			},
-			weekendPay() {
-				return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekend').reduce((s, r) => s + (r.pay || 0), 0)
-			},
-			holidayPay() {
-				return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'holiday').reduce((s, r) => s + (r.pay || 0), 0)
-			},
+		weekdayDays() {
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === "weekday" && r.pay_mode === "daily").reduce((s, r) => s + (r.days || 0), 0)
+		},
+		weekendDays() {
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === "weekend" && r.pay_mode === "daily").reduce((s, r) => s + (r.days || 0), 0)
+		},
+		holidayDays() {
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === "holiday" && r.pay_mode === "daily").reduce((s, r) => s + (r.days || 0), 0)
+		},
+		weekdayQty() {
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === "weekday" && r.pay_mode === "piece").reduce((s, r) => s + (r.quantity || 0), 0)
+		},
+		weekendQty() {
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === "weekend" && r.pay_mode === "piece").reduce((s, r) => s + (r.quantity || 0), 0)
+		},
+		holidayQty() {
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === "holiday" && r.pay_mode === "piece").reduce((s, r) => s + (r.quantity || 0), 0)
+		},
+		weekdayPay() {
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekday').reduce((s, r) => s + (r.pay || 0), 0)
+		},
+		weekendPay() {
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekend').reduce((s, r) => s + (r.pay || 0), 0)
+		},
+		holidayPay() {
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'holiday').reduce((s, r) => s + (r.pay || 0), 0)
+		},
 		recordDates() {
 			return new Set(this.monthRecords.map(r => r.date))
 		},
@@ -272,7 +309,25 @@ export default {
 			if (this.selectedProjectFilter) {
 				list = list.filter(r => r.project_id === this.selectedProjectFilter)
 			}
-			return list.slice(0, 10)
+			return list.slice(0, 3)
+		},
+		showViewAll() {
+			const store = useWorkStore()
+			let list = store.records
+			if (this.settleFilter === "unsettled") list = list.filter(r => !r.settled)
+			else if (this.settleFilter === "settled") list = list.filter(r => r.settled)
+			if (this.selectedProjectFilter) list = list.filter(r => r.project_id === this.selectedProjectFilter)
+			return list.length > 3
+		},
+		hasAnyRecords() {
+			const store = useWorkStore()
+			return store.records.length > 0
+		},
+		emptyTitle() {
+			return this.hasAnyRecords ? '当前筛选条件下无记录' : '还没有记工记录'
+		},
+		emptyDesc() {
+			return this.hasAnyRecords ? '切换筛选条件或添加新记录' : '点击下方 + 开始记录第一笔记工'
 		},
 		calendarCells() {
 			const cells = []
@@ -290,6 +345,7 @@ export default {
 					day: d,
 					dateStr,
 					hasRecord: this.recordDates.has(dateStr),
+					recordCount: this.monthRecords.filter(function(r) { return r.date === dateStr; }).length || 0,
 					isToday: dateStr === this.todayStr,
 					isWeekend: dayOfWeek === 0 || dayOfWeek === 6
 				})
@@ -306,9 +362,17 @@ export default {
 		},
 		isClockedIn() {
 			return this.clockInTime !== null
+		},
+		syncStatus() {
+			return useWorkStore().syncStatus
+		},
+		syncStatusText() {
+			const m = { synced: "已同步", syncing: "同步中...", error: "同步失败", offline: "未登录 · 数据仅存本地" }
+			return m[this.syncStatus] || ""
 		}
 	},
 	onShow() {
+		this.settleFilter = 'all'
 		const store = useWorkStore()
 		store.loadRecords()
 		const now = new Date()
@@ -347,18 +411,18 @@ export default {
 				}
 			},
 			typeLabel(type) {
-				const m = { weekday: '平', weekend: '休', holiday: '节' }
-				return m[type] || '平'
+			const m = { weekday: '平', weekend: '休', holiday: '节' }
+			return m[type] || '平'
 			},
 			typeFull(type) {
-				const m = { weekday: '平日', weekend: '周末', holiday: '节假日' }
-				return m[type] || '平日'
+			const m = { weekday: '平日', weekend: '周末', holiday: '节假日' }
+			return m[type] || '平日'
 			},
 			iconClass(type) {
-				return type === 'weekend' ? 'record-item__icon--weekend' : type === 'holiday' ? 'record-item__icon--holiday' : 'record-item__icon--weekday'
+			return type === 'weekend' ? 'record-item__icon--weekend' : type === 'holiday' ? 'record-item__icon--holiday' : 'record-item__icon--weekday'
 			},
 			restoreClock() {
-				const saved = uni.getStorageSync('work_clock_in')
+			const saved = uni.getStorageSync('work_clock_in')
 				if (saved) {
 					this.clockInTime = saved
 					this.updateClockElapsed()
@@ -366,6 +430,23 @@ export default {
 				} else {
 					this.clockInTime = null
 					this.clockElapsed = '0min'
+				}
+			},
+			onSyncTap() {
+			const store = useWorkStore()
+				if (store.syncStatus === 'offline') {
+					uni.showModal({
+						title: '数据未同步',
+						content: '当前未登录，记工数据仅保存在本地。清除缓存或卸载后将丢失。是否前往登录？',
+						success: (res) => {
+							if (res.confirm) {
+								uni.navigateTo({ url: '/pages/login/login' })
+							}
+						}
+					})
+				} else if (store.syncStatus === 'error') {
+					uni.showToast({ title: '正在重试同步...', icon: 'none' })
+					store.flushSyncQueue()
 				}
 			},
 			toggleClock() {
@@ -386,7 +467,7 @@ export default {
 			},
 			updateClockElapsed() {
 				if (!this.clockInTime) { this.clockElapsed = '0min'; return }
-				const elapsed = Math.floor((Date.now() - this.clockInTime) / 60000)
+			const elapsed = Math.floor((Date.now() - this.clockInTime) / 60000)
 				if (elapsed < 60) {
 					this.clockElapsed = elapsed + 'min'
 				} else {
@@ -396,7 +477,7 @@ export default {
 				}
 			},
 			goRecord() {
-				const pStore = useProjectStore()
+			const pStore = useProjectStore()
 				if (pStore.activeProjects.length === 0) {
 					uni.navigateTo({ url: '/pages/project-edit/project-edit' })
 				} else {
@@ -412,25 +493,25 @@ export default {
 			recordTimeStr(rec) {
 				if (rec.pay_mode === 'daily') return rec.days + '天'
 				if (rec.pay_mode === 'piece') return rec.quantity + (rec.piece_unit || '件')
-				return (rec.start_time || '') + '-' + (rec.end_time || '')
+			return (rec.start_time || '') + '-' + (rec.end_time || '')
 			},
 			recordQtyStr(rec) {
 				if (rec.pay_mode === 'daily') return (rec.days || 1) + '天'
 				if (rec.pay_mode === 'piece') return (rec.quantity || 0) + (rec.piece_unit || '件')
-				return (rec.duration || 0) + 'h'
+			return (rec.duration || 0) + 'h'
 			},
 			modeLabel(mode) {
-				const m = { hourly: '时薪', daily: '日薪', piece: '计件' }
-				return m[mode] || '时薪'
+			const m = { hourly: '时薪', daily: '日薪', piece: '计件' }
+			return m[mode] || '时薪'
 			},
 			getProjectName(id) {
-				if (!id) return '无项目'
-				const pStore = useProjectStore()
-				const proj = pStore.getProjectById(id)
-				return proj ? proj.name : '无项目'
+				if (!id) return '无工作'
+			const pStore = useProjectStore()
+			const proj = pStore.getProjectById(id)
+			return proj ? proj.name : '无项目'
 			},
 			showProjectFilter() {
-				const pStore = useProjectStore()
+			const pStore = useProjectStore()
 				pStore.loadProjects()
 				setTimeout(() => {
 					const items = [{ text: '所有项目', value: null },
@@ -443,6 +524,9 @@ export default {
 						}
 					})
 				}, 100)
+			},
+			goStatsRecords() {
+				uni.navigateTo({ url: '/pages/records/records' })
 			},
 			goRecordDate() {
 				this.showDaySheet = false
@@ -493,8 +577,31 @@ export default {
 }
 .clock-status__text--idle {
 	color: var(--text-muted);
-	font-weight: 400;
-	font-size: 12px;
+}
+
+.sync-status {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 6px 0 2px;
+	gap: 6px;
+}
+.sync-status__dot {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+}
+.sync-status__dot--synced { background: var(--success); }
+.sync-status__dot--syncing { background: var(--warning); animation: sync-pulse 1s ease-in-out infinite; }
+.sync-status__dot--error { background: var(--error); }
+.sync-status__dot--offline { background: var(--text-muted); }
+@keyframes sync-pulse {
+	0%, 100% { opacity: 1; }
+	50% { opacity: 0.3; }
+}
+.sync-status__text {
+	font-size: 11px;
+	color: var(--text-muted);
 }
 
 /* 摘要卡片 */
@@ -686,17 +793,6 @@ export default {
 		}
 	}
 
-	&__dot {
-		width: 4px;
-		height: 4px;
-		border-radius: 50%;
-		background: var(--primary);
-		margin-top: 3px;
-
-		.calendar__cell--today & {
-			background: #FFFFFF;
-		}
-	}
 }
 
 /* 空状态 */
@@ -725,6 +821,18 @@ export default {
 		display: block;
 		margin-top: 6px;
 	}
+}
+
+/* 查看全部 */
+.view-all {
+	text-align: center;
+	padding: 12px 0;
+	margin-bottom: 16px;
+}
+.view-all__text {
+	font-size: 14px;
+	color: var(--primary);
+	font-weight: 500;
 }
 
 /* 记录列表 */
@@ -1019,5 +1127,62 @@ margin-top: 1px;
 .record-item__settle-badge--done {
 	color: var(--primary);
 	background: #E6FFF0;
+}
+
+/* 有记工记录的日期高亮 */
+.calendar__cell--has-record {
+	background: rgba(27, 138, 90, 0.06);
+	border-radius: 0;
+}
+.calendar__cell--today.calendar__cell--has-record {
+	background: var(--primary);
+}
+.calendar__badge {
+	width: 16px;
+	height: 16px;
+	border-radius: 50%;
+	background: var(--primary);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-top: 1px;
+}
+.calendar__badge-text {
+	font-size: 9px;
+	color: #FFFFFF;
+	font-weight: 600;
+	line-height: 1;
+}
+.calendar__cell--today .calendar__badge {
+	background: #FFFFFF;
+}
+.calendar__cell--today .calendar__badge-text {
+	color: var(--primary);
+}
+
+/* 摘要子行 */
+.summary-card__sub-row {
+	display: flex;
+	gap: 12px;
+	margin-top: 4px;
+}
+.summary-card__sub-text {
+	font-size: 13px;
+	color: var(--text-muted);
+}
+
+/* 筛选分隔 */
+.records-section__filters .filter-chip__sep {
+	font-size: 11px;
+	color: var(--text-muted);
+	margin: 0 2px;
+}
+
+.summary-card__breakdown-value--dim {
+	font-size: 12px;
+	font-weight: 400;
+	color: var(--text-muted);
+	margin-left: 6px;
+	display: inline;
 }
 </style>

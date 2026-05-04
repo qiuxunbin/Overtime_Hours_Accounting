@@ -29,17 +29,12 @@
 			<view class="profile-menu" v-if="isLoggedIn || !isApp">
 				<view class="cell-item" @tap="goProjects">
 					<view class="cell-item__icon"><text class="cell-item__icon-text">&#x1F3E0;</text></view>
-					<view class="cell-item__content"><text class="cell-item__label">项目管理</text></view>
+					<view class="cell-item__content"><text class="cell-item__label">工作设置</text></view>
 					<view class="cell-item__right"><text class="cell-item__arrow">&#x203A;</text></view>
 				</view>
 				<view class="cell-item" @tap="goBatchRecord">
 					<view class="cell-item__icon"><text class="cell-item__icon-text">&#x1F4DD;</text></view>
 					<view class="cell-item__content"><text class="cell-item__label">批量记工</text></view>
-					<view class="cell-item__right"><text class="cell-item__arrow">&#x203A;</text></view>
-				</view>
-				<view class="cell-item" @tap="goSalary">
-					<view class="cell-item__icon"><text class="cell-item__icon-text">&#x1F4B0;</text></view>
-					<view class="cell-item__content"><text class="cell-item__label">薪资设置</text></view>
 					<view class="cell-item__right"><text class="cell-item__arrow">&#x203A;</text></view>
 				</view>
 				<view class="cell-item" @tap="goClock">
@@ -49,13 +44,13 @@
 				</view>
 				<view class="cell-item" @tap="handleExport">
 					<view class="cell-item__icon"><text class="cell-item__icon-text">&#x1F4E4;</text></view>
-					<view class="cell-item__content"><text class="cell-item__label">导出数据</text></view>
-					<view class="cell-item__right"><text class="cell-item__desc">备份全部记录</text><text class="cell-item__arrow">&#x203A;</text></view>
+					<view class="cell-item__content"><text class="cell-item__label">备份记工记录</text></view>
+					<view class="cell-item__right"><text class="cell-item__desc">保存到手机或电脑</text><text class="cell-item__arrow">&#x203A;</text></view>
 				</view>
 				<view class="cell-item cell-item--last" @tap="showImport = true">
 					<view class="cell-item__icon"><text class="cell-item__icon-text">&#x1F4E5;</text></view>
-					<view class="cell-item__content"><text class="cell-item__label">导入数据</text></view>
-					<view class="cell-item__right"><text class="cell-item__desc">恢复备份</text><text class="cell-item__arrow">&#x203A;</text></view>
+					<view class="cell-item__content"><text class="cell-item__label">恢复记工备份</text></view>
+					<view class="cell-item__right"><text class="cell-item__desc">从备份恢复</text><text class="cell-item__arrow">&#x203A;</text></view>
 				</view>
 			</view>
 
@@ -72,42 +67,42 @@
 				</view>
 			</view>
 
-			<text class="page-profile__tip">数据存储在云数据库。导出备份可复制 JSON 保存到备忘录。导入时粘贴 JSON 或 CSV 恢复。</text>
+			<text class="page-profile__tip">数据存储在云数据库。备份可保存到备忘录或文件，需要时恢复即可。</text>
 		</view>
 
 		<!-- 导入弹窗 -->
 		<view class="import-mask" v-if="showImport" @tap="showImport = false">
 			<view class="import-panel" @tap.stop>
-				<text class="import-panel__title">导入数据</text>
+				<text class="import-panel__title">恢复记工备份</text>
 
 				<!-- 导入类型 Tab -->
 				<view class="import-tabs">
 					<view class="import-tabs__item" :class="{ 'import-tabs__item--active': importMode === 'json' }" @tap="importMode = 'json'">
-						<text>JSON</text>
+						<text>备份导入</text>
 					</view>
 					<view class="import-tabs__item" :class="{ 'import-tabs__item--active': importMode === 'csv' }" @tap="importMode = 'csv'">
-						<text>CSV</text>
+						<text>表格导入</text>
 					</view>
 				</view>
 
 				<!-- JSON 导入 -->
 				<template v-if="importMode === 'json'">
-					<text class="import-panel__desc">粘贴之前导出的 JSON 备份数据</text>
+					<text class="import-panel__desc">粘贴之前导出的备份数据</text>
 					<textarea
 						class="import-panel__textarea"
 						v-model="importText"
-						placeholder="在此粘贴 JSON 数据..."
+						placeholder="在此粘贴备份数据..."
 						placeholder-style="color: var(--text-muted); font-size: 13px;"
 					/>
 				</template>
 
 				<!-- CSV 导入 -->
 				<template v-if="importMode === 'csv'">
-					<text class="import-panel__desc">粘贴 CSV 数据（可从导出 CSV 文件复制），自动匹配项目名称</text>
+					<text class="import-panel__desc">粘贴表格数据（可从导出的表格文件复制），自动匹配工作名称</text>
 					<textarea
 						class="import-panel__textarea"
 						v-model="csvText"
-						placeholder="日期,类型,计薪方式,明细,公式,工钱,项目,备注,补贴,扣款&#10;2026-05-02,平日,时薪,18:00-21:00 3h,3h × ¥30/h,90,xx工地,,0,0"
+						:placeholder="csvPlaceholder"
 						placeholder-style="color: var(--text-muted); font-size: 12px;"
 						@input="onCsvInput"
 					/>
@@ -115,7 +110,7 @@
 					<view class="csv-preview" v-if="csvPreview.records.length > 0">
 						<text class="csv-preview__summary">
 							识别 {{ csvPreview.records.length }} 条记录，
-							匹配项目 {{ csvPreview.matched }} 条，
+							匹配工作 {{ csvPreview.matched }} 条，
 							<text class="csv-preview__warn" v-if="csvPreview.unmatched > 0">未匹配 {{ csvPreview.unmatched }} 条</text>
 						</text>
 						<view class="csv-preview__list">
@@ -176,8 +171,8 @@ function parseCSVLine(line) {
 // Map CSV column names to record fields
 const COLUMN_MAP = {
 	'日期': 'date',
-	'项目': 'project_name',
-	'项目名称': 'project_name',
+	'工作': 'project_name',
+	'工作名称': 'project_name',
 	'计薪方式': 'pay_mode_str',
 	'类型': 'day_type_str',
 	'开始时间': 'start_time',
@@ -221,6 +216,9 @@ export default {
 			// #ifndef APP-PLUS
 			return false
 			// #endif
+		},
+		csvPlaceholder() {
+			return '日期,类型,计薪方式,明细,公式,工钱,工作,备注,补贴,扣款\n2026-05-02,平日,时薪,18:00-21:00 3h,3h × ¥30/h,90,xx工地,,0,0'
 		}
 	},
 	methods: {
@@ -243,10 +241,6 @@ export default {
 			uni.navigateTo({ url: '/pages/batch-record/batch-record' })
 		},
 
-		goSalary() {
-			uni.navigateTo({ url: "/pages/salary/salary" })
-		},
-
 		goClock() {
 			uni.navigateTo({ url: '/pages/clock/clock' })
 		},
@@ -267,19 +261,19 @@ export default {
 					const jsonStr = JSON.stringify(backup, null, 2)
 
 					uni.showActionSheet({
-						itemList: ['复制 JSON 到剪贴板', '生成可读文本分享'],
+						itemList: ['复制备份到剪贴板', '生成可读文本分享'],
 						success: (actionRes) => {
 							if (actionRes.tapIndex === 0) {
 								uni.setClipboardData({
 									data: jsonStr,
 									success: () => {
-										uni.showToast({ title: 'JSON 已复制到剪贴板', icon: 'success' })
+										uni.showToast({ title: '备份已复制到剪贴板', icon: 'success' })
 									}
 								})
 							} else if (actionRes.tapIndex === 1) {
 								const records = backup.data['work-record'] || []
 								const totalHours = records.reduce((s, r) => s + (r.duration || 0), 0)
-								const summary = `记工算工钱 - 数据备份\n记录数：${records.length} 条\n总工时：${totalHours} 小时\n导出时间：${new Date().toLocaleString()}\n\n--- 以下是 JSON 数据 ---\n${jsonStr}`
+								const summary = `记工备份\n记录数：${records.length} 条\n总工时：${totalHours} 小时\n导出时间：${new Date().toLocaleString()}\n\n--- 以下是备份数据 ---\n${jsonStr}`
 								uni.setClipboardData({
 									data: summary,
 									success: () => {
@@ -438,15 +432,15 @@ export default {
 
 		async handleCsvImport() {
 			if (this.csvPreview.records.length === 0) {
-				uni.showToast({ title: '无有效 CSV 数据', icon: 'none' })
+				uni.showToast({ title: '无有效表格数据', icon: 'none' })
 				return
 			}
 
 			const unmatchedItems = this.csvPreview.records.filter(r => !r.project_id)
-			let msg = `将导入 ${this.csvPreview.records.length} 条记录，匹配到 ${this.csvPreview.matched} 条项目`
+			let msg = `将导入 ${this.csvPreview.records.length} 条记录，匹配到 ${this.csvPreview.matched} 条工作`
 			if (unmatchedItems.length > 0) {
 				const names = [...new Set(unmatchedItems.map(r => r.project_name).filter(Boolean))]
-				msg += `\n\n未匹配的项目：${names.join('、')}\n这些记录将不关联项目`
+				msg += `\n\n未匹配的工作：${names.join('、')}\n这些记录将不关联工作`
 			}
 
 			uni.showModal({
@@ -503,7 +497,7 @@ export default {
 
 		async handleJsonImport() {
 			if (!this.importText.trim()) {
-				uni.showToast({ title: '请粘贴 JSON 数据', icon: 'none' })
+				uni.showToast({ title: '请粘贴备份数据', icon: 'none' })
 				return
 			}
 
@@ -511,7 +505,7 @@ export default {
 			try {
 				backup = JSON.parse(this.importText.trim())
 			} catch (e) {
-				uni.showToast({ title: 'JSON 格式错误', icon: 'none' })
+				uni.showToast({ title: '备份格式错误', icon: 'none' })
 				return
 			}
 

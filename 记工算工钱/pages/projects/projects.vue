@@ -1,9 +1,10 @@
 <template>
 	<view class="page-projects">
-		<NavBar title="项目管理" :showBack="true" />
+		<NavBar title="工作" :showBack="true" />
 
 		<view class="page-projects__content">
-			<!-- 项目列表 -->
+				<view class="section-label">工作列表</view>
+			<!-- 工作列表 -->
 			<view class="project-list" v-if="store.activeProjects.length > 0">
 				<view
 					v-for="project in store.activeProjects"
@@ -20,18 +21,18 @@
 					<view class="project-card__delete" @tap.stop="confirmDelete(project)">
 						<text class="project-card__delete-icon">🗑</text>
 					</view>
-					<text class="project-card__arrow">›</text>
+					<text class="project-card__edit-icon">✎</text><text class="project-card__arrow">›</text>
 				</view>
 			</view>
 
 			<!-- 空状态 -->
 			<view class="empty-wrap" v-if="store.activeProjects.length === 0">
 				<text class="empty-wrap__icon">&#x1F3E0;</text>
-				<text class="empty-wrap__text">还没有项目</text>
-				<text class="empty-wrap__hint">创建项目后可以按项目统计记工收入</text>
+				<text class="empty-wrap__text">还没有工作</text>
+				<text class="empty-wrap__hint">创建工作后可以按工作统计记工收入</text>
 			</view>
 
-			<!-- 已归档项目 -->
+			<!-- 已归档工作 -->
 			<view class="archived-section" v-if="store.archivedProjects.length > 0">
 				<text class="archived-section__title">已归档</text>
 				<view
@@ -55,7 +56,7 @@
 
 			<!-- 新建按钮（内联） -->
 			<view class="create-btn" @tap="createProject">
-				<text class="create-btn__text">+ 新建项目</text>
+				<text class="create-btn__text">+ 新建工作</text>
 			</view>
 		</view>
 	</view>
@@ -64,14 +65,13 @@
 <script>
 import NavBar from '../../components/NavBar.vue'
 import { useProjectStore } from '../../stores/projectStore'
-import { useSalaryStore } from '../../stores/salaryStore'
 import { useWorkStore } from '@/stores/workStore'
 
 export default {
 	components: { NavBar },
 	data() {
 		return {
-			store: useProjectStore()
+			store: useProjectStore(),
 		}
 	},
 	onShow() {
@@ -90,10 +90,9 @@ export default {
 			if (mode === "piece") {
 				return icon + " 计件 ¥" + (project.piece_rate || 0) + "/" + (project.piece_unit || "件")
 			}
-			const salaryStore = useSalaryStore()
-			const wd = project.weekday_rate || salaryStore.weekdayRate
-			const we = project.weekend_rate || salaryStore.weekendRate
-			const hd = project.holiday_rate || salaryStore.holidayRate
+			const wd = project.weekday_rate || 0
+			const we = project.weekend_rate || 0
+			const hd = project.holiday_rate || 0
 			return icon + " 平¥" + wd + " 周¥" + we + " 节¥" + hd
 		},
 		projectStats(project) {
@@ -119,7 +118,7 @@ export default {
 		confirmDelete(project) {
 			uni.showModal({
 				title: '确认删除',
-				content: `删除项目「${project.name}」不会删除记工记录，但记录将不再关联该项目。`,
+				content: `删除工作「${project.name}」不会删除记工记录，但记录将不再关联该工作。`,
 				confirmText: '删除',
 				confirmColor: '#B85C4A',
 				success: (res) => {
@@ -136,6 +135,17 @@ export default {
 
 <style lang="scss" scoped>
 .page-projects {
+
+.section-label {
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--text-secondary);
+		display: block;
+		margin-top: 24px;
+		margin-bottom: 8px;
+	}
+
+
 	padding-top: 56px;
 	min-height: 100vh;
 	background: var(--surface);
@@ -178,37 +188,41 @@ export default {
 	}
 
 	&__name {
-		font-size: 14px;
+		font-size: 16px;
 		font-weight: 500;
 		color: var(--text-primary);
 		display: block;
 	}
 
 	&__rate {
-		font-size: 11px;
+		font-size: 13px;
 		color: var(--text-muted);
 		margin-top: 2px;
 		display: block;
 	}
 
 	&__stats {
-		font-size: 11px;
+		font-size: 12px;
 		color: var(--primary);
 		margin-top: 1px;
 		display: block;
 	}
 
 	&__delete {
-		padding: 4px; margin-right: 4px;
+		padding: 6px 8px; margin-right: 2px;
 	}
 	&__delete-icon {
-		font-size: 14px; opacity: 0.5;
+		font-size: 20px;
 	}
 
-	&__arrow {
-		font-size: 16px;
-		color: var(--text-muted);
+	&__edit-icon {
+		font-size: 17px;
+		color: var(--text-secondary);
 		margin-left: 8px;
+	}
+	&__arrow {
+		font-size: 18px;
+		color: var(--text-muted);
 	}
 }
 

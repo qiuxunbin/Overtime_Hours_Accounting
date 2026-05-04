@@ -86,17 +86,6 @@
 			]
 		},
 		{
-			"root": "pages/salary",
-			"pages": [
-				{
-					"path": "salary",
-					"style": {
-						"navigationStyle": "custom"
-					}
-				}
-			]
-		},
-		{
 			"root": "pages/clock",
 			"pages": [
 				{
@@ -156,6 +145,17 @@
 			"pages": [
 				{
 					"path": "batch-record",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		},
+		{
+			"root": "pages/records",
+			"pages": [
+				{
+					"path": "records",
 					"style": {
 						"navigationStyle": "custom"
 					}

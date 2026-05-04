@@ -139,9 +139,9 @@
 						</view>
 					</view>
 				</view>
-			<!-- 项目收入对比 -->
+			<!-- 工作收入对比 -->
 			<view class="card" v-if="projectStats.length > 0">
-				<text class="card__title">项目收入对比</text>
+				<text class="card__title">工作收入对比</text>
 				<view class="project-stats">
 					<view class="project-stat" v-for="(ps, idx) in projectStats" :key="idx">
 						<view class="project-stat__header">
@@ -342,7 +342,7 @@ export default {
 					unitLabel = 'h'
 				}
 				return {
-					name: proj ? proj.name : '无项目',
+					name: proj ? proj.name : '无工作',
 					color: proj ? proj.color : '#9C9C9C',
 					hours: Math.round(stats.hours * 10) / 10,
 					pay: stats.pay,
@@ -662,16 +662,14 @@ export default {
 				uni.showToast({ title: '无数据', icon: 'none' })
 				return
 			}
-			let csv = '﻿日期,类型,计薪方式,时长/天数/件数,工钱,项目,备注,补贴,扣款
-'
+			let csv = '﻿日期,类型,计薪方式,时长/天数/件数,工钱,工作,备注,补贴,扣款\n'
 			records.forEach(r => {
 				const subsidies = r.subsidies ? ((r.subsidies.night_shift||0)+(r.subsidies.meal||0)+(r.subsidies.transport||0)) : 0
 				const deduction = r.deduction ? (r.deduction.amount||0) : 0
 				const payMode = r.pay_mode || 'hourly'
 				const qty = payMode === 'daily' ? (r.days || 0) + '天' : payMode === 'piece' ? (r.quantity || 0) : (r.duration || 0) + 'h'
 				const row = [r.date, this.typeLabel((r.day_type || r.overtime_type)), payMode, qty, r.pay || 0, r.project_name || '', (r.remark || '').replace(/,/g, ';'), subsidies, deduction].join(',')
-				csv += row + '
-'
+				csv += row + '\n'
 			})
 			const now = new Date()
 			const fileName = '记工统计_' + now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate()) + '.csv'
@@ -872,7 +870,7 @@ export default {
 	}
 }
 
-/* 项目统计 */
+/* 工作统计 */
 .project-stats {
 		display: flex;
 		flex-direction: column;

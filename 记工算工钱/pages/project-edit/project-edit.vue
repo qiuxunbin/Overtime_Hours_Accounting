@@ -1,11 +1,11 @@
 <template>
 	<view class="page-project-edit">
-		<NavBar :title="editId ? '编辑项目' : '新建项目'" :showBack="true" />
+		<NavBar :title="editId ? '编辑工作' : '新建工作'" :showBack="true" />
 
 		<view class="page-project-edit__content">
-			<!-- 项目名称 -->
+			<!-- 工作名称 -->
 			<view class="field-row">
-				<text class="field-row__label">项目名称</text>
+				<text class="field-row__label">工作名称</text>
 				<input
 					class="field-row__input"
 					type="text"
@@ -36,13 +36,13 @@
 				<!-- 时薪表单 -->
 				<view v-if="form.pay_mode === 'hourly'" class="rate-section">
 					<text class="rate-section__title">时薪标准</text>
-					<text class="rate-section__desc">留空或填 0 表示使用全局时薪设置</text>
+					<text class="rate-section__desc">设置每小时的计酬标准</text>
 					<view class="rate-inputs">
 						<view class="rate-input">
 							<text class="rate-input__label">平日</text>
 							<view class="rate-input__right">
 								<text class="rate-input__prefix">¥</text>
-								<input class="rate-input__field" type="digit" v-model.number="form.weekday_rate" placeholder="0" />
+								<input class="rate-input__field" type="digit" :value="form.weekday_rate || ''" @input="e => onRateInput(e, 'weekday_rate')" placeholder="0" />
 								<text class="rate-input__suffix">/h</text>
 							</view>
 						</view>
@@ -50,7 +50,7 @@
 							<text class="rate-input__label">周末</text>
 							<view class="rate-input__right">
 								<text class="rate-input__prefix">¥</text>
-								<input class="rate-input__field" type="digit" v-model.number="form.weekend_rate" placeholder="0" />
+								<input class="rate-input__field" type="digit" :value="form.weekend_rate || ''" @input="e => onRateInput(e, 'weekend_rate')" placeholder="0" />
 								<text class="rate-input__suffix">/h</text>
 							</view>
 						</view>
@@ -58,7 +58,7 @@
 							<text class="rate-input__label">节假日</text>
 							<view class="rate-input__right">
 								<text class="rate-input__prefix">¥</text>
-								<input class="rate-input__field" type="digit" v-model.number="form.holiday_rate" placeholder="0" />
+								<input class="rate-input__field" type="digit" :value="form.holiday_rate || ''" @input="e => onRateInput(e, 'holiday_rate')" placeholder="0" />
 								<text class="rate-input__suffix">/h</text>
 							</view>
 						</view>
@@ -75,7 +75,7 @@
 							<text class="rate-input__label">日薪</text>
 							<view class="rate-input__right">
 								<text class="rate-input__prefix">¥</text>
-								<input class="rate-input__field" type="digit" v-model.number="form.daily_rate" placeholder="0" />
+								<input class="rate-input__field" type="digit" :value="form.daily_rate || ''" @input="e => onRateInput(e, 'daily_rate')" placeholder="0" />
 								<text class="rate-input__suffix">/天</text>
 							</view>
 						</view>
@@ -92,7 +92,7 @@
 							<text class="rate-input__label">单价</text>
 							<view class="rate-input__right">
 								<text class="rate-input__prefix">¥</text>
-								<input class="rate-input__field" type="digit" v-model.number="form.piece_rate" placeholder="0" />
+								<input class="rate-input__field" type="digit" :value="form.piece_rate || ''" @input="e => onRateInput(e, 'piece_rate')" placeholder="0" />
 								<text class="rate-input__suffix">/</text>
 								<picker class="rate-input__picker" :value="pieceUnitIndex" :range="pieceUnitOptions" @change="onPieceUnitChange">
 									<text class="rate-input__picker-text">{{ form.piece_unit }}</text>
@@ -122,7 +122,7 @@
 
 			<!-- 归档 -->
 			<view class="archive-row" v-if="editId">
-				<text class="archive-row__label">归档项目</text>
+				<text class="archive-row__label">归档工作</text>
 				<view class="archive-row__switch" :class="{ 'archive-row__switch--on': form.is_archived }" @tap="form.is_archived = !form.is_archived">
 					<view class="archive-row__knob"></view>
 				</view>
@@ -136,7 +136,7 @@
 					<text class="bottom-bar__save-text">保存</text>
 				</view>
 				<view class="delete-btn" v-if="isEditing" @tap="handleDelete">
-					<text class="delete-btn__text">删除项目</text>
+					<text class="delete-btn__text">删除工作</text>
 				</view>
 			</view>
 			<view class="bottom-bar__safe"></view>
@@ -147,20 +147,19 @@
 <script>
 import NavBar from '../../components/NavBar.vue'
 import { useProjectStore } from '../../stores/projectStore'
-import { useSalaryStore } from '../../stores/salaryStore'
+
 import { PROJECT_COLORS, PAY_MODES, PIECE_UNITS } from '../../utils/constants'
 
 export default {
 	components: { NavBar },
 	data() {
-		const defaultPayMode = useSalaryStore().config?.pay_mode || 'hourly'
 		return {
 			editId: null,
 			form: {
 				name: '',
 				color: '#1B8A5A',
 				sort_order: 0,
-				pay_mode: defaultPayMode,
+				pay_mode: 'hourly',
 				weekday_rate: 0,
 				weekend_rate: 0,
 				holiday_rate: 0,
@@ -192,7 +191,7 @@ export default {
 					name: proj.name || '',
 					color: proj.color || '#1B8A5A',
 					sort_order: proj.sort_order || 0,
-					pay_mode: proj.pay_mode || useSalaryStore().config?.pay_mode || 'hourly',
+					pay_mode: proj.pay_mode || 'hourly',
 					weekday_rate: proj.weekday_rate || 0,
 					weekend_rate: proj.weekend_rate || 0,
 					holiday_rate: proj.holiday_rate || 0,
@@ -201,16 +200,52 @@ export default {
 					piece_unit: proj.piece_unit || '件',
 					is_archived: proj.is_archived || false
 				}
+			} else {
+				this.autoFillRates()
 			}
 		}
 	},
-	methods: {
+	onShow() {
+			const pStore = useProjectStore()
+			pStore.loadProjects()
+		},
+	autoFillRates() {
+		const pStore = useProjectStore()
+		pStore.loadProjects()
+		const sameModeProjects = pStore.projects
+			.filter(p => p.pay_mode === this.form.pay_mode && p._id !== this.editId)
+			.sort((a, b) => (b.created_at || 0) - (a.created_at || 0))
+		const last = sameModeProjects[0]
+		if (!last) return
+		if (this.form.pay_mode === "hourly") {
+			if (last.weekday_rate > 0) this.form.weekday_rate = last.weekday_rate
+			if (last.weekend_rate > 0) this.form.weekend_rate = last.weekend_rate
+			if (last.holiday_rate > 0) this.form.holiday_rate = last.holiday_rate
+		} else if (this.form.pay_mode === "daily") {
+			if (last.daily_rate > 0) this.form.daily_rate = last.daily_rate
+		} else if (this.form.pay_mode === "piece") {
+			if (last.piece_rate > 0) this.form.piece_rate = last.piece_rate
+			if (last.piece_unit) this.form.piece_unit = last.piece_unit
+		}
+		},
+		methods: {
 		onPieceUnitChange(e) {
 			this.form.piece_unit = this.pieceUnitOptions[e.detail.value] || '件'
 		},
+		onRateInput(e, field) {
+			const raw = String(e.detail?.value ?? e.target?.value ?? "")
+			let filtered = raw.replace(/[^\d.]/g, "")
+			const dotIdx = filtered.indexOf(".")
+			if (dotIdx >= 0) {
+				filtered = filtered.substring(0, dotIdx + 1) + filtered.substring(dotIdx + 1).replace(/\./g, "")
+			}
+			this.form[field] = filtered === "" || filtered === "." ? 0 : parseFloat(filtered)
+			this.$forceUpdate()
+		},
+
 		async handleSave() {
 			if (!this.form.name.trim()) {
-				uni.showToast({ title: '请输入项目名称', icon: 'none' })
+				uni.showToast({ title: '请输入工作名称', icon: 'none' })
 				return
 			}
 
@@ -241,7 +276,7 @@ export default {
 		handleDelete() {
 			uni.showModal({
 				title: '确认删除',
-				content: `删除项目「${this.form.name}」不会删除记工记录，但记录将不再关联该项目。`,
+				content: `删除工作「${this.form.name}」不会删除记工记录，但记录将不再关联该工作。`,
 				confirmText: '删除',
 				confirmColor: '#B85C4A',
 				success: (res) => {
