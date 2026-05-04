@@ -142,12 +142,6 @@
 					</view>
 				</view>
 
-				<!-- 
-						</view>
-					</view>
-					<text class="rate-section__example">例：50件 × ¥6/件 = ¥300</text>
-				</view>
-			</view>
 
 	
 
