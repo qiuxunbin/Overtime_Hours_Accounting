@@ -538,12 +538,16 @@ export default {
 	onReady() { setTimeout(() => { this.pageReady = true }, 350) },
 	async onShow() {
 		await this.loadProjectPicker()
-		if (!this.selectedProjectId) this.autoSelectProject()
+		this.$nextTick(() => {
+			if (!this.selectedProjectId) this.autoSelectProject()
+		})
 	},
 	async onLoad(options) {
 		if (options.date) this.pickerDate = options.date
 		await this.loadProjectPicker()
-		this.autoSelectProject()
+		this.$nextTick(() => {
+			this.autoSelectProject()
+		})
 		if (options.id) {
 			this.editId = options.id
 			const store = useWorkStore()
