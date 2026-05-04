@@ -147,6 +147,41 @@
 			<view class="bottom-bar__safe"></view>
 		</view>
 	</view>
+
+	<!-- 工作选择面板 -->
+	<view class="work-picker-mask" v-if="showWorkPicker" @tap="showWorkPicker = false">
+		<view class="work-picker" @tap.stop>
+			<view class="work-picker__head">
+				<text class="work-picker__title">选择工作</text>
+				<text class="work-picker__close" @tap="showWorkPicker = false">✕</text>
+			</view>
+			<view class="work-picker__list">
+				<view class="work-picker__item" @tap="onPickWork(null)">
+					<view class="work-picker__dot" style="background: #9C9C9C;"></view>
+					<view class="work-picker__info">
+						<text class="work-picker__name">不关联工作</text>
+					</view>
+				</view>
+				<view
+					v-for="p in pickerProjects"
+					:key="p._id"
+					class="work-picker__item"
+					:class="{ 'work-picker__item--sel': selectedProjectId === p._id }"
+					@tap="onPickWork(p._id)"
+				>
+					<view class="work-picker__dot" :style="{ background: p.color }"></view>
+					<view class="work-picker__info">
+						<text class="work-picker__name">{{ p.name }}</text>
+						<text class="work-picker__rate">{{ rateSummary(p) }}</text>
+					</view>
+					<text class="work-picker__check" v-if="selectedProjectId === p._id">✓</text>
+				</view>
+			</view>
+			<view class="work-picker__foot" @tap="goCreateProject">
+				<text class="work-picker__add">+ 新建工作</text>
+			</view>
+		</view>
+	</view>
 </template>
 
 <script>
@@ -176,6 +211,7 @@ export default {
 			pieceQuantity: 0,
 			remark: '',
 			selectedProjectId: null,
+			showWorkPicker: false,
 			saving: false
 		}
 	},
@@ -199,6 +235,9 @@ export default {
 		},
 		hasProjects() {
 			return useProjectStore().activeProjects.length > 0
+		},
+		pickerProjects() {
+			return useProjectStore().activeProjects
 		},
 		previewDates() {
 			const dates = []
@@ -745,5 +784,41 @@ export default {
 .section__hint--highlight {
 	color: var(--primary);
 	font-weight: 700;
+}
+
+/* 工作选择面板 */
+.work-picker-mask {
+	position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+	background: rgba(0,0,0,0.45); z-index: 300;
+	display: flex; align-items: flex-end; justify-content: center;
+}
+.work-picker {
+	width: 100%; max-width: 640px; max-height: 70vh;
+	background: var(--surface-card); border-radius: 20px 20px 0 0;
+	display: flex; flex-direction: column; overflow: hidden;
+}
+.work-picker__head {
+	display: flex; align-items: center; justify-content: space-between;
+	padding: 20px 20px 12px; border-bottom: 1px solid var(--border);
+}
+.work-picker__title { font-size: 17px; font-weight: 600; color: var(--text-primary); }
+.work-picker__close { font-size: 18px; color: var(--text-muted); padding: 4px; }
+.work-picker__list { flex: 1; overflow-y: auto; padding: 8px 12px; }
+.work-picker__item {
+	display: flex; align-items: center; padding: 12px 8px;
+	border-radius: 10px; gap: 10px;
+}
+.work-picker__item--sel { background: var(--primary-light); }
+.work-picker__dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.work-picker__info { flex: 1; display: flex; flex-direction: column; }
+.work-picker__name { font-size: 15px; font-weight: 500; color: var(--text-primary); }
+.work-picker__rate { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.work-picker__check { font-size: 16px; color: var(--primary); font-weight: 700; }
+.work-picker__foot {
+	padding: 12px 20px 24px; border-top: 1px solid var(--border);
+}
+.work-picker__add {
+	display: block; text-align: center; font-size: 16px; font-weight: 600;
+	color: var(--primary); padding: 10px 0;
 }
 </style>
