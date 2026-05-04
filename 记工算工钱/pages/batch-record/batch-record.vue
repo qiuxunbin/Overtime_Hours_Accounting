@@ -59,17 +59,14 @@
 			<!-- 日薪 -->
 			<template v-if="effectivePayMode === 'daily'">
 				<view class="qty-stepper">
-					<view class="qty-stepper__btn" :class="{ 'qty-stepper__btn--off': dailyDays <= dailyMin }" @tap="adjustDailyDays(-0.5)"><text>−</text></view>
-					<text class="qty-stepper__num">{{ dailyDays }}</text>
+					<text class="qty-stepper__num">1</text>
 					<text class="qty-stepper__unit">天</text>
-					<view class="qty-stepper__btn qty-stepper__btn--add" :class="{ 'qty-stepper__btn--off': dailyDays >= dailyMax }" @tap="adjustDailyDays(0.5)"><text>+</text></view>
 				</view>
-				<text class="field-hint" v-if="isSingleDay && dailyDays > 1">⚠ 不能超过日历天数</text>
 
 				<view class="pay-card" v-if="dailyPay > 0">
 					<text class="pay-card__label">单日工钱</text>
 					<text class="pay-card__amount">¥{{ fmtMoney(dailyPay) }}</text>
-					<text class="pay-card__detail">{{ dailyDays }}天 × ¥{{ projectDailyRate }}/天 = ¥{{ fmtMoney(dailyPay) }}</text>
+					<text class="pay-card__detail">1天 × ¥{{ projectDailyRate }}/天 = ¥{{ fmtMoney(dailyPay) }}</text>
 				</view>
 			</template>
 
@@ -163,7 +160,7 @@ export default {
 	components: { NavBar },
 	data() {
 		const now = new Date(); const today = formatDate(now)
-		return { startDate: today, endDate: today, startTime: '18:00', endTime: '21:00', dailyDays: 1, pieceQuantity: 0, remark: '', selectedProjectId: null, showWorkPicker: false, saving: false }
+		return { startDate: today, endDate: today, startTime: '18:00', endTime: '21:00', pieceQuantity: 0, remark: '', selectedProjectId: null, showWorkPicker: false, saving: false }
 	},
 	computed: {
 		todayStr() { const n = new Date(); return `${n.getFullYear()}-${pad(n.getMonth() + 1)}-${pad(n.getDate())}` },
@@ -175,8 +172,7 @@ export default {
 
 		// 日薪：单日限制
 		isSingleDay() { return this.startDate === this.endDate },
-		dailyMin() { return this.isSingleDay ? 0 : 0.5 },
-		dailyMax() { const s = new Date(this.startDate); const e = new Date(this.endDate); return Math.max(1, Math.ceil((e - s) / 86400000) + 1) },
+		
 
 		hasProjects() { return useProjectStore().activeProjects.length > 0 },
 		pickerProjects() { return useProjectStore().activeProjects },
@@ -196,7 +192,7 @@ if (mode === 'piece') return `平¥${p?.piece_weekday_rate || 0} 休¥${p?.piece
 		dayType() { return useHolidayStore().getDayType(this.startDate) },
 		estimatedPay() { if (this.durationNum <= 0 || this.currentRate <= 0) return 0; return round2(this.durationNum * this.currentRate) },
 		projectDailyRate() { if (!this.selectedProject) return 0; return this.currentRate || 0 },
-		dailyPay() { return round2((this.dailyDays || 0) * this.projectDailyRate) },
+		dailyPay() { return round2(this.projectDailyRate) },
 		projectPieceRate() { if (!this.selectedProject) return 0; return this.currentRate || 0 },
 		piecePay() { return round2((this.pieceQuantity || 0) * this.projectPieceRate) },
 
@@ -212,7 +208,7 @@ if (mode === 'piece') return `平¥${p?.piece_weekday_rate || 0} 休¥${p?.piece
 					dates.push({ date: dateStr, typeLabel: typeLabels[type] || '平日', qtyLabel: this.durationText, type, pay, rate, payText: fmtDec(pay) })
 					d.setDate(d.getDate() + 1) }
 			} else if (mode === 'daily') {
-				const days = this.dailyDays; if (days <= 0) return []
+				const days = 1
 						const proj = this.selectedProject; let d = new Date(start)
 					while (d <= end) { const dateStr = formatDate(d); const type = useHolidayStore().getDayType(dateStr); const rateKey = 'daily_' + type + '_rate'; const rate = (proj && proj[rateKey] > 0) ? proj[rateKey] : (proj?.daily_rate || 0); const pay = round2(days * rate)
 						dates.push({ date: dateStr, typeLabel: typeLabels[type] || '平日', qtyLabel: days + '天', type, pay, rate, days, payText: fmtDec(pay) })
@@ -230,7 +226,7 @@ if (mode === 'piece') return `平¥${p?.piece_weekday_rate || 0} 休¥${p?.piece
 	},
 	watch: {
 			selectedProject(val) { if (!val && this.selectedProjectId) this.autoSelectProject() },
-			dailyMax(val) { if (this.dailyDays > val) this.dailyDays = val }
+			
 		},
 	async onShow() { await useProjectStore().loadProjects(); this.$nextTick(() => { if (!this.selectedProjectId || !this.selectedProject) this.autoSelectProject() }) },
 	methods: {
@@ -239,11 +235,7 @@ if (mode === 'piece') return `平¥${p?.piece_weekday_rate || 0} 休¥${p?.piece
 		onStartTimeChange(e) { this.startTime = e.detail.value },
 		onEndTimeChange(e) { this.endTime = e.detail.value },
 
-		adjustDailyDays(delta) {
-			if (delta < 0 && this.dailyDays <= this.dailyMin) return
-			if (delta > 0 && this.dailyDays >= this.dailyMax) { if (this.isSingleDay) uni.showToast({ title: "不能超过日历天数", icon: "none" }); return }
-			this.dailyDays = Math.max(this.dailyMin, Math.min(this.dailyMax, Math.round((this.dailyDays + delta) * 10) / 10))
-		},
+
 		adjustPieceQty(delta) {
 			if (delta < 0 && this.pieceQuantity <= 0) return
 			this.pieceQuantity = Math.max(0, this.pieceQuantity + delta)
@@ -269,8 +261,7 @@ if (mode === 'piece') return `平¥${p?.piece_weekday_rate || 0} 休¥${p?.piece
 			if (this.saving || this.previewDates.length === 0) return
 			const mode = this.effectivePayMode
 			if (mode === 'hourly' && this.durationNum <= 0) { uni.showToast({ title: '请设置有效时间', icon: 'none' }); return }
-			if (mode === 'daily' && this.dailyDays <= 0) { uni.showToast({ title: '请设置天数', icon: 'none' }); return }
-			if (mode === 'daily' && this.dailyDays > this.dailyMax) { uni.showToast({ title: '单日工时不能超过日历天数', icon: 'none' }); return }
+			
 			if (mode === 'piece' && this.pieceQuantity <= 0) { uni.showToast({ title: '请设置件数', icon: 'none' }); return }
 			if (!this.selectedProjectId) { if (!this.hasProjects) { uni.navigateTo({ url: '/pages/project-edit/project-edit' }); return } this.showProjectPicker(); return }
 			if (mode === 'hourly' && this.currentRate <= 0) { this.goEditProject(); return }
@@ -280,7 +271,7 @@ if (mode === 'piece') return `平¥${p?.piece_weekday_rate || 0} 休¥${p?.piece
 				try {
 					const base = { date: item.date, pay_mode: mode, remark: this.remark, project_id: this.selectedProjectId, project_name: proj ? proj.name : '', photos: [], settled: false, subsidies: { night_shift: 0, meal: 0, transport: 0 }, deduction: { amount: 0, note: '' }, day_type: item.type }
 					if (mode === 'hourly') Object.assign(base, { start_time: this.startTime, end_time: this.endTime, duration: round2(this.durationNum), rate: item.rate || 0, pay: item.pay, net_pay: item.pay })
-					else if (mode === 'daily') Object.assign(base, { start_time: '', end_time: '', duration: 0, days: item.days || 1, daily_rate: item.rate || 0, rate: item.rate || 0, pay: item.pay, net_pay: item.pay })
+					else if (mode === 'daily') Object.assign(base, { start_time: '', end_time: '', duration: 0, days: 1, daily_rate: item.rate || 0, rate: item.rate || 0, pay: item.pay, net_pay: item.pay })
 					else if (mode === 'piece') Object.assign(base, { start_time: '', end_time: '', duration: 0, quantity: item.quantity || 0, piece_rate: item.rate || 0, piece_unit: item.unit || '件', rate: item.rate || 0, pay: item.pay, net_pay: item.pay })
 					await store.addRecord(base); success++
 				} catch (e) { fail++ }

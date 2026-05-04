@@ -25,11 +25,11 @@
 				</view>
 			</view>
 
-			<view class="record-list" v-if="processedRecords.length > 0">
-				<view v-for="(rec, idx) in processedRecords" :key="rec.id || rec._id" class="record-item" :class="{ 'record-item--last': idx === processedRecords.length - 1, 'record-item--sel': selectMode && rec._selected }" @tap="onItemTap(rec)">
+			<view class="record-list" v-if="filteredRecords.length > 0">
+				<view v-for="(rec, idx) in filteredRecords" :key="rec.id || rec._id" class="record-item" :class="{ 'record-item--last': idx === filteredRecords.length - 1, 'record-item--sel': selectMode && selectedSet.has(rec.id || rec._id) }" @tap="onItemTap(rec)">
 					<view class="record-item__check" v-if="selectMode">
-						<view class="record-item__checkbox" :class="{ 'record-item__checkbox--on': rec._selected }">
-							<text v-if="rec._selected">✓</text>
+						<view class="record-item__checkbox" :class="{ 'record-item__checkbox--on': selectedSet.has(rec.id || rec._id) }">
+							<text v-if="selectedSet.has(rec.id || rec._id)">✓</text>
 						</view>
 					</view>
 					<view class="record-item__icon" :class="iconClass(rec.day_type || rec.overtime_type)">
@@ -111,14 +111,6 @@ export default {
 			if (this.settleFilter !== 'all' || this.projectFilter) return '当前筛选条件下无记录'
 			return '本月没有记工记录'
 		},
-		processedRecords() {
-			const selSet = new Set(this.selectedList)
-			return this.filteredRecords.map(rec => {
-				const copy = Object.assign({}, rec)
-				copy._selected = selSet.has(rec.id || rec._id)
-				return copy
-			})
-		},
 		selectedSet() { return new Set(this.selectedList) }
 	},
 	onShow() {
@@ -138,12 +130,8 @@ export default {
 		onItemTap(rec) {
 			if (!this.selectMode) { this.goEdit(rec.id || rec._id); return }
 			const id = rec.id || rec._id
-			if (this.selectedSet.has(id)) {
-				const idx = this.selectedList.indexOf(id)
-				if (idx !== -1) this.selectedList.splice(idx, 1)
-			} else {
-				this.selectedList.push(id)
-			}
+			const idx = this.selectedList.indexOf(id)
+			if (idx === -1) { this.selectedList.push(id) } else { this.selectedList.splice(idx, 1) }
 		},
 
 		toggleSelectMode() {
