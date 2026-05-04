@@ -23,8 +23,24 @@
 				</view>
 			</view>
 
-			<!-- 统一时间 -->
+			<!-- 计薪模式 -->
 			<view class="section">
+				<text class="section__title">计薪方式</text>
+				<view class="mode-tabs">
+					<view class="mode-tab" :class="{ 'mode-tab--active': payMode === 'hourly' }" @tap="payMode = 'hourly'">
+						<text>时薪</text>
+					</view>
+					<view class="mode-tab" :class="{ 'mode-tab--active': payMode === 'daily' }" @tap="payMode = 'daily'">
+						<text>日薪</text>
+					</view>
+					<view class="mode-tab" :class="{ 'mode-tab--active': payMode === 'piece' }" @tap="payMode = 'piece'">
+						<text>计件</text>
+					</view>
+				</view>
+			</view>
+
+			<!-- 统一数量 — 时薪 -->
+			<view class="section" v-if="payMode === 'hourly'">
 				<text class="section__title">统一时间</text>
 				<view class="time-range">
 					<picker mode="time" :value="startTime" @change="onStartTimeChange" class="time-picker">
@@ -41,8 +57,42 @@
 						</view>
 					</picker>
 				</view>
-				<text class="section__hint" v-if="startDate !== endDate">每天 {{ duration }}h，共 {{ previewDates.length }} 天，合计 {{ totalPreviewHours }}h</text>
-				<text class="section__hint" v-else>起止日期相同，只生成 <text class="section__hint--highlight">1</text> 条记工记录</text>
+				<text class="section__hint" v-if="startDate !== endDate && duration > 0">每天 {{ duration }}h，共 {{ previewDates.length }} 天，合计 {{ totalPreviewQuantity }}h</text>
+				<text class="section__hint" v-else-if="startDate === endDate">起止日期相同，只生成 <text class="section__hint--highlight">1</text> 条记工记录</text>
+			</view>
+
+			<!-- 统一数量 — 日薪 -->
+			<view class="section" v-if="payMode === 'daily'">
+				<text class="section__title">统一天数</text>
+				<view class="qty-stepper">
+					<view class="qty-stepper__btn" @tap="adjustDailyDays(-0.5)">
+						<text>−</text>
+					</view>
+					<text class="qty-stepper__num">{{ dailyDays }}</text>
+					<text class="qty-stepper__unit">天</text>
+					<view class="qty-stepper__btn qty-stepper__btn--add" @tap="adjustDailyDays(0.5)">
+						<text>+</text>
+					</view>
+				</view>
+				<text class="section__hint" v-if="previewDates.length > 0 && dailyDays > 0">每天 {{ dailyDays }} 天，共 {{ previewDates.length }} 天记工 · 合计 {{ totalPreviewQuantity }} 天</text>
+				<text class="section__hint" v-else-if="startDate === endDate">起止日期相同，只生成 <text class="section__hint--highlight">1</text> 条记工记录</text>
+			</view>
+
+			<!-- 统一数量 — 计件 -->
+			<view class="section" v-if="payMode === 'piece'">
+				<text class="section__title">统一件数</text>
+				<view class="qty-stepper">
+					<view class="qty-stepper__btn" @tap="adjustPieceQty(-1)">
+						<text>−</text>
+					</view>
+					<text class="qty-stepper__num">{{ pieceQuantity }}</text>
+					<text class="qty-stepper__unit">{{ pieceUnit }}</text>
+					<view class="qty-stepper__btn qty-stepper__btn--add" @tap="adjustPieceQty(1)">
+						<text>+</text>
+					</view>
+				</view>
+				<text class="section__hint" v-if="previewDates.length > 0 && pieceQuantity > 0">每天 {{ pieceQuantity }}{{ pieceUnit }}，共 {{ previewDates.length }} 天 · 合计 {{ totalPreviewQuantity }}{{ pieceUnit }}</text>
+				<text class="section__hint" v-else-if="startDate === endDate">起止日期相同，只生成 <text class="section__hint--highlight">1</text> 条记工记录</text>
 			</view>
 
 			<!-- 工作选择 -->
@@ -67,13 +117,14 @@
 			<!-- 预览 -->
 			<view class="section" v-if="previewDates.length > 0">
 				<text class="section__title">预览（共 {{ previewDates.length }} 条）</text>
-					<text class="section__summary" v-if="previewDates.length > 0">工作 {{ previewDates.length }} 天 · 预估工钱 ¥{{ estimatedTotalPay }}</text>
+				<text class="section__summary" v-if="estimatedTotalPay > 0">预估工钱 ¥{{ estimatedTotalPay }}</text>
 				<view class="preview-list">
 					<view class="preview-item" v-for="(d, idx) in previewDates" :key="idx">
 						<text class="preview-item__date">{{ d.date }}</text>
 						<text class="preview-item__type">{{ d.typeLabel }}</text>
-						<text class="preview-item__hours">{{ d.hours }}h</text>
+						<text class="preview-item__qty">{{ d.qtyLabel }}</text>
 						<text class="preview-item__pay" v-if="d.pay > 0">¥{{ d.pay }}</text>
+						<text class="preview-item__pay preview-item__pay--zero" v-else>¥0</text>
 					</view>
 				</view>
 			</view>
@@ -99,9 +150,10 @@ import { useWorkStore } from '@/stores/workStore'
 import { useProjectStore } from '../../stores/projectStore'
 import { useHolidayStore } from '@/stores/holidayStore'
 
-
 function pad(n) { return String(n).padStart(2, '0') }
 function formatDate(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` }
+
+const PIECE_UNITS = ['件', '个', '米', '吨', '套', '次']
 
 export default {
 	components: { NavBar },
@@ -111,8 +163,11 @@ export default {
 		return {
 			startDate: today,
 			endDate: today,
+			payMode: 'hourly',
 			startTime: '18:00',
 			endTime: '21:00',
+			dailyDays: 1,
+			pieceQuantity: 0,
 			remark: '',
 			selectedProjectId: null,
 			saving: false
@@ -129,6 +184,13 @@ export default {
 			const minutes = (eh * 60 + em) - (sh * 60 + sm)
 			return minutes > 0 ? (minutes / 60).toFixed(1) : '0'
 		},
+		pieceUnit() {
+			if (this.selectedProject?.piece_unit) return this.selectedProject.piece_unit
+			return '件'
+		},
+		pieceUnitOptions() {
+			return PIECE_UNITS
+		},
 		previewDates() {
 			const dates = []
 			const start = new Date(this.startDate)
@@ -136,15 +198,49 @@ export default {
 			if (end < start) return []
 
 			const typeLabels = { weekday: '平日', weekend: '周末', holiday: '节假日' }
-			const h = parseFloat(this.duration) || 0
-			if (h <= 0) return []
+			const mode = this.payMode
 
-			let d = new Date(start)
-			while (d <= end) {
-				const dateStr = formatDate(d)
-				const type = useHolidayStore().getDayType(dateStr)
-				const proj = this.selectedProject; const key = type + '_rate'; const rate = (proj && proj[key] > 0) ? proj[key] : 0; const dayPay = rate > 0 ? Math.round(h * rate) : 0; dates.push({ date: dateStr, typeLabel: typeLabels[type] || '平日', hours: h, type, pay: dayPay })
-				d.setDate(d.getDate() + 1)
+			if (mode === 'hourly') {
+				const h = parseFloat(this.duration) || 0
+				if (h <= 0) return []
+				let d = new Date(start)
+				while (d <= end) {
+					const dateStr = formatDate(d)
+					const type = useHolidayStore().getDayType(dateStr)
+					const proj = this.selectedProject
+					const rateKey = type + '_rate'
+					const rate = (proj && proj[rateKey] > 0) ? proj[rateKey] : 0
+					const pay = rate > 0 ? Math.round(h * rate) : 0
+					dates.push({ date: dateStr, typeLabel: typeLabels[type] || '平日', qtyLabel: h + 'h', type, pay, rate })
+					d.setDate(d.getDate() + 1)
+				}
+			} else if (mode === 'daily') {
+				const days = this.dailyDays
+				if (days <= 0) return []
+				const proj = this.selectedProject
+				const rate = (proj && proj.daily_rate > 0) ? proj.daily_rate : 0
+				const pay = rate > 0 ? Math.round(days * rate) : 0
+				let d = new Date(start)
+				while (d <= end) {
+					const dateStr = formatDate(d)
+					const type = useHolidayStore().getDayType(dateStr)
+					dates.push({ date: dateStr, typeLabel: typeLabels[type] || '平日', qtyLabel: days + '天', type, pay, rate, days })
+					d.setDate(d.getDate() + 1)
+				}
+			} else if (mode === 'piece') {
+				const qty = this.pieceQuantity
+				if (qty <= 0) return []
+				const proj = this.selectedProject
+				const rate = (proj && proj.piece_rate > 0) ? proj.piece_rate : 0
+				const unit = this.pieceUnit
+				const pay = rate > 0 ? Math.round(qty * rate) : 0
+				let d = new Date(start)
+				while (d <= end) {
+					const dateStr = formatDate(d)
+					const type = useHolidayStore().getDayType(dateStr)
+					dates.push({ date: dateStr, typeLabel: typeLabels[type] || '平日', qtyLabel: qty + unit, type, pay, rate, quantity: qty, unit })
+					d.setDate(d.getDate() + 1)
+				}
 			}
 			return dates
 		},
@@ -153,9 +249,13 @@ export default {
 			const pStore = useProjectStore()
 			return pStore.getProjectById(this.selectedProjectId)
 		},
-		totalPreviewHours() {
-			const h = parseFloat(this.duration) || 0
-			return (h * this.previewDates.length).toFixed(1)
+		totalPreviewQuantity() {
+			const mode = this.payMode
+			const len = this.previewDates.length
+			if (len === 0) return '0'
+			if (mode === 'hourly') return (parseFloat(this.duration) * len || 0).toFixed(1)
+			if (mode === 'daily') return (this.dailyDays * len || 0)
+			return (this.pieceQuantity * len || 0)
 		},
 		estimatedTotalPay() {
 			return this.previewDates.reduce(function(s, d) { return s + (d.pay || 0); }, 0).toFixed(0)
@@ -173,24 +273,32 @@ export default {
 		onStartTimeChange(e) { this.startTime = e.detail.value },
 		onEndTimeChange(e) { this.endTime = e.detail.value },
 
+		adjustDailyDays(delta) {
+			this.dailyDays = Math.max(0.5, Math.round((this.dailyDays + delta) * 10) / 10)
+		},
+		adjustPieceQty(delta) {
+			this.pieceQuantity = Math.max(0, this.pieceQuantity + delta)
+		},
+
 		showProjectPicker() {
 			const pStore = useProjectStore()
 			pStore.loadProjects()
 			setTimeout(() => {
-				const items = [{ text: '无工作', value: null },
-					...pStore.activeProjects.map(p => ({ text: p.name + (p.pay_mode !== 'hourly' ? ' (非时薪)' : ''), value: p._id }))
+				const modeProjects = pStore.activeProjects.filter(p => p.pay_mode === this.payMode || p.pay_mode === this.payMode)
+				const allProjects = [
+					{ text: '无工作', value: null },
+					...pStore.activeProjects.map(p => ({
+						text: p.name + (p.pay_mode !== this.payMode ? ' (' + ({hourly:'时薪',daily:'日薪',piece:'计件'}[p.pay_mode]||p.pay_mode) + ')' : ''),
+						value: p._id,
+						modeOk: p.pay_mode === this.payMode
+					}))
 				]
 				uni.showActionSheet({
-					itemList: items.map(i => i.text),
+					itemList: allProjects.map(i => i.text),
 					success: (res) => {
-						const picked = items[res.tapIndex]
-						if (picked.value) {
-							const proj = pStore.getProjectById(picked.value)
-							if (proj && proj.pay_mode !== 'hourly') {
-								uni.showToast({ title: '非时薪工作请去记工页单独添加', icon: 'none', duration: 2000 })
-								this.selectedProjectId = null
-								return
-							}
+						const picked = allProjects[res.tapIndex]
+						if (picked.value && !picked.modeOk) {
+							uni.showToast({ title: '该工作计薪方式与当前选择不一致', icon: 'none', duration: 2000 })
 						}
 						this.selectedProjectId = picked.value
 					}
@@ -201,10 +309,15 @@ export default {
 		async handleBatchSave() {
 			if (this.saving || this.previewDates.length === 0) return
 
-			const h = parseFloat(this.duration) || 0
-			if (h <= 0) {
-				uni.showToast({ title: '请设置有效时间', icon: 'none' })
-				return
+			const mode = this.payMode
+			if (mode === 'hourly' && (parseFloat(this.duration) || 0) <= 0) {
+				uni.showToast({ title: '请设置有效时间', icon: 'none' }); return
+			}
+			if (mode === 'daily' && this.dailyDays <= 0) {
+				uni.showToast({ title: '请设置天数', icon: 'none' }); return
+			}
+			if (mode === 'piece' && this.pieceQuantity <= 0) {
+				uni.showToast({ title: '请设置件数', icon: 'none' }); return
 			}
 
 			this.saving = true
@@ -216,15 +329,9 @@ export default {
 
 			for (const item of this.previewDates) {
 				try {
-					const durationVal = parseFloat(this.duration) || 0
-					const key = item.type + '_rate'
-					const rate = (proj && proj[key] > 0) ? proj[key] : 0
-					const pay = Math.round(durationVal * rate * 100) / 100
-					const netPay = pay
-
 					const record = {
 						date: item.date,
-						pay_mode: 'hourly',
+						pay_mode: mode,
 						remark: this.remark,
 						project_id: this.selectedProjectId,
 						project_name: proj ? proj.name : '',
@@ -232,13 +339,33 @@ export default {
 						settled: false,
 						subsidies: { night_shift: 0, meal: 0, transport: 0 },
 						deduction: { amount: 0, note: '' },
-						start_time: this.startTime,
-						end_time: this.endTime,
-						duration: durationVal,
 						day_type: item.type,
-						rate: rate,
-						pay: pay,
-						net_pay: netPay
+						pay: item.pay,
+						net_pay: item.pay
+					}
+
+					if (mode === 'hourly') {
+						Object.assign(record, {
+							start_time: this.startTime,
+							end_time: this.endTime,
+							duration: parseFloat(this.duration) || 0,
+							rate: item.rate,
+							pay: item.pay,
+							net_pay: item.pay
+						})
+					} else if (mode === 'daily') {
+						Object.assign(record, {
+							start_time: '', end_time: '', duration: 0,
+							days: item.days, daily_rate: item.rate,
+							pay: item.pay, net_pay: item.pay
+						})
+					} else if (mode === 'piece') {
+						Object.assign(record, {
+							start_time: '', end_time: '', duration: 0,
+							quantity: item.quantity, piece_rate: item.rate,
+							piece_unit: item.unit,
+							pay: item.pay, net_pay: item.pay
+						})
 					}
 
 					const res = await store.addRecord(record)
@@ -294,6 +421,71 @@ export default {
 	}
 }
 
+/* 计薪模式 tabs */
+.mode-tabs {
+	display: flex;
+	background: var(--surface-hover);
+	border-radius: 12px;
+	padding: 4px;
+}
+.mode-tab {
+	flex: 1;
+	text-align: center;
+	padding: 8px 0;
+	border-radius: 10px;
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--text-muted);
+}
+.mode-tab--active {
+	background: var(--surface-card);
+	color: var(--primary);
+	font-weight: 600;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+/* 数量步进器 */
+.qty-stepper {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--surface-card);
+	border-radius: 12px;
+	border: 1px solid var(--border);
+	padding: 16px;
+	gap: 16px;
+
+	&__btn {
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		background: var(--surface-hover);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 22px;
+		color: var(--text-secondary);
+
+		&--add {
+			background: var(--primary);
+			color: #FFFFFF;
+		}
+	}
+
+	&__num {
+		font-size: 28px;
+		font-weight: 700;
+		color: var(--text-primary);
+		min-width: 60px;
+		text-align: center;
+	}
+
+	&__unit {
+		font-size: 15px;
+		color: var(--text-muted);
+	}
+}
+
 .date-range {
 	display: flex;
 	align-items: center;
@@ -314,13 +506,6 @@ export default {
 		margin-right: 8px;
 	}
 
-			display: flex;
-			align-items: center;
-			gap: 8px;
-			width: 8px;
-			height: 8px;
-			border-radius: 50%;
-			flex-shrink: 0;
 	&__value {
 		font-size: 15px;
 		font-weight: 500;
@@ -379,18 +564,18 @@ export default {
 	border-radius: 12px;
 	border: 1px solid var(--border);
 
-		&__left {
-			display: flex;
-			align-items: center;
-			gap: 8px;
-		}
+	&__left {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
 
-		&__dot {
-			width: 8px;
-			height: 8px;
-			border-radius: 50%;
-			flex-shrink: 0;
-		}
+	&__dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		flex-shrink: 0;
+	}
 
 	&__value {
 		font-size: 15px;
@@ -445,12 +630,27 @@ export default {
 		text-align: center;
 	}
 
-	&__hours {
-		font-size: 14px;
+	&__qty {
+		font-size: 13px;
 		font-weight: 500;
 		color: var(--primary);
 		flex: 1;
 		text-align: right;
+		padding-right: 8px;
+	}
+
+	&__pay {
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--primary);
+		flex: 0 0 60px;
+		text-align: right;
+
+		&--zero {
+			color: var(--text-muted);
+			font-weight: 400;
+			font-size: 12px;
+		}
 	}
 }
 
@@ -495,23 +695,15 @@ export default {
 	}
 }
 
-/* 批量记工新增样式 */
 .section__summary {
-	font-size: 12px;
+	font-size: 13px;
 	color: var(--primary);
 	display: block;
-	margin-top: 4px;
+	margin-bottom: 8px;
 	font-weight: 500;
 }
 .section__hint--highlight {
 	color: var(--primary);
 	font-weight: 700;
-}
-.preview-item__pay {
-	font-size: 13px;
-	font-weight: 600;
-	color: var(--primary);
-	flex: 0 0 60px;
-	text-align: right;
 }
 </style>
