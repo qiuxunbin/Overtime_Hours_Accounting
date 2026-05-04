@@ -539,7 +539,7 @@ export default {
 	async onShow() {
 		await this.loadProjectPicker()
 		this.$nextTick(() => {
-			if (!this.selectedProjectId) this.autoSelectProject()
+			if (!this.selectedProjectId || !this.selectedProject) this.autoSelectProject()
 		})
 	},
 	async onLoad(options) {

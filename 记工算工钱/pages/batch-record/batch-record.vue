@@ -312,7 +312,7 @@ export default {
 	async onShow() {
 		await useProjectStore().loadProjects()
 		this.$nextTick(() => {
-			if (!this.selectedProjectId) this.autoSelectProject()
+			if (!this.selectedProjectId || !this.selectedProject) this.autoSelectProject()
 		})
 	},
 	autoSelectProject() {
