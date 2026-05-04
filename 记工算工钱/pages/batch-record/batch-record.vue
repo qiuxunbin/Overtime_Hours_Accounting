@@ -197,7 +197,7 @@ export default {
 		pieceUnitOptions() {
 			return PIECE_UNITS
 		},
-t	hasProjects() {
+		hasProjects() {
 			return useProjectStore().activeProjects.length > 0
 		},
 		previewDates() {
@@ -277,7 +277,7 @@ t	hasProjects() {
 		}
 	},
 	methods: {
-t	modeLabel(mode) {
+		modeLabel(mode) {
 			const m = { hourly: "时薪", daily: "日薪", piece: "计件" }
 			return m[mode] || ""
 		},
@@ -336,7 +336,7 @@ t	modeLabel(mode) {
 				uni.showToast({ title: '请设置件数', icon: 'none' }); return
 			}
 
-t			if (!this.selectedProjectId) {
+					if (!this.selectedProjectId) {
 				if (!this.hasProjects) { uni.navigateTo({ url: '/pages/project-edit/project-edit' }); return }
 				this.showProjectPicker(); return
 			}
@@ -608,7 +608,7 @@ t			if (!this.selectedProjectId) {
 		color: var(--text-muted);
 		margin-left: 4px;
 	}
-t	&__mode {
+		&__mode {
 			font-size: 11px;
 			color: var(--primary);
 			background: var(--primary-light);
