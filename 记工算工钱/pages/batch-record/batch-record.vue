@@ -353,7 +353,7 @@ export default {
 		},
 		showProjectPicker() {
 			const pStore = useProjectStore()
-			pStore.loadProjects()
+			await pStore.loadProjects()
 			if (pStore.activeProjects.length === 0) {
 				uni.navigateTo({ url: '/pages/project-edit/project-edit' }); return
 			}

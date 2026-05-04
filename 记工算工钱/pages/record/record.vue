@@ -462,7 +462,7 @@ export default {
 			const mode = this.effectivePayMode
 			if (mode === 'daily') return `日薪 ¥${p?.daily_rate || 0}/天`
 			if (mode === 'piece') return `计件 ¥${p?.piece_rate || 0}/${p?.piece_unit || '件'}`
-			return '时薪'
+			return `平¥${p?.weekday_rate || 0} 休¥${p?.weekend_rate || 0} 节¥${p?.holiday_rate || 0}`
 		},
 		dayTypeLabel() {
 			const map = { weekday: '平日', weekend: '周末', holiday: '节假日' }
@@ -625,7 +625,7 @@ export default {
 		adjustQty(delta) { this.pieceQuantity = Math.max(0, (this.pieceQuantity || 0) + delta) },
 		showProjectSelector() {
 			const pStore = useProjectStore()
-			pStore.loadProjects()
+			await pStore.loadProjects()
 			if (pStore.activeProjects.length === 0) {
 				this.goCreateProject(); return
 			}
