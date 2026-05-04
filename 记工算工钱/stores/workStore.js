@@ -75,7 +75,7 @@ export const useWorkStore = defineStore('work', {
 		monthTotalPay: (state) => {
 			return state.records
 				.filter(r => r.date?.startsWith(state.currentMonth))
-				.reduce((sum, r) => sum + (r.pay || 0), 0)
+				.reduce((sum, r) => sum + (r.net_pay || r.pay || 0), 0)
 		},
 
 		monthBreakdown: (state) => {
@@ -86,7 +86,7 @@ export const useWorkStore = defineStore('work', {
 				.forEach(r => {
 					const type = r.day_type || r.overtime_type || 'weekday'
 					if (!bd[type]) bd[type] = def()
-					bd[type].pay += r.pay || 0
+					bd[type].pay += r.net_pay || r.pay || 0
 					bd[type].hours += r.duration || 0
 					bd[type].days += r.days || 0
 					bd[type].qty += r.quantity || 0

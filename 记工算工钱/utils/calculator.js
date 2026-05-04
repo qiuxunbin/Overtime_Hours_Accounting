@@ -134,6 +134,13 @@ export function calcNetPay(record, project) {
 }
 
 /**
+ * 获取记录净收入 net_pay，兼容旧记录（无 net_pay 时回退 pay）
+ * @param {object} r 记工记录
+ * @returns {number}
+ */
+export function getNetPay(r) { return r.net_pay ?? r.pay ?? 0 }
+
+/**
  * 保留两位小数
  * @param {number} n
  * @returns {number}

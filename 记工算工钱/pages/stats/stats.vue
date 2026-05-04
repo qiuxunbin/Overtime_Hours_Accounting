@@ -229,7 +229,7 @@ export default {
 			return this.monthRecords.reduce((s, r) => s + (r.duration || 0), 0)
 		},
 		totalPay() {
-			return this.monthRecords.reduce((s, r) => s + (r.pay || 0), 0)
+			return this.monthRecords.reduce((s, r) => s + (r.net_pay || r.pay || 0), 0)
 		},
 		totalDays() {
 			return this.monthRecords.filter(r => r.pay_mode === 'daily').reduce((s, r) => s + (r.days || 0), 0)
@@ -256,13 +256,13 @@ export default {
 			return this.holidayRecords.reduce((s, r) => s + (r.duration || 0), 0)
 		},
 		weekdayPay() {
-			return this.weekdayRecords.reduce((s, r) => s + (r.pay || 0), 0)
+			return this.weekdayRecords.reduce((s, r) => s + (r.net_pay || r.pay || 0), 0)
 		},
 		weekendPay() {
-			return this.weekendRecords.reduce((s, r) => s + (r.pay || 0), 0)
+			return this.weekendRecords.reduce((s, r) => s + (r.net_pay || r.pay || 0), 0)
 		},
 		holidayPay() {
-			return this.holidayRecords.reduce((s, r) => s + (r.pay || 0), 0)
+			return this.holidayRecords.reduce((s, r) => s + (r.net_pay || r.pay || 0), 0)
 		},
 		weekdayDays() {
 			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekday').reduce((s, r) => s + (r.days || 0), 0)
@@ -292,7 +292,7 @@ export default {
 				const wn = Math.ceil(dom / 7)
 				const key = 'W' + wn
 				if (!weeks[key]) weeks[key] = 0
-				weeks[key] += r.pay || 0
+				weeks[key] += r.net_pay || r.pay || 0
 			})
 			const maxV = Math.max(...Object.values(weeks), 1)
 			return Object.entries(weeks).sort().map(([k, v]) => ({
@@ -311,7 +311,7 @@ export default {
 			const year = String(this.viewYear)
 			return this.allRecords
 				.filter(r => r.date && r.date.startsWith(year))
-				.reduce((s, r) => s + (r.pay || 0), 0)
+				.reduce((s, r) => s + (r.net_pay || r.pay || 0), 0)
 		},
 		projectStats() {
 			if (this.monthRecords.length === 0) return []
@@ -324,7 +324,7 @@ export default {
 				groups[key].hours += r.duration || 0
 				groups[key].days += r.days || 0
 				groups[key].quantity += r.quantity || 0
-				groups[key].pay += r.pay || 0
+				groups[key].pay += r.net_pay || r.pay || 0
 			})
 			let items = Object.entries(groups).map(([id, stats]) => {
 				const proj = id !== '__none__' ? projMap.get(id) : null
@@ -364,7 +364,7 @@ export default {
 				const label = pad(d.getMonth() + 1) + '月'
 				const pay = this.allRecords
 					.filter(r => r.date && r.date.startsWith(key))
-					.reduce((s, r) => s + (r.pay || 0), 0)
+					.reduce((s, r) => s + (r.net_pay || r.pay || 0), 0)
 				months.push({ key, label, pay })
 			}
 			return months
@@ -421,7 +421,7 @@ export default {
 		monthPayTotal(monthPrefix) {
 			return this.allRecords
 				.filter(r => r.date && r.date.startsWith(monthPrefix))
-				.reduce((s, r) => s + (r.pay || 0), 0)
+				.reduce((s, r) => s + (r.net_pay || r.pay || 0), 0)
 		},
 		prevMonth() {
 			if (this.viewMonth === 1) { this.viewYear--; this.viewMonth = 12 }
@@ -668,7 +668,7 @@ export default {
 				const deduction = r.deduction ? (r.deduction.amount||0) : 0
 				const payMode = r.pay_mode || 'hourly'
 				const qty = payMode === 'daily' ? (r.days || 0) + '天' : payMode === 'piece' ? (r.quantity || 0) : (r.duration || 0) + 'h'
-				const row = [r.date, this.typeLabel((r.day_type || r.overtime_type)), payMode, qty, r.pay || 0, r.project_name || '', (r.remark || '').replace(/,/g, ';'), subsidies, deduction].join(',')
+				const row = [r.date, this.typeLabel((r.day_type || r.overtime_type)), payMode, qty, r.net_pay || r.pay || 0, r.project_name || '', (r.remark || '').replace(/,/g, ';'), subsidies, deduction].join(',')
 				csv += row + '\n'
 			})
 			const now = new Date()

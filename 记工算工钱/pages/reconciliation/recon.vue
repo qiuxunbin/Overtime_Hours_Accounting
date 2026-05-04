@@ -77,7 +77,7 @@
 								<text class="detail-item__time">{{ recordDetailStr(rec) }}</text>
 								<text class="detail-item__formula">{{ recordFormulaStr(rec) }}</text>
 							</view>
-							<text class="detail-item__pay">¥{{ (rec.pay || 0).toFixed(0) }}</text>
+							<text class="detail-item__pay">¥{{ (rec.net_pay || rec.pay || 0).toFixed(0) }}</text>
 						</view>
 					</view>
 					<view class="project-group__footer">
@@ -212,7 +212,7 @@ export default {
 				}
 				const g = groups[key]
 				g.records.push(r)
-				g.subtotalPay += r.pay || 0
+				g.subtotalPay += r.net_pay || r.pay || 0
 				g.subtotalHours += r.duration || 0
 				g.subtotalDays += r.days || 0
 				g.subtotalQty += r.quantity || 0
@@ -252,7 +252,7 @@ export default {
 			return Object.values(groups)
 		},
 		estimatedTotal() {
-			return this.monthRecords.reduce((s, r) => s + (r.pay || 0), 0)
+			return this.monthRecords.reduce((s, r) => s + (r.net_pay || r.pay || 0), 0)
 		},
 		diffAmount() {
 			const actual = parseFloat(this.actualPay) || 0
@@ -417,7 +417,7 @@ export default {
 				daysStr,
 				qtyStr,
 				rate,
-				r.pay || 0,
+				r.net_pay || r.pay || 0,
 				remark,
 				settledStr,
 				subsidies,
@@ -585,7 +585,7 @@ export default {
 			ctx.setFillStyle(green)
 			ctx.setFontSize(14)
 			ctx.setTextAlign('right')
-			ctx.fillText('¥' + (r.pay || 0).toFixed(0), cardX + cardW - 12, itemY + 8)
+			ctx.fillText('¥' + (r.net_pay || r.pay || 0).toFixed(0), cardX + cardW - 12, itemY + 8)
 
 			if (i < itemCount - 1) {
 			ctx.setStrokeStyle('#E8E4DC')

@@ -129,7 +129,7 @@ async function getMonthlySummary(uid, year, month) {
 		.get()
 
 	const totalHours = records.reduce((s, r) => s + (r.duration || 0), 0)
-	const totalPay = records.reduce((s, r) => s + (r.pay || 0), 0)
+	const totalPay = records.reduce((s, r) => s + (r.net_pay || r.pay || 0), 0)
 	const totalDays = records.reduce((s, r) => s + (r.days || 0), 0)
 	const totalQuantity = records.reduce((s, r) => s + (r.quantity || 0), 0)
 	const breakdown = { weekday: { hours: 0, pay: 0 }, weekend: { hours: 0, pay: 0 }, holiday: { hours: 0, pay: 0 } }
@@ -195,7 +195,7 @@ async function getYearStats(uid, year) {
 		.where({ user_id: uid, date: new RegExp(`^${String(year)}`) })
 		.limit(5000).get()
 	const totalHours = records.reduce((s, r) => s + (r.duration || 0), 0)
-	const totalPay = records.reduce((s, r) => s + (r.pay || 0), 0)
+	const totalPay = records.reduce((s, r) => s + (r.net_pay || r.pay || 0), 0)
 	const totalDays = records.reduce((s, r) => s + (r.days || 0), 0)
 	const totalQuantity = records.reduce((s, r) => s + (r.quantity || 0), 0)
 	const months = new Set()

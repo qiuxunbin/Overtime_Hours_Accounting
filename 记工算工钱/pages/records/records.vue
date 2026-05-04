@@ -51,7 +51,7 @@
 						<text class="record-item__mode">{{ modeLabel(rec.pay_mode) }}</text>
 						<text class="record-item__settle" :class="rec.settled ? 'record-item__settle--done' : 'record-item__settle--pending'">{{ rec.settled ? '已结' : '未结' }}</text>
 						<text class="record-item__qty">{{ qtyStr(rec) }}</text>
-						<text class="record-item__pay" v-if="rec.pay">¥{{ rec.pay.toFixed(0) }}</text>
+						<text class="record-item__pay" v-if="rec.net_pay || rec.pay">¥{{ (rec.net_pay || rec.pay).toFixed(0) }}</text>
 					</view>
 				</view>
 			</view>

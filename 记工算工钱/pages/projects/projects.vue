@@ -100,7 +100,7 @@ export default {
 			const oStore = useWorkStore()
 			const records = oStore.records.filter(r => r.project_id === project._id)
 			const totalHours = records.reduce((s, r) => s + (r.duration || 0), 0)
-			const totalPay = records.reduce((s, r) => s + (r.pay || 0), 0)
+			const totalPay = records.reduce((s, r) => s + (r.net_pay || r.pay || 0), 0)
 			const totalDays = records.reduce((s, r) => s + (r.days || 0), 0)
 			const totalQty = records.reduce((s, r) => s + (r.quantity || 0), 0)
 			if (totalPay === 0) return ""

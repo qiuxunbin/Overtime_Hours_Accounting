@@ -137,7 +137,7 @@
 							<text class="record-item__pay-mode-tag">{{ modeLabel(rec.pay_mode) }}</text>
 								<text class="record-item__settle-badge" :class="rec.settled ? 'record-item__settle-badge--done' : 'record-item__settle-badge--pending'">{{ rec.settled ? '已结' : '未结' }}</text>
 							<text class="record-item__hours">{{ recordQtyStr(rec) }}</text>
-							<text class="record-item__pay" v-if="rec.pay">¥{{ rec.pay.toFixed(0) }}</text>
+							<text class="record-item__pay" v-if="(rec.net_pay || rec.pay)">¥{{ (rec.net_pay || rec.pay).toFixed(0) }}</text>
 						</view>
 					</view>
 				</view>
@@ -185,7 +185,7 @@
 						</view>
 						<view class="day-sheet__item-right">
 							<text class="day-sheet__item-hours">{{ recordQtyStr(rec) }}</text>
-							<text class="day-sheet__item-pay" v-if="rec.pay">¥{{ rec.pay.toFixed(0) }}</text>
+							<text class="day-sheet__item-pay" v-if="(rec.net_pay || rec.pay)">¥{{ (rec.net_pay || rec.pay).toFixed(0) }}</text>
 							<text class="record-item__settle-badge" :class="rec.settled ? 'record-item__settle-badge--done' : 'record-item__settle-badge--pending'">{{ rec.settled ? '已结' : '未结' }}</text>
 						</view>
 					</view>
@@ -240,7 +240,7 @@ export default {
 			return this.monthRecords.reduce((s, r) => s + (r.duration || 0), 0)
 		},
 		totalPay() {
-			return this.monthRecords.reduce((s, r) => s + (r.pay || 0), 0)
+			return this.monthRecords.reduce((s, r) => s + (r.net_pay || r.pay || 0), 0)
 		},
 		totalDays() {
 			return this.monthRecords.filter(r => r.pay_mode === 'daily').reduce((s, r) => s + (r.days || 0), 0)
@@ -276,13 +276,13 @@ export default {
 			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === "holiday" && r.pay_mode === "piece").reduce((s, r) => s + (r.quantity || 0), 0)
 		},
 		weekdayPay() {
-			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekday').reduce((s, r) => s + (r.pay || 0), 0)
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekday').reduce((s, r) => s + (r.net_pay || r.pay || 0), 0)
 		},
 		weekendPay() {
-			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekend').reduce((s, r) => s + (r.pay || 0), 0)
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekend').reduce((s, r) => s + (r.net_pay || r.pay || 0), 0)
 		},
 		holidayPay() {
-			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'holiday').reduce((s, r) => s + (r.pay || 0), 0)
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'holiday').reduce((s, r) => s + (r.net_pay || r.pay || 0), 0)
 		},
 		recordDates() {
 			return new Set(this.monthRecords.map(r => r.date))
@@ -295,7 +295,7 @@ export default {
 		daySheetTotal() {
 			const recs = this.daySheetRecords
 			const h = recs.reduce((s, r) => s + (r.duration || 0), 0)
-			const p = recs.reduce((s, r) => s + (r.pay || 0), 0)
+			const p = recs.reduce((s, r) => s + (r.net_pay || r.pay || 0), 0)
 			const s = recs.reduce((sum, r) => sum + ((r.subsidies ? (r.subsidies.night_shift||0)+(r.subsidies.meal||0)+(r.subsidies.transport||0) : 0) - (r.deduction ? r.deduction.amount||0 : 0)), 0); return h + 'h · ¥' + (p + s).toFixed(0)
 		},
 		recentRecords() {
