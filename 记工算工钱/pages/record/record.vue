@@ -115,21 +115,21 @@
 							<text class="subsidy-row__label">夜班补贴</text>
 							<view class="subsidy-row__input-wrap">
 								<text class="subsidy-row__prefix">¥</text>
-								<input class="subsidy-row__input" type="digit" v-model.number="subsidies.night_shift" placeholder="0" />
+								<input class="subsidy-row__input" type="digit" :value="subsidies.night_shift || ''" @input="e => onNumInput('subsidies', 'night_shift', e)" placeholder="0" />
 							</view>
 						</view>
 						<view class="subsidy-row">
 							<text class="subsidy-row__label">餐补</text>
 							<view class="subsidy-row__input-wrap">
 								<text class="subsidy-row__prefix">¥</text>
-								<input class="subsidy-row__input" type="digit" v-model.number="subsidies.meal" placeholder="0" />
+								<input class="subsidy-row__input" type="digit" :value="subsidies.meal || ''" @input="e => onNumInput('subsidies', 'meal', e)" placeholder="0" />
 							</view>
 						</view>
 						<view class="subsidy-row">
 							<text class="subsidy-row__label">交通补贴</text>
 							<view class="subsidy-row__input-wrap">
 								<text class="subsidy-row__prefix">¥</text>
-								<input class="subsidy-row__input" type="digit" v-model.number="subsidies.transport" placeholder="0" />
+								<input class="subsidy-row__input" type="digit" :value="subsidies.transport || ''" @input="e => onNumInput('subsidies', 'transport', e)" placeholder="0" />
 							</view>
 						</view>
 						<view class="subsidy-divider"></view>
@@ -137,7 +137,7 @@
 							<text class="subsidy-row__label">扣款金额</text>
 							<view class="subsidy-row__input-wrap">
 								<text class="subsidy-row__prefix">¥</text>
-								<input class="subsidy-row__input" type="digit" v-model.number="deduction.amount" placeholder="0" />
+								<input class="subsidy-row__input" type="digit" :value="deduction.amount || ''" @input="e => onNumInput('deduction', 'amount', e)" placeholder="0" />
 							</view>
 						</view>
 						<view class="subsidy-row">
@@ -201,21 +201,21 @@
 							<text class="subsidy-row__label">夜班补贴</text>
 							<view class="subsidy-row__input-wrap">
 								<text class="subsidy-row__prefix">¥</text>
-								<input class="subsidy-row__input" type="digit" v-model.number="subsidies.night_shift" placeholder="0" />
+								<input class="subsidy-row__input" type="digit" :value="subsidies.night_shift || ''" @input="e => onNumInput('subsidies', 'night_shift', e)" placeholder="0" />
 							</view>
 						</view>
 						<view class="subsidy-row">
 							<text class="subsidy-row__label">餐补</text>
 							<view class="subsidy-row__input-wrap">
 								<text class="subsidy-row__prefix">¥</text>
-								<input class="subsidy-row__input" type="digit" v-model.number="subsidies.meal" placeholder="0" />
+								<input class="subsidy-row__input" type="digit" :value="subsidies.meal || ''" @input="e => onNumInput('subsidies', 'meal', e)" placeholder="0" />
 							</view>
 						</view>
 						<view class="subsidy-row">
 							<text class="subsidy-row__label">交通补贴</text>
 							<view class="subsidy-row__input-wrap">
 								<text class="subsidy-row__prefix">¥</text>
-								<input class="subsidy-row__input" type="digit" v-model.number="subsidies.transport" placeholder="0" />
+								<input class="subsidy-row__input" type="digit" :value="subsidies.transport || ''" @input="e => onNumInput('subsidies', 'transport', e)" placeholder="0" />
 							</view>
 						</view>
 						<view class="subsidy-divider"></view>
@@ -223,7 +223,7 @@
 							<text class="subsidy-row__label">扣款金额</text>
 							<view class="subsidy-row__input-wrap">
 								<text class="subsidy-row__prefix">¥</text>
-								<input class="subsidy-row__input" type="digit" v-model.number="deduction.amount" placeholder="0" />
+								<input class="subsidy-row__input" type="digit" :value="deduction.amount || ''" @input="e => onNumInput('deduction', 'amount', e)" placeholder="0" />
 							</view>
 						</view>
 						<view class="subsidy-row">
@@ -299,21 +299,21 @@
 							<text class="subsidy-row__label">夜班补贴</text>
 							<view class="subsidy-row__input-wrap">
 								<text class="subsidy-row__prefix">¥</text>
-								<input class="subsidy-row__input" type="digit" v-model.number="subsidies.night_shift" placeholder="0" />
+								<input class="subsidy-row__input" type="digit" :value="subsidies.night_shift || ''" @input="e => onNumInput('subsidies', 'night_shift', e)" placeholder="0" />
 							</view>
 						</view>
 						<view class="subsidy-row">
 							<text class="subsidy-row__label">餐补</text>
 							<view class="subsidy-row__input-wrap">
 								<text class="subsidy-row__prefix">¥</text>
-								<input class="subsidy-row__input" type="digit" v-model.number="subsidies.meal" placeholder="0" />
+								<input class="subsidy-row__input" type="digit" :value="subsidies.meal || ''" @input="e => onNumInput('subsidies', 'meal', e)" placeholder="0" />
 							</view>
 						</view>
 						<view class="subsidy-row">
 							<text class="subsidy-row__label">交通补贴</text>
 							<view class="subsidy-row__input-wrap">
 								<text class="subsidy-row__prefix">¥</text>
-								<input class="subsidy-row__input" type="digit" v-model.number="subsidies.transport" placeholder="0" />
+								<input class="subsidy-row__input" type="digit" :value="subsidies.transport || ''" @input="e => onNumInput('subsidies', 'transport', e)" placeholder="0" />
 							</view>
 						</view>
 						<view class="subsidy-divider"></view>
@@ -321,7 +321,7 @@
 							<text class="subsidy-row__label">扣款金额</text>
 							<view class="subsidy-row__input-wrap">
 								<text class="subsidy-row__prefix">¥</text>
-								<input class="subsidy-row__input" type="digit" v-model.number="deduction.amount" placeholder="0" />
+								<input class="subsidy-row__input" type="digit" :value="deduction.amount || ''" @input="e => onNumInput('deduction', 'amount', e)" placeholder="0" />
 							</view>
 						</view>
 						<view class="subsidy-row">
@@ -531,6 +531,11 @@ export default {
 	},
 	methods: {
 		onDateChange(e) { this.pickerDate = e.detail.value; this.autoDetectType(e.detail.value) },
+		onNumInput(objName, key, e) {
+			const raw = String(e.detail?.value ?? '')
+			const filtered = raw.replace(/[^\d.]/g, '').replace(/(\..*)\./g, '$1')
+			this[objName][key] = filtered === '' || filtered === '.' ? 0 : parseFloat(filtered)
+		},
 		goCreateProject() {
 			uni.navigateTo({ url: '/pages/project-edit/project-edit' })
 		},
