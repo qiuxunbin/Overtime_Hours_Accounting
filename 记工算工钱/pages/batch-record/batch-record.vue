@@ -149,6 +149,7 @@ import NavBar from '../../components/NavBar.vue'
 import { useWorkStore } from '@/stores/workStore'
 import { useProjectStore } from '../../stores/projectStore'
 import { useHolidayStore } from '@/stores/holidayStore'
+import { requireAuth } from '@/utils/auth'
 
 function pad(n) { return String(n).padStart(2, '0') }
 function formatDate(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` }
@@ -320,6 +321,7 @@ export default {
 				uni.showToast({ title: '请设置件数', icon: 'none' }); return
 			}
 
+			if (!requireAuth()) return
 			this.saving = true
 			const store = useWorkStore()
 			const pStore = useProjectStore()
@@ -329,7 +331,7 @@ export default {
 
 			for (const item of this.previewDates) {
 				try {
-					const record = {
+					const base = {
 						date: item.date,
 						pay_mode: mode,
 						remark: this.remark,
@@ -345,7 +347,7 @@ export default {
 					}
 
 					if (mode === 'hourly') {
-						Object.assign(record, {
+						Object.assign(base, {
 							start_time: this.startTime,
 							end_time: this.endTime,
 							duration: parseFloat(this.duration) || 0,
@@ -354,13 +356,13 @@ export default {
 							net_pay: item.pay
 						})
 					} else if (mode === 'daily') {
-						Object.assign(record, {
+						Object.assign(base, {
 							start_time: '', end_time: '', duration: 0,
 							days: item.days, daily_rate: item.rate,
 							pay: item.pay, net_pay: item.pay
 						})
 					} else if (mode === 'piece') {
-						Object.assign(record, {
+						Object.assign(base, {
 							start_time: '', end_time: '', duration: 0,
 							quantity: item.quantity, piece_rate: item.rate,
 							piece_unit: item.unit,
@@ -368,16 +370,16 @@ export default {
 						})
 					}
 
-					const res = await store.addRecord(record)
-					if (res && !res.duplicated) success++
-					else fail++
+					await store.addRecord(base)
+					success++
 				} catch (e) {
 					fail++
+					console.log('[batch-save] error:', e)
 				}
 			}
 
 			this.saving = false
-			uni.showToast({ title: `创建 ${success} 条${fail > 0 ? '，' + fail + ' 条重复' : ''}`, icon: 'success' })
+			uni.showToast({ title: `创建 ${success} 条${fail > 0 ? '，' + fail + ' 条失败' : ''}`, icon: 'success' })
 			setTimeout(() => { uni.navigateBack() }, 1000)
 		}
 	}
