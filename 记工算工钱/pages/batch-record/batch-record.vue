@@ -23,6 +23,24 @@
 				</view>
 			</view>
 
+			<!-- 工作选择 -->
+			<view class="section">
+				<text class="section__title">工作 <text style="color: #B85C4A;">*</text></text>
+				<view class="field-row field-row--warn" v-if="!hasProjects" @tap="goCreateProject">
+					<text class="field-row__value" style="color: #C4A46C;">请先创建工作</text>
+					<text class="field-row__arrow" style="color: #C4A46C;">›</text>
+				</view>
+				<view class="field-row" :class="{ 'field-row--empty': !selectedProject }" v-else @tap="showProjectPicker">
+					<view class="field-row__left" v-if="selectedProject">
+						<view class="field-row__dot" :style="{ background: selectedProject.color }"></view>
+						<text class="field-row__value">{{ selectedProject.name }}</text>
+						<text class="field-row__mode">{{ modeLabel(selectedProject.pay_mode) }}</text>
+					</view>
+					<text class="field-row__value" v-else>选工作</text>
+					<text class="field-row__arrow">›</text>
+				</view>
+			</view>
+
 			<!-- 计薪模式 -->
 			<view class="pay-mode-section">
 				<text class="section__title">计薪方式</text>
@@ -104,24 +122,6 @@
 				</view>
 				<text class="section__hint" v-if="previewDates.length > 0 && pieceQuantity > 0">每天 {{ pieceQuantity }}{{ pieceUnit }}，共 {{ previewDates.length }} 天 · 合计 {{ totalPreviewQuantity }}{{ pieceUnit }}</text>
 				<text class="section__hint" v-else-if="startDate === endDate">起止日期相同，只生成 <text class="section__hint--highlight">1</text> 条记工记录</text>
-			</view>
-
-			<!-- 工作选择 -->
-			<view class="section">
-				<text class="section__title">工作 <text style="color: #B85C4A;">*</text></text>
-				<view class="field-row field-row--warn" v-if="!hasProjects" @tap="goCreateProject">
-					<text class="field-row__value" style="color: #C4A46C;">请先创建工作</text>
-					<text class="field-row__arrow" style="color: #C4A46C;">›</text>
-				</view>
-				<view class="field-row" :class="{ 'field-row--empty': !selectedProject }" v-else @tap="showProjectPicker">
-					<view class="field-row__left" v-if="selectedProject">
-						<view class="field-row__dot" :style="{ background: selectedProject.color }"></view>
-						<text class="field-row__value">{{ selectedProject.name }}</text>
-						<text class="field-row__mode">{{ modeLabel(selectedProject.pay_mode) }}</text>
-					</view>
-					<text class="field-row__value" v-else>选工作</text>
-					<text class="field-row__arrow">›</text>
-				</view>
 			</view>
 
 			<!-- 备注 -->
@@ -343,29 +343,22 @@ export default {
 		showProjectPicker() {
 			const pStore = useProjectStore()
 			pStore.loadProjects()
-			setTimeout(() => {
-				if (pStore.activeProjects.length === 0) {
-					uni.navigateTo({ url: "/pages/project-edit/project-edit" }); return
-				}
-				const allProjects = [
-					{ text: '无工作', value: null },
-					...pStore.activeProjects.map(p => ({
-						text: p.name + (p.pay_mode !== this.payMode ? ' (' + ({hourly:'时薪',daily:'日薪',piece:'计件'}[p.pay_mode]||p.pay_mode) + ')' : ''),
-						value: p._id,
-						modeOk: p.pay_mode === this.payMode
-					}))
-				]
-				uni.showActionSheet({
-					itemList: allProjects.map(i => i.text),
-					success: (res) => {
-						const picked = allProjects[res.tapIndex]
-						if (picked.value && !picked.modeOk) {
-							uni.showToast({ title: '该工作计薪方式与当前选择不一致', icon: 'none', duration: 2000 })
-						}
-						this.selectedProjectId = picked.value
-					}
-				})
-			}, 100)
+			if (pStore.activeProjects.length === 0) {
+				uni.navigateTo({ url: '/pages/project-edit/project-edit' }); return
+			}
+			this.showWorkPicker = true
+		},
+		onPickWork(id) {
+			this.selectedProjectId = id
+			const proj = id ? useProjectStore().getProjectById(id) : null
+			if (proj && proj.pay_mode) { this.payMode = proj.pay_mode }
+			this.showWorkPicker = false
+		},
+		rateSummary(p) {
+			if (!p) return ''
+			if (p.pay_mode === 'daily') return '日薪 ¥' + (p.daily_rate || 0) + '/天'
+			if (p.pay_mode === 'piece') return '计件 ¥' + (p.piece_rate || 0) + '/' + (p.piece_unit || '件')
+			return '平¥' + (p.weekday_rate || 0) + ' 休¥' + (p.weekend_rate || 0) + ' 节¥' + (p.holiday_rate || 0)
 		},
 
 		async handleBatchSave() {
