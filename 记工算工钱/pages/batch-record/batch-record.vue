@@ -167,7 +167,7 @@
 				<text class="work-picker__close" @tap="showWorkPicker = false">✕</text>
 			</view>
 			<view class="work-picker__list">
-	<view
+				<view
 					v-for="p in pickerProjects"
 					:key="p._id"
 					class="work-picker__item"
