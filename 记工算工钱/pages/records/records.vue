@@ -153,7 +153,7 @@ export default {
 			const pStore = useProjectStore()
 			pStore.loadProjects()
 			const items = [
-				{ text: '所有项目', value: null },
+				{ text: '所有工作', value: null },
 				...pStore.activeProjects.map(p => ({ text: p.name, value: p._id }))
 			]
 			setTimeout(() => {

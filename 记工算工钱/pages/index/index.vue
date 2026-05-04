@@ -508,13 +508,13 @@ export default {
 				if (!id) return '无工作'
 			const pStore = useProjectStore()
 			const proj = pStore.getProjectById(id)
-			return proj ? proj.name : '无项目'
+			return proj ? proj.name : '无工作'
 			},
 			showProjectFilter() {
 			const pStore = useProjectStore()
 				pStore.loadProjects()
 				setTimeout(() => {
-					const items = [{ text: '所有项目', value: null },
+					const items = [{ text: '所有工作', value: null },
 						...pStore.activeProjects.map(p => ({ text: p.name, value: p._id }))
 					]
 					uni.showActionSheet({

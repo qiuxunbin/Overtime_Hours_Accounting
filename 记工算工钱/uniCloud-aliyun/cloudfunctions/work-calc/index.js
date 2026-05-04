@@ -398,7 +398,7 @@ async function updateProject(uid, id, data) {
 
 async function deleteProject(uid, id) {
 	const { data: exist } = await db.collection('project-config').where({ _id: id, user_id: uid }).limit(1).get()
-	if (!exist.length) return { code: 404, message: '项目不存在' }
+	if (!exist.length) return { code: 404, message: '工作不存在' }
 	await db.collection('project-config').doc(id).remove()
 	return { code: 0 }
 }

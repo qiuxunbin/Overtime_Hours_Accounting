@@ -103,12 +103,12 @@ export function getPayFormula(record, project) {
   switch (record.pay_mode) {
     case 'daily': {
       const rate = project?.daily_rate || record.daily_rate || 0
-      const src = project?.daily_rate > 0 ? (project.name || '项目') : '保存记录'
+      const src = project?.daily_rate > 0 ? (project.name || '工作') : '保存记录'
       return (record.days || 1) + '天×¥' + rate + '/天=¥' + pay.toFixed(0) + '(' + src + ')'
     }
     case 'piece': {
       const rate = project?.piece_rate || record.piece_rate || 0
-      const src = project?.piece_rate > 0 ? (project.name || '项目') : '保存记录'
+      const src = project?.piece_rate > 0 ? (project.name || '工作') : '保存记录'
       return (record.quantity || 0) + '件×¥' + rate + '/' + (record.piece_unit || '件') + '=¥' + pay.toFixed(0) + '(' + src + ')'
     }
     case 'hourly':
@@ -116,7 +116,7 @@ export function getPayFormula(record, project) {
       const key = (record.day_type || 'weekday') + '_rate'
       const projectRate = project?.[key]
       const rate = (projectRate > 0) ? projectRate : (record.rate || 0)
-      const src = projectRate > 0 ? (project?.name || '项目') : '保存记录'
+      const src = projectRate > 0 ? (project?.name || '工作') : '保存记录'
       return (record.duration || 0) + 'h×¥' + rate + '/h=¥' + pay.toFixed(0) + '(' + src + ')'
     }
   }
