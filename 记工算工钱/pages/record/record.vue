@@ -362,7 +362,7 @@
 					:key="p._id"
 					class="work-picker__item"
 					:class="{ 'work-picker__item--sel': selectedProjectId === p._id }"
-					@tap="onPickWork(p._id)"
+					:data-id="p._id" @tap="onPickWork"
 				>
 					<view class="work-picker__dot" :style="{ background: p.color }"></view>
 					<view class="work-picker__info">
@@ -630,7 +630,8 @@ export default {
 			}
 			this.showWorkPicker = true
 		},
-		onPickWork(id) {
+		onPickWork(e) {
+			const id = e.currentTarget.dataset.id
 			this.selectedProjectId = id
 			const proj = id ? useProjectStore().getProjectById(id) : null
 			this.projectName = proj ? proj.name : ''

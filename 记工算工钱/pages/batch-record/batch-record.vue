@@ -142,7 +142,7 @@
 					<text class="work-picker__close" @tap="showWorkPicker = false">✕</text>
 				</view>
 				<view class="work-picker__list">
-					<view v-for="p in pickerProjects" :key="p._id" class="work-picker__item" :class="{ 'work-picker__item--sel': selectedProjectId === p._id }" @tap="onPickWork(p._id)">
+					<view v-for="p in pickerProjects" :key="p._id" class="work-picker__item" :class="{ 'work-picker__item--sel': selectedProjectId === p._id }" :data-id="p._id" @tap="onPickWork">
 						<view class="work-picker__dot" :style="{ background: p.color }"></view>
 						<view class="work-picker__info">
 							<text class="work-picker__name">{{ p.name }}</text>
@@ -358,7 +358,8 @@ export default {
 			}
 			this.showWorkPicker = true
 		},
-		onPickWork(id) {
+		onPickWork(e) {
+			const id = e.currentTarget.dataset.id
 			this.selectedProjectId = id
 			this.showWorkPicker = false
 		},
