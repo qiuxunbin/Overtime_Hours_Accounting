@@ -159,13 +159,7 @@
 				<text class="work-picker__close" @tap="showWorkPicker = false">✕</text>
 			</view>
 			<view class="work-picker__list">
-				<view class="work-picker__item" @tap="onPickWork(null)">
-					<view class="work-picker__dot" style="background: #9C9C9C;"></view>
-					<view class="work-picker__info">
-						<text class="work-picker__name">不关联工作</text>
-					</view>
-				</view>
-				<view
+	<view
 					v-for="p in pickerProjects"
 					:key="p._id"
 					class="work-picker__item"
