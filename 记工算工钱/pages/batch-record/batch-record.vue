@@ -195,9 +195,9 @@ if (mode === 'piece') return `平¥${p?.piece_weekday_rate || 0} 休¥${p?.piece
 		currentRate() { if (!this.selectedProject) return 0; const key = this.dayType + '_rate'; return this.selectedProject[key] || 0 },
 		dayType() { return useHolidayStore().getDayType(this.startDate) },
 		estimatedPay() { if (this.durationNum <= 0 || this.currentRate <= 0) return 0; return round2(this.durationNum * this.currentRate) },
-		projectDailyRate() { return this.selectedProject?.daily_rate || 0 },
+		projectDailyRate() { if (!this.selectedProject) return 0; return this.currentRate || 0 },
 		dailyPay() { return round2((this.dailyDays || 0) * this.projectDailyRate) },
-		projectPieceRate() { return this.selectedProject?.piece_rate || 0 },
+		projectPieceRate() { if (!this.selectedProject) return 0; return this.currentRate || 0 },
 		piecePay() { return round2((this.pieceQuantity || 0) * this.projectPieceRate) },
 
 		previewDates() {

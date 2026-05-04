@@ -85,10 +85,16 @@ export default {
 			const icons = { hourly: "⏱", daily: "📅", piece: "📦" }
 			const icon = icons[mode] || "⏱"
 			if (mode === "daily") {
-				return icon + " 日薪 ¥" + (project.daily_rate || 0)
+				const wd = project.daily_weekday_rate || project.daily_rate || 0;
+				const we = project.daily_weekend_rate || 0;
+				const hd = project.daily_holiday_rate || 0;
+				return icon + " 日薪 平¥" + wd + " 周¥" + we + " 节¥" + hd
 			}
 			if (mode === "piece") {
-				return icon + " 计件 ¥" + (project.piece_rate || 0) + "/" + (project.piece_unit || "件")
+				const wd = project.piece_weekday_rate || project.piece_rate || 0;
+				const we = project.piece_weekend_rate || 0;
+				const hd = project.piece_holiday_rate || 0;
+				return icon + " 计件 平¥" + wd + " 周¥" + we + " 节¥" + hd + "/" + (project.piece_unit || "件")
 			}
 			const wd = project.weekday_rate || 0
 			const we = project.weekend_rate || 0

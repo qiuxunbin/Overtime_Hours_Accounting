@@ -228,7 +228,13 @@ export default {
 					weekend_rate: proj.weekend_rate || 0,
 					holiday_rate: proj.holiday_rate || 0,
 					daily_rate: proj.daily_rate || 0,
+					daily_weekday_rate: proj.daily_weekday_rate || 0,
+					daily_weekend_rate: proj.daily_weekend_rate || 0,
+					daily_holiday_rate: proj.daily_holiday_rate || 0,
 					piece_rate: proj.piece_rate || 0,
+					piece_weekday_rate: proj.piece_weekday_rate || 0,
+					piece_weekend_rate: proj.piece_weekend_rate || 0,
+					piece_holiday_rate: proj.piece_holiday_rate || 0,
 					piece_unit: proj.piece_unit || '件',
 					is_archived: proj.is_archived || false
 				}
