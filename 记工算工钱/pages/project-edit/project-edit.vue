@@ -198,7 +198,7 @@ export default {
 		},
 
 		methods: {
-t	autoFillRates() {
+		autoFillRates() {
 			const pStore = useProjectStore()
 			pStore.loadProjects()
 			const same = pStore.projects.filter(p => p.pay_mode === this.form.pay_mode && p._id !== this.editId).sort((a, b) => (b.created_at || 0) - (a.created_at || 0))
