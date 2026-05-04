@@ -173,6 +173,15 @@ export const useWorkStore = defineStore('work', {
 				deduction: record.deduction || { amount: 0, note: '' }
 			}
 
+			// 查重：相同日期+项目+时段禁止重复
+			const dup = this.records.find(r => {
+				if (r.date !== doc.date || r.project_id !== doc.project_id) return false
+				if (payMode === 'hourly') return r.start_time === doc.start_time && r.end_time === doc.end_time
+				if (payMode === 'daily') return r.pay_mode === 'daily'
+				return false
+			})
+			if (dup) return { duplicated: true }
+
 			const id = col.add(doc)
 			const newRecord = { ...doc, _id: id, id }
 			this.records.unshift(newRecord)

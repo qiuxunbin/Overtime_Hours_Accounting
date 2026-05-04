@@ -98,7 +98,16 @@ export function collection(name) {
 
 		remove(id) {
 			const map = readAll(name)
-			delete map[id]
+			if (map[id]) {
+				delete map[id]
+			} else {
+				for (const key of Object.keys(map)) {
+					if (map[key]._id === id || map[key].id === id) {
+						delete map[key]
+						break
+					}
+				}
+			}
 			writeAll(name, map)
 		},
 
