@@ -535,7 +535,7 @@ export default {
 			return parts.join('  ')
 		}
 	},
-t	watch: {
+		watch: {
 			selectedProject(val) {
 				if (!val && this.selectedProjectId) {
 					this.autoSelectProject()
