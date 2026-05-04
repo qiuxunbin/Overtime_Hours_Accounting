@@ -269,7 +269,11 @@ export default {
 			}
 
 			uni.showToast({ title: '已保存', icon: 'success' })
-			setTimeout(() => { uni.navigateBack() }, 500)
+			setTimeout(() => {
+				const pages = getCurrentPages()
+				if (pages.length > 1) { uni.navigateBack() }
+				else { uni.switchTab({ url: '/pages/index/index' }) }
+			}, 500)
 		},
 		handleDelete() {
 			uni.showModal({
@@ -282,7 +286,11 @@ export default {
 						const pStore = useProjectStore()
 						pStore.deleteProject(this.editId)
 						uni.showToast({ title: '已删除', icon: 'success' })
-						setTimeout(() => { uni.navigateBack() }, 500)
+						setTimeout(() => {
+							const pages = getCurrentPages()
+							if (pages.length > 1) { uni.navigateBack() }
+							else { uni.switchTab({ url: '/pages/index/index' }) }
+						}, 500)
 					}
 				}
 			})
