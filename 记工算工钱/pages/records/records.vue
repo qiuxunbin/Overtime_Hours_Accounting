@@ -25,11 +25,11 @@
 				</view>
 			</view>
 
-			<view class="record-list" v-if="filteredRecords.length > 0">
-				<view v-for="(rec, idx) in filteredRecords" :key="rec.id || rec._id" class="record-item" :class="{ 'record-item--last': idx === filteredRecords.length - 1, 'record-item--sel': selectMode && isSelected(rec) }" @tap="onItemTap(rec)">
+			<view class="record-list" v-if="processedRecords.length > 0">
+				<view v-for="(rec, idx) in processedRecords" :key="rec.id || rec._id" class="record-item" :class="{ 'record-item--last': idx === processedRecords.length - 1, 'record-item--sel': selectMode && rec._selected }" @tap="onItemTap(rec)">
 					<view class="record-item__check" v-if="selectMode">
-						<view class="record-item__checkbox" :class="{ 'record-item__checkbox--on': isSelected(rec) }">
-							<text v-if="isSelected(rec)">✓</text>
+						<view class="record-item__checkbox" :class="{ 'record-item__checkbox--on': rec._selected }">
+							<text v-if="rec._selected">✓</text>
 						</view>
 					</view>
 					<view class="record-item__icon" :class="iconClass(rec.day_type || rec.overtime_type)">
@@ -110,7 +110,16 @@ export default {
 		emptyText() {
 			if (this.settleFilter !== 'all' || this.projectFilter) return '当前筛选条件下无记录'
 			return '本月没有记工记录'
-		}
+		},
+		processedRecords() {
+			const selSet = new Set(this.selectedList)
+			return this.filteredRecords.map(rec => {
+				const copy = Object.assign({}, rec)
+				copy._selected = selSet.has(rec.id || rec._id)
+				return copy
+			})
+		},
+		selectedSet() { return new Set(this.selectedList) }
 	},
 	onShow() {
 		if (this.selectMode) return
@@ -125,13 +134,16 @@ export default {
 		modeLabel(mode) { const m = { hourly: '时薪', daily: '日薪', piece: '计件' }; return m[mode] || '时薪' },
 		qtyStr(rec) { if (rec.pay_mode === 'daily') return (rec.days || 1) + '天'; if (rec.pay_mode === 'piece') return (rec.quantity || 0) + (rec.piece_unit || '件'); return (rec.duration || 0) + 'h' },
 		goEdit(id) { uni.navigateTo({ url: '/pages/record/record?id=' + id }) },
-		isSelected(rec) { return this.selectedList.indexOf(rec.id || rec._id) !== -1 },
 
 		onItemTap(rec) {
 			if (!this.selectMode) { this.goEdit(rec.id || rec._id); return }
 			const id = rec.id || rec._id
-			const idx = this.selectedList.indexOf(id)
-			if (idx === -1) { this.selectedList.push(id) } else { this.selectedList.splice(idx, 1) }
+			if (this.selectedSet.has(id)) {
+				const idx = this.selectedList.indexOf(id)
+				if (idx !== -1) this.selectedList.splice(idx, 1)
+			} else {
+				this.selectedList.push(id)
+			}
 		},
 
 		toggleSelectMode() {
