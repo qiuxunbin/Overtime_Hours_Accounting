@@ -182,11 +182,11 @@ export const useWorkStore = defineStore('work', {
 			})
 			if (dup) return { duplicated: true }
 
-			const id = col.add(doc)
-			const newRecord = { ...doc, _id: id, id }
+			const recordId = col.add(doc)
+			const newRecord = { ...doc, _id: recordId, id: recordId }
 			this.records.unshift(newRecord)
 
-			this.enqueueSync('add', id, doc)
+			this.enqueueSync('add', recordId, doc)
 
 			return { record: newRecord, duplicated: false }
 		},
