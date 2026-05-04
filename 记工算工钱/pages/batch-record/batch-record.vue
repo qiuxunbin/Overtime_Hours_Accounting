@@ -102,8 +102,11 @@
 			<!-- 预览 -->
 			<view class="preview-section" v-if="previewDates.length > 0">
 				<text class="preview-section__title">预览 — 按日期批量生成 {{ previewDates.length }} 条（每条为单日数据）</text>
-				<text class="preview-section__tip" v-if="effectivePayMode === 'hourly'">节假日/周末按工作设置对应费率计算</text>
-				<text class="preview-section__sum" v-if="totalPay > 0">批量合计 = 单日工钱 × {{ previewDates.length }} 天 = ¥{{ fmtMoney(totalPay) }}</text>
+				<text class="preview-section__tip" v-if="hasRateDiff">不同日期类型按对应费率分别计算</text>
+				<text class="preview-section__sum" v-if="totalPay > 0">
+					<template v-if="!hasRateDiff">批量合计 = 单日工钱 × {{ previewDates.length }} 天 = ¥{{ fmtMoney(totalPay) }}</template>
+					<template v-else>批量合计（各日期按对应费率计算）= ¥{{ fmtMoney(totalPay) }}</template>
+				</text>
 				<view class="preview-list">
 					<view class="preview-item" v-for="(d, idx) in previewDates" :key="idx">
 						<text class="preview-item__date">{{ d.date }}</text>
@@ -188,6 +191,7 @@ export default {
 			return `平 ¥${p?.weekday_rate || 0} · 休 ¥${p?.weekend_rate || 0} · 节 ¥${p?.holiday_rate || 0}`
 		},
 		pieceUnit() { return this.selectedProject?.piece_unit || '件' },
+			hasRateDiff() { const p = this.selectedProject; if (!p || p.pay_mode !== 'hourly') return false; return p.weekday_rate !== p.weekend_rate || p.weekend_rate !== p.holiday_rate },
 		currentRate() { if (!this.selectedProject) return 0; const key = this.dayType + '_rate'; return this.selectedProject[key] || 0 },
 		dayType() { return useHolidayStore().getDayType(this.startDate) },
 		estimatedPay() { if (this.durationNum <= 0 || this.currentRate <= 0) return 0; return round2(this.durationNum * this.currentRate) },
