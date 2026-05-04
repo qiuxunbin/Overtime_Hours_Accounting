@@ -238,13 +238,13 @@ export default {
 			return this.monthRecords.filter(r => r.pay_mode === 'piece').reduce((s, r) => s + (r.quantity || 0), 0)
 		},
 		weekdayRecords() {
-			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekday')
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type || 'weekday') === 'weekday')
 		},
 		weekendRecords() {
-			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekend')
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type || 'weekday') === 'weekend')
 		},
 		holidayRecords() {
-			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'holiday')
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type || 'weekday') === 'holiday')
 		},
 		weekdayHours() {
 			return this.weekdayRecords.reduce((s, r) => s + (r.duration || 0), 0)
@@ -265,22 +265,22 @@ export default {
 			return this.holidayRecords.reduce((s, r) => s + (r.net_pay || r.pay || 0), 0)
 		},
 		weekdayDays() {
-			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekday').reduce((s, r) => s + (r.days || 0), 0)
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type || 'weekday') === 'weekday').reduce((s, r) => s + (r.days || 0), 0)
 		},
 		weekendDays() {
-			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekend').reduce((s, r) => s + (r.days || 0), 0)
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type || 'weekday') === 'weekend').reduce((s, r) => s + (r.days || 0), 0)
 		},
 		holidayDays() {
-			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'holiday').reduce((s, r) => s + (r.days || 0), 0)
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type || 'weekday') === 'holiday').reduce((s, r) => s + (r.days || 0), 0)
 		},
 		weekdayQty() {
-			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekday').reduce((s, r) => s + (r.quantity || 0), 0)
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type || 'weekday') === 'weekday').reduce((s, r) => s + (r.quantity || 0), 0)
 		},
 		weekendQty() {
-			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekend').reduce((s, r) => s + (r.quantity || 0), 0)
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type || 'weekday') === 'weekend').reduce((s, r) => s + (r.quantity || 0), 0)
 		},
 		holidayQty() {
-			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'holiday').reduce((s, r) => s + (r.quantity || 0), 0)
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type || 'weekday') === 'holiday').reduce((s, r) => s + (r.quantity || 0), 0)
 		},
 		weekBars() {
 			if (this.monthRecords.length === 0) return []
@@ -398,6 +398,8 @@ export default {
 	},
 	async onShow() {
 		const store = useWorkStore()
+		const pStore = useProjectStore()
+		pStore.loadProjects()
 		await store.loadRecords()
 		console.log('[stats] onShow, records loaded:', store.records.length)
 		this._scheduleRender(350)
@@ -670,7 +672,7 @@ export default {
 				const deduction = r.deduction ? (r.deduction.amount||0) : 0
 				const payMode = r.pay_mode || 'hourly'
 				const qty = payMode === 'daily' ? (r.days || 0) + '天' : payMode === 'piece' ? (r.quantity || 0) : (r.duration || 0) + 'h'
-				const row = [r.date, this.typeLabel((r.day_type || r.overtime_type)), payMode, qty, r.net_pay || r.pay || 0, r.project_name || '', (r.remark || '').replace(/,/g, ';'), subsidies, deduction].join(',')
+				const row = [r.date, this.typeLabel((r.day_type || r.overtime_type || 'weekday')), payMode, qty, r.net_pay || r.pay || 0, r.project_name || '', (r.remark || '').replace(/,/g, ';'), subsidies, deduction].join(',')
 				csv += row + '\n'
 			})
 			const now = new Date()

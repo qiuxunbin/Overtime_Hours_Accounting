@@ -249,13 +249,13 @@ export default {
 			return this.monthRecords.filter(r => r.pay_mode === 'piece').reduce((s, r) => s + (r.quantity || 0), 0)
 		},
 		weekdayHours() {
-			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekday').reduce((s, r) => s + (r.duration || 0), 0)
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type || 'weekday') === 'weekday').reduce((s, r) => s + (r.duration || 0), 0)
 		},
 		weekendHours() {
-			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekend').reduce((s, r) => s + (r.duration || 0), 0)
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type || 'weekday') === 'weekend').reduce((s, r) => s + (r.duration || 0), 0)
 		},
 		holidayHours() {
-			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'holiday').reduce((s, r) => s + (r.duration || 0), 0)
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type || 'weekday') === 'holiday').reduce((s, r) => s + (r.duration || 0), 0)
 		},
 		weekdayDays() {
 			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === "weekday" && r.pay_mode === "daily").reduce((s, r) => s + (r.days || 0), 0)
@@ -276,13 +276,13 @@ export default {
 			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === "holiday" && r.pay_mode === "piece").reduce((s, r) => s + (r.quantity || 0), 0)
 		},
 		weekdayPay() {
-			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekday').reduce((s, r) => s + (r.net_pay || r.pay || 0), 0)
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type || 'weekday') === 'weekday').reduce((s, r) => s + (r.net_pay || r.pay || 0), 0)
 		},
 		weekendPay() {
-			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'weekend').reduce((s, r) => s + (r.net_pay || r.pay || 0), 0)
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type || 'weekday') === 'weekend').reduce((s, r) => s + (r.net_pay || r.pay || 0), 0)
 		},
 		holidayPay() {
-			return this.monthRecords.filter(r => (r.day_type || r.overtime_type) === 'holiday').reduce((s, r) => s + (r.net_pay || r.pay || 0), 0)
+			return this.monthRecords.filter(r => (r.day_type || r.overtime_type || 'weekday') === 'holiday').reduce((s, r) => s + (r.net_pay || r.pay || 0), 0)
 		},
 		recordDates() {
 			return new Set(this.monthRecords.map(r => r.date))
