@@ -94,7 +94,7 @@ export const SUBSIDY_TYPES = [
 	{ value: 'transport', label: '交通补贴', icon: '🚗' }
 ]
 
-// 项目预设颜色
+// 工作预设颜色
 export const PROJECT_COLORS = [
 	{ value: '#1B8A5A', label: '绿' },
 	{ value: '#006495', label: '蓝' },
@@ -102,7 +102,7 @@ export const PROJECT_COLORS = [
 	{ value: '#BA1A1A', label: '红' }
 ]
 
-// 默认项目配置
+// 默认工作配置
 export const DEFAULT_PROJECT_CONFIG = {
 	name: '',
 	color: '#1B8A5A',

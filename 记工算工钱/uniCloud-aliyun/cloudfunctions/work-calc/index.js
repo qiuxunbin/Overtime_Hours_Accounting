@@ -78,7 +78,7 @@ exports.main = async (event, context) => {
 		// 薪资配置
 		case 'salaryGet':     return await getSalaryConfig(uid)
 		case 'salarySet':     return await setSalaryConfig(uid, event.data)
-		// 项目管理
+		// 工作管理
 		case 'projectList':   return await listProjects(uid)
 		case 'projectAdd':    return await addProject(uid, event.data)
 		case 'projectUpdate': return await updateProject(uid, event.id, event.data)
@@ -140,9 +140,6 @@ async function getMonthlySummary(uid, year, month) {
 
 async function recalcMonth(uid, year, month) {
 	const prefix = `${year}-${String(month).padStart(2, '0')}`
-	const { data: configs } = await db.collection('salary-config').where({ user_id: uid }).limit(1).get()
-	const cfg = configs[0] || {}
-	const rateMap = { weekday: cfg.weekday_rate || 0, weekend: cfg.weekend_rate || 0, holiday: cfg.holiday_rate || 0 }
 
 	const { data: projects } = await db.collection('project-config').where({ user_id: uid }).limit(100).get()
 	const projMap = {}
@@ -158,18 +155,20 @@ async function recalcMonth(uid, year, month) {
 
 		switch (payMode) {
 			case 'daily': {
-				rate = rec.daily_rate || project?.daily_rate || 0
+				rate = project?.daily_rate || rec.daily_rate || 0
 				pay = Math.round((rec.days || 1) * rate * 100) / 100
 				break
 			}
 			case 'piece': {
-				rate = rec.piece_rate || project?.piece_rate || 0
+				rate = project?.piece_rate || rec.piece_rate || 0
 				pay = Math.round((rec.quantity || 0) * rate * 100) / 100
 				break
 			}
 			case 'hourly':
 			default: {
-				rate = rateMap[rec.day_type || rec.overtime_type] || rec.rate || 0
+				const key = (rec.day_type || rec.overtime_type) + '_rate'
+				const projRate = (project && project[key] > 0) ? project[key] : 0
+				rate = projRate || rec.rate || 0
 				pay = Math.round((rec.duration || 0) * rate * 100) / 100
 				break
 			}
@@ -376,7 +375,7 @@ async function syncRecords(uid, event) {
 	return { code: 0, id_mappings: idMappings, conflicts: conflicts, server_time: Date.now() }
 }
 
-// ========== 项目管理 ==========
+// ========== 工作管理 ==========
 
 async function listProjects(uid) {
 	const { data } = await db.collection('project-config')
@@ -392,7 +391,7 @@ async function addProject(uid, data) {
 
 async function updateProject(uid, id, data) {
 	const { data: exist } = await db.collection('project-config').where({ _id: id, user_id: uid }).limit(1).get()
-	if (!exist.length) return { code: 404, message: '项目不存在' }
+	if (!exist.length) return { code: 404, message: '工作不存在' }
 	await db.collection('project-config').doc(id).update({ ...data, updated_at: Date.now() })
 	return { code: 0 }
 }

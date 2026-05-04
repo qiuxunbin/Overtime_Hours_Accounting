@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { collection } from '@/utils/localStore'
 import { getDeviceId, getOwner } from '@/utils/device'
 import { DEFAULT_PROJECT_CONFIG, PAY_MODES } from '@/utils/constants'
+import { requireAuth } from '@/utils/auth'
 
 const col = collection('projects')
 
@@ -79,6 +80,7 @@ export const useProjectStore = defineStore('project', {
 		// ========== CRUD — 本地优先 ==========
 
 		async addProject(data) {
+			if (!requireAuth()) return
 			const owner = getOwner()
 			const doc = {
 				...DEFAULT_PROJECT_CONFIG,
@@ -98,6 +100,7 @@ export const useProjectStore = defineStore('project', {
 		},
 
 		async updateProject(id, data) {
+			if (!requireAuth()) return
 			col.update(id, data)
 
 			const index = this.projects.findIndex(p => p.id === id || p._id === id)
@@ -113,6 +116,7 @@ export const useProjectStore = defineStore('project', {
 		},
 
 		async deleteProject(id) {
+			if (!requireAuth()) return
 			col.remove(id)
 			this.projects = this.projects.filter(p => p.id !== id && p._id !== id)
 			this.enqueueSync('delete', id, null)
@@ -147,7 +151,7 @@ export const useProjectStore = defineStore('project', {
 				if (res.code === 0) {
 					if (res.id_mappings) {
 						for (const [localId, cloudId] of Object.entries(res.id_mappings)) {
-							col.update(localId, { _id: cloudId, _synced: true, updated_at: Date.now() })
+							col.replaceId(localId, cloudId)
 							const proj = this.projects.find(p => p._id === localId || p.id === localId)
 							if (proj) {
 								proj._id = cloudId

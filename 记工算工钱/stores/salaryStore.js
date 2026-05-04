@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { DEFAULT_SALARY_CONFIG } from '../utils/constants'
+import { requireAuth } from '@/utils/auth'
 
 const LOCAL_KEY = 'salary_config'
 
@@ -80,6 +81,7 @@ export const useSalaryStore = defineStore('salary', {
 		},
 
 		async updateConfig(partial) {
+			if (!requireAuth()) return
 			this.config = { ...this.config, ...partial }
 			saveLocal(this.config)
 

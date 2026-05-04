@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { collection } from '@/utils/localStore'
 import { getDeviceId, getOwner } from '@/utils/device'
-import { calcPay, calcNetPay } from '@/utils/calculator'
+
+import { requireAuth } from '@/utils/auth'
 
 const col = collection('work_records')
 
@@ -122,8 +123,13 @@ export const useWorkStore = defineStore('work', {
 			const localDocs = col.getAll()
 			this.records = localDocs.map(r => this._ensureRecordDefaults(r))
 
-			// 2. 后台尝试云同步
+			// 2. 后台尝试云同步（30s 去重）
+			const MIN_SYNC_GAP = 30000
 			if (hasToken()) {
+				if (this.lastSyncAt && Date.now() - this.lastSyncAt < MIN_SYNC_GAP) {
+					this.loading = false
+					return
+				}
 				this.syncStatus = 'syncing'
 				try {
 					await this.pullFromCloud()
@@ -142,6 +148,7 @@ export const useWorkStore = defineStore('work', {
 		// ========== CRUD — 本地优先 ==========
 
 		async addRecord(record) {
+			if (!requireAuth()) return
 			const owner = getOwner()
 			const payMode = record.pay_mode || 'hourly'
 			const doc = {
@@ -170,6 +177,7 @@ export const useWorkStore = defineStore('work', {
 		},
 
 		async updateRecord(id, data) {
+			if (!requireAuth()) return
 			col.update(id, data)
 
 			const index = this.records.findIndex(r => r.id === id || r._id === id)
@@ -187,6 +195,7 @@ export const useWorkStore = defineStore('work', {
 		},
 
 		async deleteRecord(id) {
+			if (!requireAuth()) return
 			col.remove(id)
 			this.records = this.records.filter(r => r.id !== id && r._id !== id)
 			this.enqueueSync('delete', id, null)
@@ -226,7 +235,7 @@ export const useWorkStore = defineStore('work', {
 					// 应用云端 ID 映射
 					if (res.id_mappings) {
 						for (const [localId, cloudId] of Object.entries(res.id_mappings)) {
-							col.update(localId, { _id: cloudId, _synced: true, updated_at: Date.now() })
+							col.replaceId(localId, cloudId)
 							const rec = this.records.find(r => r._id === localId || r.id === localId)
 							if (rec) {
 								rec._id = cloudId
@@ -318,6 +327,8 @@ export const useWorkStore = defineStore('work', {
 			try {
 				await this.pullFromCloud()
 				await this.flushSyncQueue()
+				this.syncStatus = 'synced'
+				this.lastSyncAt = Date.now()
 			} catch (e) {
 				// 静默
 			}

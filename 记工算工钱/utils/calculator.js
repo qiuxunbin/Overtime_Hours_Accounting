@@ -2,6 +2,7 @@
  * 记工算工钱 — 统一计算引擎
  * 所有金额计算收敛到此文件，作为唯一入口。
  * 页面和 Store 不自行计算金额。
+ * 费率优先级：工作费率 > 记录保存时费率(兜底) > 0
  */
 
 /**
@@ -30,14 +31,12 @@ export function calcDuration(startTime, endTime, precision = 'exact') {
 /**
  * 根据 day_type 获取对应时薪费率
  * @param {string} dayType 'weekday'|'weekend'|'holiday'
- * @param {object} project 项目配置
- * @param {object} salaryConfig 全局薪资配置
+ * @param {object} project 工作配置
  * @returns {number} 时薪费率
  */
-export function getRateByType(dayType, project, salaryConfig) {
+export function getRateByType(dayType, project) {
   const key = dayType + '_rate'
   if (project?.[key] > 0) return project[key]
-  if (salaryConfig?.[key] > 0) return salaryConfig[key]
   return 0
 }
 
@@ -67,25 +66,58 @@ export function calcDeduction(deduction) {
 
 /**
  * 计算单条记录的应付金额 pay
+ * 费率优先级：工作费率 > 记录保存时费率(兜底) > 0
  * @param {object} record 记工记录
- * @param {object} project 项目配置
- * @param {object} salaryConfig 全局薪资配置
+ * @param {object|null} project 工作配置（null=无工作）
  * @returns {number}
  */
-export function calcPay(record, project, salaryConfig) {
+export function calcPay(record, project) {
   switch (record.pay_mode) {
     case 'daily': {
-      const rate = record.daily_rate || project?.daily_rate || salaryConfig?.daily_rate || 0
+      const rate = project?.daily_rate || record.daily_rate || 0
       return round2((record.days || 0) * rate)
     }
     case 'piece': {
-      const rate = record.piece_rate || project?.piece_rate || salaryConfig?.piece_rate || 0
+      const rate = project?.piece_rate || record.piece_rate || 0
       return round2((record.quantity || 0) * rate)
     }
     case 'hourly':
     default: {
-      const rate = record.rate || getRateByType(record.day_type || 'weekday', project, salaryConfig)
+      const key = (record.day_type || 'weekday') + '_rate'
+      const projectRate = project?.[key]
+      const rate = (projectRate > 0) ? projectRate : (record.rate || 0)
       return round2((record.duration || 0) * rate)
+    }
+  }
+}
+
+/**
+ * 获取单条记录的费率来源说明文字
+ * @param {object} record
+ * @param {object|null} project
+ * @returns {string}
+ */
+export function getPayFormula(record, project) {
+  if (!record || (!record.duration && !record.days && !record.quantity)) return ''
+  const pay = record.pay ?? calcPay(record, project)
+  switch (record.pay_mode) {
+    case 'daily': {
+      const rate = project?.daily_rate || record.daily_rate || 0
+      const src = project?.daily_rate > 0 ? (project.name || '项目') : '保存记录'
+      return (record.days || 1) + '天×¥' + rate + '/天=¥' + pay.toFixed(0) + '(' + src + ')'
+    }
+    case 'piece': {
+      const rate = project?.piece_rate || record.piece_rate || 0
+      const src = project?.piece_rate > 0 ? (project.name || '项目') : '保存记录'
+      return (record.quantity || 0) + '件×¥' + rate + '/' + (record.piece_unit || '件') + '=¥' + pay.toFixed(0) + '(' + src + ')'
+    }
+    case 'hourly':
+    default: {
+      const key = (record.day_type || 'weekday') + '_rate'
+      const projectRate = project?.[key]
+      const rate = (projectRate > 0) ? projectRate : (record.rate || 0)
+      const src = projectRate > 0 ? (project?.name || '项目') : '保存记录'
+      return (record.duration || 0) + 'h×¥' + rate + '/h=¥' + pay.toFixed(0) + '(' + src + ')'
     }
   }
 }
@@ -93,12 +125,11 @@ export function calcPay(record, project, salaryConfig) {
 /**
  * 计算净额 net_pay = pay + 补贴 - 扣款
  * @param {object} record 记工记录（需含 pay 字段或可计算）
- * @param {object} project 项目配置
- * @param {object} salaryConfig 全局薪资配置
+ * @param {object} project 工作配置
  * @returns {number}
  */
-export function calcNetPay(record, project, salaryConfig) {
-  const pay = record.pay ?? calcPay(record, project, salaryConfig)
+export function calcNetPay(record, project) {
+  const pay = record.pay ?? calcPay(record, project)
   return round2(pay + calcSubsidies(record.subsidies) - calcDeduction(record.deduction))
 }
 

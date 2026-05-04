@@ -76,6 +76,14 @@ export function collection(name) {
 			if (map[id]) {
 				map[id] = { ...map[id], ...data, _updated_at: Date.now(), _synced: false }
 				writeAll(name, map)
+			} else {
+				for (const key of Object.keys(map)) {
+					if (map[key]._id === id || map[key].id === id) {
+						map[key] = { ...map[key], ...data, _updated_at: Date.now(), _synced: false }
+						writeAll(name, map)
+						return
+					}
+				}
 			}
 		},
 
@@ -92,6 +100,17 @@ export function collection(name) {
 			const map = readAll(name)
 			delete map[id]
 			writeAll(name, map)
+		},
+
+		replaceId(oldId, newId) {
+			const map = readAll(name)
+			if (map[oldId] && oldId !== newId) {
+				map[oldId]._id = newId
+				map[oldId].id = newId
+				map[newId] = map[oldId]
+				delete map[oldId]
+				writeAll(name, map)
+			}
 		},
 
 		clear() {
