@@ -182,11 +182,9 @@ export default {
 		onItemTap(rec) {
 			if (this.selectMode) {
 				const id = rec.id || rec._id
-				if (this.selectedMap[id]) {
-					this.$delete(this.selectedMap, id)
-				} else {
-					this.$set(this.selectedMap, id, true)
-				}
+				const next = { ...this.selectedMap }
+					if (next[id]) { delete next[id] } else { next[id] = true }
+					this.selectedMap = next
 			} else {
 				this.goEdit(rec.id || rec._id)
 			}
