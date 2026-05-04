@@ -14,20 +14,26 @@
 				</view>
 			</view>
 
-			<!-- 筛选栏 -->
+			<!-- 筛选栏 + 管理模式 -->
 			<view class="filter-bar">
 				<view class="filter-chip" @tap="onProjectFilter">
 					<text class="filter-chip__text" :style="{ color: projectFilter ? '#1B8A5A' : '#9C9C9C' }">{{ projectFilterName || '所有工作' }}</text>
 					<text class="filter-chip__arrow">›</text>
 				</view>
-				<view class="filter-chip" :class="{ 'filter-chip--active': settleFilter === 'all' }" @tap="settleFilter = 'all'">
-					<text class="filter-chip__text">全部</text>
-				</view>
-				<view class="filter-chip" :class="{ 'filter-chip--active': settleFilter === 'unsettled' }" @tap="settleFilter = 'unsettled'">
-					<text class="filter-chip__text">未结算</text>
-				</view>
-				<view class="filter-chip" :class="{ 'filter-chip--active': settleFilter === 'settled' }" @tap="settleFilter = 'settled'">
-					<text class="filter-chip__text">已结算</text>
+				<template v-if="!selectMode">
+					<view class="filter-chip" :class="{ 'filter-chip--active': settleFilter === 'all' }" @tap="settleFilter = 'all'">
+						<text class="filter-chip__text">全部</text>
+					</view>
+					<view class="filter-chip" :class="{ 'filter-chip--active': settleFilter === 'unsettled' }" @tap="settleFilter = 'unsettled'">
+						<text class="filter-chip__text">未结算</text>
+					</view>
+					<view class="filter-chip" :class="{ 'filter-chip--active': settleFilter === 'settled' }" @tap="settleFilter = 'settled'">
+						<text class="filter-chip__text">已结算</text>
+					</view>
+				</template>
+				<view class="filter-bar__spacer" v-if="!selectMode"></view>
+				<view class="filter-chip filter-chip--manage" :class="{ 'filter-chip--active': selectMode }" @tap="toggleSelectMode">
+					<text class="filter-chip__text">{{ selectMode ? '取消' : '管理' }}</text>
 				</view>
 			</view>
 
@@ -37,9 +43,17 @@
 					v-for="(rec, idx) in filteredRecords"
 					:key="rec.id || rec._id"
 					class="record-item"
-					:class="{ 'record-item--last': idx === filteredRecords.length - 1 }"
-					@tap="goEdit(rec.id || rec._id)"
+					:class="{
+						'record-item--last': idx === filteredRecords.length - 1,
+						'record-item--sel': selectMode && selectedIds.has(rec.id || rec._id)
+					}"
+					@tap="onItemTap(rec)"
 				>
+					<view class="record-item__check" v-if="selectMode">
+						<view class="record-item__checkbox" :class="{ 'record-item__checkbox--on': selectedIds.has(rec.id || rec._id) }">
+							<text v-if="selectedIds.has(rec.id || rec._id)">✓</text>
+						</view>
+					</view>
 					<view class="record-item__icon" :class="iconClass(rec.day_type || rec.overtime_type)">
 						<text class="record-item__icon-text">{{ typeLabel(rec.day_type || rec.overtime_type) }}</text>
 					</view>
@@ -65,6 +79,16 @@
 
 			<view class="page-records__spacer"></view>
 		</view>
+
+		<!-- 批量删除底栏 -->
+		<view class="batch-bar" v-if="selectMode && selectedIds.size > 0">
+			<view class="batch-bar__inner">
+				<view class="batch-bar__btn batch-bar__btn--del" @tap="batchDelete">
+					<text class="batch-bar__btn-text">删除已选 ({{ selectedIds.size }})</text>
+				</view>
+			</view>
+			<view class="batch-bar__safe"></view>
+		</view>
 	</view>
 </template>
 
@@ -83,7 +107,9 @@ export default {
 			viewYear: now.getFullYear(),
 			viewMonth: now.getMonth() + 1,
 			projectFilter: null,
-			settleFilter: 'all'
+			settleFilter: 'all',
+			selectMode: false,
+			selectedIds: new Set()
 		}
 	},
 	computed: {
@@ -149,6 +175,42 @@ export default {
 		goEdit(id) {
 			uni.navigateTo({ url: '/pages/record/record?id=' + id })
 		},
+		onItemTap(rec) {
+			if (this.selectMode) {
+				const id = rec.id || rec._id
+				const next = new Set(this.selectedIds)
+				if (next.has(id)) { next.delete(id) } else { next.add(id) }
+				this.selectedIds = next
+			} else {
+				this.goEdit(rec.id || rec._id)
+			}
+		},
+		toggleSelectMode() {
+			this.selectMode = !this.selectMode
+			if (!this.selectMode) this.selectedIds = new Set()
+		},
+		batchDelete() {
+			if (this.selectedIds.size === 0) return
+			uni.showModal({
+				title: '确认删除',
+				content: `将删除 ${this.selectedIds.size} 条记录，删除后无法恢复`,
+				confirmText: '删除',
+				confirmColor: '#B85C4A',
+				success: (res) => {
+					if (res.confirm) {
+						const store = useWorkStore()
+						let count = 0
+						for (const id of this.selectedIds) {
+							store.deleteRecord(id)
+							count++
+						}
+						this.selectedIds = new Set()
+						this.selectMode = false
+						uni.showToast({ title: `已删除 ${count} 条`, icon: 'success' })
+					}
+				}
+			})
+		},
 		onProjectFilter() {
 			const pStore = useProjectStore()
 			pStore.loadProjects()
@@ -171,194 +233,93 @@ export default {
 
 <style lang="scss" scoped>
 .page-records {
-	padding-top: 56px;
-	min-height: 100vh;
-	background: var(--surface);
-
-	&__content {
-		padding: 0 16px 100px;
-		max-width: 640px;
-		margin: 0 auto;
-	}
-
-	&__spacer {
-		height: 60px;
-	}
+	padding-top: 56px; min-height: 100vh; background: var(--surface);
+	&__content { padding: 0 16px 100px; max-width: 640px; margin: 0 auto; }
+	&__spacer { height: 60px; }
 }
 
 .month-nav {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 16px 0;
-
-	&__title {
-		font-size: 17px;
-		font-weight: 600;
-		color: var(--text-primary);
-	}
-
-	&__btn {
-		width: 36px;
-		height: 36px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: 50%;
-	}
-
-	&__icon {
-		font-size: 22px;
-		color: var(--text-muted);
-	}
+	display: flex; align-items: center; justify-content: space-between; padding: 16px 0;
+	&__title { font-size: 17px; font-weight: 600; color: var(--text-primary); }
+	&__btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+	&__icon { font-size: 22px; color: var(--text-muted); }
 }
 
 /* 筛选栏 */
 .filter-bar {
-	display: flex;
-	gap: 8px;
-	margin-bottom: 12px;
+	display: flex; gap: 8px; margin-bottom: 12px; align-items: center;
 }
+.filter-bar__spacer { flex: 1; }
 .filter-chip {
-	padding: 4px 10px;
-	border-radius: 20px;
-	background: var(--surface-hover);
-	display: flex;
-	align-items: center;
+	padding: 4px 10px; border-radius: 20px; background: var(--surface-hover);
+	display: flex; align-items: center;
 }
-.filter-chip--active {
-	background: rgba(27, 138, 90, 0.1);
-}
-.filter-chip--active .filter-chip__text {
-	color: var(--primary);
-}
-.filter-chip__text {
-	font-size: 12px;
-	color: var(--text-muted);
-}
-.filter-chip__arrow {
-	font-size: 12px;
-	color: var(--text-muted);
-	margin-left: 2px;
-}
+.filter-chip--active { background: rgba(27, 138, 90, 0.1); }
+.filter-chip--active .filter-chip__text { color: var(--primary); }
+.filter-chip--manage { background: transparent; border: 1px solid var(--border); }
+.filter-chip--manage.filter-chip--active { background: #B85C4A; border-color: #B85C4A; }
+.filter-chip--manage.filter-chip--active .filter-chip__text { color: #FFFFFF; }
+.filter-chip__text { font-size: 12px; color: var(--text-muted); }
+.filter-chip__arrow { font-size: 12px; color: var(--text-muted); margin-left: 2px; }
 
 /* 记录列表 */
 .record-list {
-	background: var(--surface-card);
-	border-radius: 12px;
-	border: 1px solid var(--border);
-	overflow: hidden;
+	background: var(--surface-card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden;
 }
 .record-item {
-	display: flex;
-	align-items: center;
-	padding: 12px 14px;
-	border-bottom: 1px solid var(--border);
-	cursor: pointer;
-
-	&--last {
-		border-bottom: none;
+	display: flex; align-items: center; padding: 12px 14px;
+	border-bottom: 1px solid var(--border); cursor: pointer;
+	&--last { border-bottom: none; }
+	&--sel { background: rgba(184, 92, 74, 0.06); }
+	&__check { margin-right: 8px; flex-shrink: 0; }
+	&__checkbox {
+		width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border);
+		display: flex; align-items: center; justify-content: center; font-size: 11px; color: #FFFFFF;
+		&--on { background: #B85C4A; border-color: #B85C4A; }
 	}
-
 	&__icon {
-		width: 34px;
-		height: 34px;
-		border-radius: 17px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-shrink: 0;
-		margin-right: 10px;
-
+		width: 34px; height: 34px; border-radius: 17px;
+		display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 10px;
 		&--weekday { background: rgba(27, 138, 90, 0.12); }
 		&--weekend { background: rgba(0, 100, 149, 0.12); }
 		&--holiday { background: rgba(162, 61, 51, 0.12); }
 	}
-
-	&__icon-text {
-		font-size: 11px;
-		font-weight: 600;
-		color: var(--primary);
-	}
+	&__icon-text { font-size: 11px; font-weight: 600; color: var(--primary); }
 	&__icon--weekend &__icon-text { color: #006495; }
 	&__icon--holiday &__icon-text { color: #A23D33; }
-
 	&__info { flex: 1; }
-
-	&__date {
-		font-size: 14px;
-		font-weight: 500;
-		color: var(--text-primary);
-		display: block;
-	}
-
-	&__project {
-		font-size: 11px;
-		color: var(--primary);
-		margin-top: 2px;
-		display: block;
-	}
-
-	&__right {
-		text-align: right;
-		min-width: 80px;
-	}
-
+	&__date { font-size: 14px; font-weight: 500; color: var(--text-primary); display: block; }
+	&__project { font-size: 11px; color: var(--primary); margin-top: 2px; display: block; }
+	&__right { text-align: right; min-width: 80px; }
 	&__mode {
-		font-size: 10px;
-		color: var(--primary);
-		background: var(--primary-light);
-		padding: 1px 5px;
-		border-radius: 4px;
-		display: inline-block;
-		margin-bottom: 2px;
+		font-size: 10px; color: var(--primary); background: var(--primary-light);
+		padding: 1px 5px; border-radius: 4px; display: inline-block; margin-bottom: 2px;
 	}
-
 	&__settle {
-		font-size: 10px;
-		padding: 1px 5px;
-		border-radius: 4px;
-		display: inline-block;
-		margin-bottom: 2px;
-
+		font-size: 10px; padding: 1px 5px; border-radius: 4px; display: inline-block; margin-bottom: 2px;
 		&--pending { color: #E5A100; background: #FFF8E6; }
 		&--done { color: var(--primary); background: #E6FFF0; }
 	}
-
-	&__qty {
-		font-size: 15px;
-		font-weight: 600;
-		color: var(--primary);
-		display: block;
-	}
-
-	&__pay {
-		font-size: 12px;
-		color: var(--text-muted);
-		display: block;
-		margin-top: 1px;
-	}
+	&__qty { font-size: 15px; font-weight: 600; color: var(--primary); display: block; }
+	&__pay { font-size: 12px; color: var(--text-muted); display: block; margin-top: 1px; }
 }
 
 /* 空状态 */
-.empty-wrap {
-	text-align: center;
-	padding: 80px 0;
-
+.empty-wrap { text-align: center; padding: 80px 0;
 	&__icon { font-size: 48px; }
+	&__text { font-size: 16px; color: var(--text-muted); display: block; margin-top: 12px; }
+	&__hint { font-size: 13px; color: var(--text-muted); display: block; margin-top: 6px; }
+}
 
-	&__text {
-		font-size: 16px;
-		color: var(--text-muted);
-		display: block;
-		margin-top: 12px;
+/* 批量删除底栏 */
+.batch-bar {
+	position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+	&__inner { max-width: 640px; margin: 0 auto; padding: 12px 16px; }
+	&__btn {
+		height: 48px; border-radius: 20px; display: flex; align-items: center; justify-content: center;
+		&--del { background: #B85C4A; }
 	}
-
-	&__hint {
-		font-size: 13px;
-		color: var(--text-muted);
-		display: block;
-		margin-top: 6px;
-	}
+	&__btn-text { font-size: 17px; font-weight: 600; color: #FFFFFF; }
+	&__safe { height: constant(safe-area-inset-bottom); height: env(safe-area-inset-bottom); }
 }
 </style>
