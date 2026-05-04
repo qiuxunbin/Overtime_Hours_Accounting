@@ -24,17 +24,20 @@
 			</view>
 
 			<!-- 计薪模式 -->
-			<view class="section">
+			<view class="pay-mode-section">
 				<text class="section__title">计薪方式</text>
-				<view class="mode-tabs">
-					<view class="mode-tab" :class="{ 'mode-tab--active': payMode === 'hourly' }" @tap="payMode = 'hourly'">
-						<text>时薪</text>
+				<view class="pay-mode-tabs">
+					<view class="pay-mode-tab" :class="{ 'pay-mode-tab--active': payMode === 'hourly' }" @tap="payMode = 'hourly'">
+						<text class="pay-mode-tab__icon">⏱</text>
+						<text class="pay-mode-tab__label">时薪</text>
 					</view>
-					<view class="mode-tab" :class="{ 'mode-tab--active': payMode === 'daily' }" @tap="payMode = 'daily'">
-						<text>日薪</text>
+					<view class="pay-mode-tab" :class="{ 'pay-mode-tab--active': payMode === 'daily' }" @tap="payMode = 'daily'">
+						<text class="pay-mode-tab__icon">📅</text>
+						<text class="pay-mode-tab__label">日薪</text>
 					</view>
-					<view class="mode-tab" :class="{ 'mode-tab--active': payMode === 'piece' }" @tap="payMode = 'piece'">
-						<text>计件</text>
+					<view class="pay-mode-tab" :class="{ 'pay-mode-tab--active': payMode === 'piece' }" @tap="payMode = 'piece'">
+						<text class="pay-mode-tab__icon">📦</text>
+						<text class="pay-mode-tab__label">计件</text>
 					</view>
 				</view>
 			</view>
@@ -484,26 +487,46 @@ export default {
 }
 
 /* 计薪模式 tabs */
-.mode-tabs {
-	display: flex;
-	background: var(--surface-hover);
+.pay-mode-section {
+	margin-top: 16px;
+	padding: 16px 20px;
+	background: var(--surface-card);
 	border-radius: 12px;
-	padding: 4px;
+	border: 1px solid var(--border);
 }
-.mode-tab {
+.pay-mode-tabs {
+	display: flex;
+	gap: 8px;
+	margin-top: 12px;
+}
+.pay-mode-tab {
 	flex: 1;
-	text-align: center;
-	padding: 8px 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 12px 6px;
 	border-radius: 10px;
-	font-size: 14px;
+	background: var(--surface);
+	border: 1.5px solid var(--border);
+}
+.pay-mode-tab--active {
+	background: var(--primary-light);
+	border-color: var(--primary);
+}
+.pay-mode-tab__icon {
+	font-size: 20px;
+	display: block;
+	margin-bottom: 4px;
+}
+.pay-mode-tab__label {
+	font-size: 13px;
 	font-weight: 500;
 	color: var(--text-muted);
 }
-.mode-tab--active {
-	background: var(--surface-card);
+.pay-mode-tab--active .pay-mode-tab__label {
 	color: var(--primary);
 	font-weight: 600;
-	box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 
 /* 数量步进器 */

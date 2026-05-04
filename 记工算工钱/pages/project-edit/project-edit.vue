@@ -105,20 +105,7 @@
 				</view>
 			</view>
 
-			<!-- 颜色 -->
-			<view class="color-section">
-				<text class="section-label">颜色</text>
-				<view class="color-section__options">
-					<view
-						v-for="(c, idx) in colorOptions"
-						:key="idx"
-						class="color-chip"
-						:class="{ 'color-chip--active': form.color === c.value }"
-						:style="{ background: c.value }"
-						@tap="form.color = c.value"
-					></view>
-				</view>
-			</view>
+	
 
 			<!-- 归档 -->
 			<view class="archive-row" v-if="editId">
@@ -148,7 +135,7 @@
 import NavBar from '../../components/NavBar.vue'
 import { useProjectStore } from '../../stores/projectStore'
 
-import { PROJECT_COLORS, PAY_MODES, PIECE_UNITS } from '../../utils/constants'
+import { PAY_MODES, PIECE_UNITS } from '../../utils/constants'
 
 export default {
 	components: { NavBar },
@@ -168,7 +155,6 @@ export default {
 				piece_unit: '件',
 				is_archived: false
 			},
-			colorOptions: PROJECT_COLORS,
 			payModeOptions: PAY_MODES,
 			pieceUnitOptions: PIECE_UNITS
 		}
