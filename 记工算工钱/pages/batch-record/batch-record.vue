@@ -64,7 +64,7 @@
 					<text class="qty-stepper__unit">天</text>
 					<view class="qty-stepper__btn qty-stepper__btn--add" :class="{ 'qty-stepper__btn--off': dailyDays >= dailyMax }" @tap="adjustDailyDays(0.5)"><text>+</text></view>
 				</view>
-				<text class="field-hint" v-if="isSingleDay && dailyDays > 1">⚠ 单日工时不能超过 1 天</text>
+				<text class="field-hint" v-if="isSingleDay && dailyDays > 1">⚠ 不能超过日历天数</text>
 
 				<view class="pay-card" v-if="dailyPay > 0">
 					<text class="pay-card__label">单日工钱</text>
@@ -176,7 +176,7 @@ export default {
 		// 日薪：单日限制
 		isSingleDay() { return this.startDate === this.endDate },
 		dailyMin() { return this.isSingleDay ? 0 : 0.5 },
-		dailyMax() { return this.isSingleDay ? 1 : 3 },
+		dailyMax() { const s = new Date(this.startDate); const e = new Date(this.endDate); return Math.max(1, Math.ceil((e - s) / 86400000) + 1) },
 
 		hasProjects() { return useProjectStore().activeProjects.length > 0 },
 		pickerProjects() { return useProjectStore().activeProjects },
@@ -243,7 +243,7 @@ export default {
 
 		adjustDailyDays(delta) {
 			if (delta < 0 && this.dailyDays <= this.dailyMin) return
-			if (delta > 0 && this.dailyDays >= this.dailyMax) { if (this.isSingleDay) uni.showToast({ title: "单日工时不能超过 1 天", icon: "none" }); return }
+			if (delta > 0 && this.dailyDays >= this.dailyMax) { if (this.isSingleDay) uni.showToast({ title: "不能超过日历天数", icon: "none" }); return }
 			this.dailyDays = Math.max(this.dailyMin, Math.min(this.dailyMax, Math.round((this.dailyDays + delta) * 10) / 10))
 		},
 		adjustPieceQty(delta) {
@@ -272,7 +272,7 @@ export default {
 			const mode = this.effectivePayMode
 			if (mode === 'hourly' && this.durationNum <= 0) { uni.showToast({ title: '请设置有效时间', icon: 'none' }); return }
 			if (mode === 'daily' && this.dailyDays <= 0) { uni.showToast({ title: '请设置天数', icon: 'none' }); return }
-			if (mode === 'daily' && this.isSingleDay && this.dailyDays > 1) { uni.showToast({ title: '单日工时不能超过 1 天', icon: 'none' }); return }
+			if (mode === 'daily' && this.dailyDays > this.dailyMax) { uni.showToast({ title: '单日工时不能超过日历天数', icon: 'none' }); return }
 			if (mode === 'piece' && this.pieceQuantity <= 0) { uni.showToast({ title: '请设置件数', icon: 'none' }); return }
 			if (!this.selectedProjectId) { if (!this.hasProjects) { uni.navigateTo({ url: '/pages/project-edit/project-edit' }); return } this.showProjectPicker(); return }
 			if (mode === 'hourly' && this.currentRate <= 0) { this.goEditProject(); return }
