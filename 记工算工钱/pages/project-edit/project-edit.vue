@@ -198,6 +198,23 @@ export default {
 		},
 
 		methods: {
+t	autoFillRates() {
+			const pStore = useProjectStore()
+			pStore.loadProjects()
+			const same = pStore.projects.filter(p => p.pay_mode === this.form.pay_mode && p._id !== this.editId).sort((a, b) => (b.created_at || 0) - (a.created_at || 0))
+			const last = same[0]
+			if (!last) return
+			if (this.form.pay_mode === 'hourly') {
+				if (last.weekday_rate > 0) this.form.weekday_rate = last.weekday_rate
+				if (last.weekend_rate > 0) this.form.weekend_rate = last.weekend_rate
+				if (last.holiday_rate > 0) this.form.holiday_rate = last.holiday_rate
+			} else if (this.form.pay_mode === 'daily') {
+				if (last.daily_rate > 0) this.form.daily_rate = last.daily_rate
+			} else if (this.form.pay_mode === 'piece') {
+				if (last.piece_rate > 0) this.form.piece_rate = last.piece_rate
+				if (last.piece_unit) this.form.piece_unit = last.piece_unit
+			}
+		},
 		onPieceUnitChange(e) {
 			this.form.piece_unit = this.pieceUnitOptions[e.detail.value] || '件'
 		},
