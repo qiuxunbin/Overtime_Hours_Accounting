@@ -45,13 +45,13 @@
 					class="record-item"
 					:class="{
 						'record-item--last': idx === filteredRecords.length - 1,
-						'record-item--sel': selectMode && selectedIds.has(rec.id || rec._id)
+						'record-item--sel': selectMode && selectedMap[rec.id || rec._id]
 					}"
 					@tap="onItemTap(rec)"
 				>
 					<view class="record-item__check" v-if="selectMode">
-						<view class="record-item__checkbox" :class="{ 'record-item__checkbox--on': selectedIds.has(rec.id || rec._id) }">
-							<text v-if="selectedIds.has(rec.id || rec._id)">✓</text>
+						<view class="record-item__checkbox" :class="{ 'record-item__checkbox--on': selectedMap[rec.id || rec._id] }">
+							<text v-if="selectedMap[rec.id || rec._id]">✓</text>
 						</view>
 					</view>
 					<view class="record-item__icon" :class="iconClass(rec.day_type || rec.overtime_type)">
@@ -81,10 +81,10 @@
 		</view>
 
 		<!-- 批量删除底栏 -->
-		<view class="batch-bar" v-if="selectMode && selectedIds.size > 0">
+		<view class="batch-bar" v-if="selectMode && selectedCount > 0">
 			<view class="batch-bar__inner">
 				<view class="batch-bar__btn batch-bar__btn--del" @tap="batchDelete">
-					<text class="batch-bar__btn-text">删除已选 ({{ selectedIds.size }})</text>
+					<text class="batch-bar__btn-text">删除已选 ({{ selectedCount }})</text>
 				</view>
 			</view>
 			<view class="batch-bar__safe"></view>
@@ -109,7 +109,7 @@ export default {
 			projectFilter: null,
 			settleFilter: 'all',
 			selectMode: false,
-			selectedIds: new Set()
+			selectedMap: {}
 		}
 	},
 	computed: {
@@ -178,35 +178,36 @@ export default {
 		onItemTap(rec) {
 			if (this.selectMode) {
 				const id = rec.id || rec._id
-				const next = new Set(this.selectedIds)
-				if (next.has(id)) { next.delete(id) } else { next.add(id) }
-				this.selectedIds = next
+				if (this.selectedMap[id]) {
+					this.$delete(this.selectedMap, id)
+				} else {
+					this.$set(this.selectedMap, id, true)
+				}
 			} else {
 				this.goEdit(rec.id || rec._id)
 			}
 		},
 		toggleSelectMode() {
 			this.selectMode = !this.selectMode
-			if (!this.selectMode) this.selectedIds = new Set()
+			if (!this.selectMode) this.selectedMap = {}
 		},
 		batchDelete() {
-			if (this.selectedIds.size === 0) return
+			if (this.selectedCount === 0) return
 			uni.showModal({
 				title: '确认删除',
-				content: `将删除 ${this.selectedIds.size} 条记录，删除后无法恢复`,
+				content: `将删除 ${this.selectedCount} 条记录，删除后无法恢复`,
 				confirmText: '删除',
 				confirmColor: '#B85C4A',
 				success: (res) => {
 					if (res.confirm) {
 						const store = useWorkStore()
-						let count = 0
-						for (const id of this.selectedIds) {
+						const ids = Object.keys(this.selectedMap)
+						for (const id of ids) {
 							store.deleteRecord(id)
-							count++
 						}
-						this.selectedIds = new Set()
+						this.selectedMap = {}
 						this.selectMode = false
-						uni.showToast({ title: `已删除 ${count} 条`, icon: 'success' })
+						uni.showToast({ title: `已删除 ${ids.length} 条`, icon: 'success' })
 					}
 				}
 			})
@@ -313,7 +314,8 @@ export default {
 
 /* 批量删除底栏 */
 .batch-bar {
-	position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+	position: fixed; bottom: 0; left: 0; right: 0;
+	background: var(--surface-card); border-top: 1px solid var(--border); z-index: 100;
 	&__inner { max-width: 640px; margin: 0 auto; padding: 12px 16px; }
 	&__btn {
 		height: 48px; border-radius: 20px; display: flex; align-items: center; justify-content: center;
