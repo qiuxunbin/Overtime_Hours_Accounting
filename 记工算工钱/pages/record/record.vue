@@ -460,8 +460,8 @@ export default {
 			const labels = { hourly: '时薪', daily: '日薪', piece: '计件' }; if (!this.selectedProjectId) return ''
 			const p = this.selectedProject
 			const mode = this.effectivePayMode
-			if (mode === 'daily') { const wd = p?.daily_weekday_rate || p?.daily_rate || 0; return `日薪 ¥${wd}/天` }
-			if (mode === 'piece') { const wd = p?.piece_weekday_rate || p?.piece_rate || 0; return `计件 ¥${wd}/${p?.piece_unit || '件'}` }
+			if (mode === 'daily') { const wd = p?.daily_weekday_rate || p?.daily_rate || 0; const we = p?.daily_weekend_rate || 0; const hd = p?.daily_holiday_rate || 0; return `日薪 平¥${wd} 休¥${we} 节¥${hd}/天` }
+			if (mode === 'piece') { const wd = p?.piece_weekday_rate || p?.piece_rate || 0; const we = p?.piece_weekend_rate || 0; const hd = p?.piece_holiday_rate || 0; return `计件 平¥${wd} 休¥${we} 节¥${hd}/${p?.piece_unit || '件'}` }
 			return `平¥${p?.weekday_rate || 0} 休¥${p?.weekend_rate || 0} 节¥${p?.holiday_rate || 0}`
 		},
 		dayTypeLabel() {
@@ -655,8 +655,8 @@ export default {
 		},
 		rateSummary(p) {
 			if (!p) return ''
-			if (p.pay_mode === 'daily') return '日薪 ¥' + (p.daily_weekday_rate || p.daily_rate || 0) + '/天'
-			if (p.pay_mode === 'piece') return '计件 ¥' + (p.piece_weekday_rate || p.piece_rate || 0) + '/' + (p.piece_unit || '件')
+			if (p.pay_mode === 'daily') return '日薪 平¥' + (p.daily_weekday_rate || p.daily_rate || 0) + ' 休¥' + (p.daily_weekend_rate || 0) + ' 节¥' + (p.daily_holiday_rate || 0) + '/天'
+			if (p.pay_mode === 'piece') return '计件 平¥' + (p.piece_weekday_rate || p.piece_rate || 0) + ' 休¥' + (p.piece_weekend_rate || 0) + ' 节¥' + (p.piece_holiday_rate || 0) + '/' + (p.piece_unit || '件')
 			return '平¥' + (p.weekday_rate || 0) + ' 休¥' + (p.weekend_rate || 0) + ' 节¥' + (p.holiday_rate || 0)
 		},
 		handleDelete() {

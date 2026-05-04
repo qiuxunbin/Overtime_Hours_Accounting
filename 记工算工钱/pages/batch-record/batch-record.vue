@@ -262,7 +262,7 @@ if (mode === 'piece') return `平¥${p?.piece_weekday_rate || 0} 休¥${p?.piece
 			if (ap[0]) this.selectedProjectId = ap[0]._id
 		},
 		modeLabel(m) { const o = { hourly: '时薪', daily: '日薪', piece: '计件' }; return o[m] || '' },
-		rateSummary(p) { if (!p) return ''; if (p.pay_mode === 'daily') return '日薪 ¥' + (p.daily_weekday_rate || 0) + '/天'; if (p.pay_mode === 'piece') return '计件 ¥' + (p.piece_weekday_rate || 0) + '/' + (p.piece_unit || '件'); return '平 ¥' + (p.weekday_rate || 0) + ' · 休 ¥' + (p.weekend_rate || 0) + ' · 节 ¥' + (p.holiday_rate || 0) },
+		rateSummary(p) { if (!p) return ''; if (p.pay_mode === 'daily') return '日薪 平¥' + (p.daily_weekday_rate || p.daily_rate || 0) + ' 休¥' + (p.daily_weekend_rate || 0) + ' 节¥' + (p.daily_holiday_rate || 0) + '/天'; if (p.pay_mode === 'piece') return '计件 平¥' + (p.piece_weekday_rate || p.piece_rate || 0) + ' 休¥' + (p.piece_weekend_rate || 0) + ' 节¥' + (p.piece_holiday_rate || 0) + '/' + (p.piece_unit || '件'); return '平 ¥' + (p.weekday_rate || 0) + ' · 休 ¥' + (p.weekend_rate || 0) + ' · 节 ¥' + (p.holiday_rate || 0) },
 		fmtMoney(v) { return fmtDec(v) },
 
 		async handleBatchSave() {
