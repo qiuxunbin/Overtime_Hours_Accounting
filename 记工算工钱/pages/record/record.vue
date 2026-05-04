@@ -544,6 +544,10 @@ export default {
 		}
 	},
 	onReady() { setTimeout(() => { this.pageReady = true }, 350) },
+	onShow() {
+		this.loadProjectPicker()
+		if (!this.selectedProjectId) this.autoSelectProject()
+	},
 	onLoad(options) {
 		if (options.date) this.pickerDate = options.date
 		this.loadProjectPicker()
