@@ -156,13 +156,13 @@ async function recalcMonth(uid, year, month) {
 		switch (payMode) {
 			case 'daily': {
 					const dk = 'daily_' + (rec.day_type || rec.overtime_type || 'weekday') + '_rate'
-t				rate = (project && project[dk] > 0) ? project[dk] : (project?.daily_rate || rec.daily_rate || 0)
+								rate = (project && project[dk] > 0) ? project[dk] : (project?.daily_rate || rec.daily_rate || 0)
 				pay = Math.round((rec.days || 1) * rate * 100) / 100
 				break
 			}
 			case 'piece': {
 					const pk = 'piece_' + (rec.day_type || rec.overtime_type || 'weekday') + '_rate'
-t				rate = (project && project[pk] > 0) ? project[pk] : (project?.piece_rate || rec.piece_rate || 0)
+								rate = (project && project[pk] > 0) ? project[pk] : (project?.piece_rate || rec.piece_rate || 0)
 				pay = Math.round((rec.quantity || 0) * rate * 100) / 100
 				break
 			}
