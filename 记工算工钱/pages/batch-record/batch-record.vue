@@ -310,8 +310,7 @@ export default {
 		},
 	},
 	async onShow() {
-		const pStore = useProjectStore()
-		if (pStore.projects.length === 0) { await pStore.loadProjects() }
+		await useProjectStore().loadProjects()
 		if (!this.selectedProjectId) this.autoSelectProject()
 	},
 	autoSelectProject() {

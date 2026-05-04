@@ -599,8 +599,7 @@ export default {
 			}
 		},
 		async loadProjectPicker() {
-			const pStore = useProjectStore()
-			if (pStore.projects.length === 0) await pStore.loadProjects()
+			await useProjectStore().loadProjects()
 		},
 		autoDetectType(date) { this.dayType = useHolidayStore().getDayType(date) },
 		onStartChange(e) { this.startTime = e.detail.value; this.pickerStartTime = e.detail.value; this._syncQuickHour() },
