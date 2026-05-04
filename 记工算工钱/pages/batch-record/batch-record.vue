@@ -230,7 +230,10 @@ export default {
 		},
 		totalPay() { return round2(this.previewDates.reduce((s, d) => s + (d.pay || 0), 0)) },
 	},
-	watch: { selectedProject(val) { if (!val && this.selectedProjectId) this.autoSelectProject() } },
+	watch: {
+			selectedProject(val) { if (!val && this.selectedProjectId) this.autoSelectProject() },
+			isSingleDay(val) { if (val && this.dailyDays > 1) this.dailyDays = 1 }
+		},
 	async onShow() { await useProjectStore().loadProjects(); this.$nextTick(() => { if (!this.selectedProjectId || !this.selectedProject) this.autoSelectProject() }) },
 	methods: {
 		onStartDateChange(e) { this.startDate = e.detail.value },
