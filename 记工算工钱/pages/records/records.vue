@@ -147,6 +147,8 @@ export default {
 		},
 	},
 	onShow() {
+		if (this.selectMode) return
+		if (this.selectMode) return
 		const store = useWorkStore()
 		store.loadRecords()
 	},
