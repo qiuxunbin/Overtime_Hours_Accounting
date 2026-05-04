@@ -47,11 +47,11 @@
 			const token = uni.getStorageSync('uni_id_token')
 			const expired = uni.getStorageSync('uni_id_token_expired')
 			if (!token || (expired && Date.now() > expired)) {
-				// 静默登录 → 最多等5秒，超时或失败不阻碍使用本地功能
+				// 静默登录 → 最多等15秒（云函数冷启动+微信API约5-10秒），超时不阻碍本地功能
 				try {
 					await Promise.race([
 						this.silentLogin(userStore),
-						new Promise(r => setTimeout(r, 5000))
+						new Promise(r => setTimeout(r, 15000))
 					])
 					if (userStore.isLoggedIn) {
 						const workStore = useWorkStore()
@@ -139,7 +139,7 @@
 							name: 'work-calc',
 							data: { action: 'loginByWeixin', code: loginRes.code }
 						}),
-						new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000))
+						new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 12000))
 					])
 					console.log('[silentLogin] 云函数返回 code:', result?.result?.code)
 					if (result && result.result && result.result.code === 0) {
