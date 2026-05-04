@@ -18,8 +18,8 @@
 						<text class="project-card__rate">{{ rateSummary(project) }}</text>
 						<text class="project-card__stats" v-if="projectStats(project)">{{ projectStats(project) }}</text>
 					</view>
-					<view class="project-card__delete" @tap.stop="confirmDelete(project)">
-						<text class="project-card__delete-icon">🗑</text>
+					<view class="project-card__delete" @tap.stop="confirmArchive(project)">
+						<text class="project-card__delete-icon">📁</text>
 					</view>
 					<text class="project-card__edit-icon">✎</text><text class="project-card__arrow">›</text>
 				</view>
@@ -47,7 +47,7 @@
 						<text class="project-card__rate">{{ rateSummary(project) }}</text>
 						<text class="project-card__stats" v-if="projectStats(project)">{{ projectStats(project) }}</text>
 					</view>
-					<view class="project-card__delete" @tap.stop="confirmDelete(project)">
+					<view class="project-card__delete" @tap.stop="confirmUnarchive(project)">
 						<text class="project-card__delete-icon">🗑</text>
 					</view>
 					<text class="project-card__arrow">›</text>
@@ -121,16 +121,28 @@ export default {
 		createProject() {
 			uni.navigateTo({ url: '/pages/project-edit/project-edit' })
 		},
-		confirmDelete(project) {
+		confirmArchive(project) {
 			uni.showModal({
-				title: '确认删除',
-				content: `删除工作「${project.name}」不会删除记工记录，但记录将不再关联该工作。`,
-				confirmText: '删除',
-				confirmColor: '#B85C4A',
+				title: '归档工作',
+				content: `归档「${project.name}」后将从工作列表隐藏，记工记录不受影响，可随时取消归档。`,
+				confirmText: '归档',
+				confirmColor: '#1B8A5A',
 				success: (res) => {
 					if (res.confirm) {
-						this.store.deleteProject(project._id)
-						uni.showToast({ title: '已删除', icon: 'success' })
+						this.store.updateProject(project._id, { is_archived: true })
+					}
+				}
+			})
+		},
+		confirmUnarchive(project) {
+			uni.showModal({
+				title: '取消归档',
+				content: `将「${project.name}」移回工作列表。`,
+				confirmText: '移回',
+				confirmColor: '#1B8A5A',
+				success: (res) => {
+					if (res.confirm) {
+						this.store.updateProject(project._id, { is_archived: false })
 					}
 				}
 			})

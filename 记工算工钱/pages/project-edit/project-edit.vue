@@ -161,9 +161,6 @@
 				<view class="bottom-bar__save" @tap="handleSave">
 					<text class="bottom-bar__save-text">保存</text>
 				</view>
-				<view class="delete-btn" v-if="isEditing" @tap="handleDelete">
-					<text class="delete-btn__text">删除工作</text>
-				</view>
 			</view>
 			<view class="bottom-bar__safe"></view>
 		</view>
@@ -337,26 +334,7 @@ export default {
 				else { uni.switchTab({ url: '/pages/index/index' }) }
 			}, 500)
 		},
-		handleDelete() {
-			uni.showModal({
-				title: '确认删除',
-				content: `删除工作「${this.form.name}」不会删除记工记录，但记录将不再关联该工作。`,
-				confirmText: '删除',
-				confirmColor: '#B85C4A',
-				success: (res) => {
-					if (res.confirm) {
-						const pStore = useProjectStore()
-						pStore.deleteProject(this.editId)
-						uni.showToast({ title: '已删除', icon: 'success' })
-						setTimeout(() => {
-							const pages = getCurrentPages()
-							if (pages.length > 1) { uni.navigateBack() }
-							else { uni.switchTab({ url: '/pages/index/index' }) }
-						}, 500)
-					}
-				}
-			})
-		}
+
 	}
 }
 </script>
