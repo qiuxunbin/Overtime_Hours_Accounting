@@ -309,6 +309,13 @@ export default {
 			return this.previewDates.reduce(function(s, d) { return s + (d.pay || 0); }, 0).toFixed(0)
 		},
 	},
+		watch: {
+			selectedProject(val) {
+				if (!val && this.selectedProjectId) {
+					this.autoSelectProject()
+				}
+			}
+		},
 	async onShow() {
 		await useProjectStore().loadProjects()
 		this.$nextTick(() => {

@@ -535,6 +535,13 @@ export default {
 			return parts.join('  ')
 		}
 	},
+t	watch: {
+			selectedProject(val) {
+				if (!val && this.selectedProjectId) {
+					this.autoSelectProject()
+				}
+			}
+		},
 	onReady() { setTimeout(() => { this.pageReady = true }, 350) },
 	async onShow() {
 		await this.loadProjectPicker()
