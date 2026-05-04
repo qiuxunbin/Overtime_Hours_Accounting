@@ -186,8 +186,8 @@ export default {
 		payModeLabel() {
 			if (!this.selectedProjectId) return ''
 			const p = this.selectedProject; const mode = this.effectivePayMode
-			if (mode === 'daily') return `日薪 ¥${p?.daily_rate || 0}/天`
-			if (mode === 'piece') return `计件 ¥${p?.piece_rate || 0}/${p?.piece_unit || '件'}`
+if (mode === 'daily') return `平¥${p?.daily_weekday_rate || 0} 休¥${p?.daily_weekend_rate || 0} 节¥${p?.daily_holiday_rate || 0}`
+if (mode === 'piece') return `平¥${p?.piece_weekday_rate || 0} 休¥${p?.piece_weekend_rate || 0} 节¥${p?.piece_holiday_rate || 0}`
 			return `平 ¥${p?.weekday_rate || 0} · 休 ¥${p?.weekend_rate || 0} · 节 ¥${p?.holiday_rate || 0}`
 		},
 		pieceUnit() { return this.selectedProject?.piece_unit || '件' },
@@ -213,18 +213,16 @@ export default {
 					d.setDate(d.getDate() + 1) }
 			} else if (mode === 'daily') {
 				const days = this.dailyDays; if (days <= 0) return []
-				const proj = this.selectedProject; const rate = (proj && proj.daily_rate > 0) ? proj.daily_rate : 0
-				const pay = round2(days * rate); let d = new Date(start)
-				while (d <= end) { const dateStr = formatDate(d); const type = useHolidayStore().getDayType(dateStr)
-					dates.push({ date: dateStr, typeLabel: typeLabels[type] || '平日', qtyLabel: days + '天', type, pay, rate, days, payText: fmtDec(pay) })
-					d.setDate(d.getDate() + 1) }
-			} else if (mode === 'piece') {
-				const qty = this.pieceQuantity; if (qty <= 0) return []
-				const proj = this.selectedProject; const rate = (proj && proj.piece_rate > 0) ? proj.piece_rate : 0
-				const unit = this.pieceUnit; const pay = round2(qty * rate); let d = new Date(start)
-				while (d <= end) { const dateStr = formatDate(d); const type = useHolidayStore().getDayType(dateStr)
-					dates.push({ date: dateStr, typeLabel: typeLabels[type] || '平日', qtyLabel: qty + unit, type, pay, rate, quantity: qty, unit, payText: fmtDec(pay) })
-					d.setDate(d.getDate() + 1) }
+						const proj = this.selectedProject; let d = new Date(start)
+					while (d <= end) { const dateStr = formatDate(d); const type = useHolidayStore().getDayType(dateStr); const rateKey = 'daily_' + type + '_rate'; const rate = (proj && proj[rateKey] > 0) ? proj[rateKey] : (proj?.daily_rate || 0); const pay = round2(days * rate)
+						dates.push({ date: dateStr, typeLabel: typeLabels[type] || '平日', qtyLabel: days + '天', type, pay, rate, days, payText: fmtDec(pay) })
+						d.setDate(d.getDate() + 1) }
+					} else if (mode === 'piece') {
+					const qty = this.pieceQuantity; if (qty <= 0) return []
+					const proj = this.selectedProject; const unit = this.pieceUnit; let d = new Date(start)
+					while (d <= end) { const dateStr = formatDate(d); const type = useHolidayStore().getDayType(dateStr); const rateKey = 'piece_' + type + '_rate'; const rate = (proj && proj[rateKey] > 0) ? proj[rateKey] : (proj?.piece_rate || 0); const pay = round2(qty * rate)
+						dates.push({ date: dateStr, typeLabel: typeLabels[type] || '平日', qtyLabel: qty + unit, type, pay, rate, quantity: qty, unit, payText: fmtDec(pay) })
+						d.setDate(d.getDate() + 1) }
 			}
 			return dates
 		},
@@ -264,7 +262,7 @@ export default {
 			if (ap[0]) this.selectedProjectId = ap[0]._id
 		},
 		modeLabel(m) { const o = { hourly: '时薪', daily: '日薪', piece: '计件' }; return o[m] || '' },
-		rateSummary(p) { if (!p) return ''; if (p.pay_mode === 'daily') return '日薪 ¥' + (p.daily_rate || 0) + '/天'; if (p.pay_mode === 'piece') return '计件 ¥' + (p.piece_rate || 0) + '/' + (p.piece_unit || '件'); return '平 ¥' + (p.weekday_rate || 0) + ' · 休 ¥' + (p.weekend_rate || 0) + ' · 节 ¥' + (p.holiday_rate || 0) },
+		rateSummary(p) { if (!p) return ''; if (p.pay_mode === 'daily') return '日薪 ¥' + (p.daily_weekday_rate || 0) + '/天'; if (p.pay_mode === 'piece') return '计件 ¥' + (p.piece_weekday_rate || 0) + '/' + (p.piece_unit || '件'); return '平 ¥' + (p.weekday_rate || 0) + ' · 休 ¥' + (p.weekend_rate || 0) + ' · 节 ¥' + (p.holiday_rate || 0) },
 		fmtMoney(v) { return fmtDec(v) },
 
 		async handleBatchSave() {
