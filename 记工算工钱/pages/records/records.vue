@@ -183,8 +183,8 @@ export default {
 			if (this.selectMode) {
 				const id = rec.id || rec._id
 				const next = { ...this.selectedMap }
-					if (next[id]) { delete next[id] } else { next[id] = true }
-					this.selectedMap = next
+				if (next[id]) { delete next[id] } else { next[id] = true }
+				this.selectedMap = next
 			} else {
 				this.goEdit(rec.id || rec._id)
 			}
