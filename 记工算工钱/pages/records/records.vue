@@ -26,26 +26,15 @@
 			</view>
 
 			<view class="record-list" v-if="filteredRecords.length > 0">
-				<view v-for="(rec, idx) in filteredRecords" :key="rec.id || rec._id" class="record-item" :class="{ 'record-item--last': idx === filteredRecords.length - 1, 'record-item--sel': selectMode && selectedSet.has(rec.id || rec._id) }" @tap="onItemTap(rec)">
-					<view class="record-item__check" v-if="selectMode">
-						<view class="record-item__checkbox" :class="{ 'record-item__checkbox--on': selectedSet.has(rec.id || rec._id) }">
-							<text v-if="selectedSet.has(rec.id || rec._id)">✓</text>
-						</view>
-					</view>
-					<view class="record-item__icon" :class="iconClass(rec.day_type || rec.overtime_type)">
-						<text class="record-item__icon-text">{{ typeLabel(rec.day_type || rec.overtime_type) }}</text>
-					</view>
-					<view class="record-item__info">
-						<text class="record-item__date">{{ rec.date }}</text>
-						<text class="record-item__project" v-if="rec.project_name">{{ rec.project_name }}</text>
-					</view>
-					<view class="record-item__right">
-						<text class="record-item__mode">{{ modeLabel(rec.pay_mode) }}</text>
-						<text class="record-item__settle" :class="rec.settled ? 'record-item__settle--done' : 'record-item__settle--pending'">{{ rec.settled ? '已结' : '未结' }}</text>
-						<text class="record-item__qty">{{ qtyStr(rec) }}</text>
-						<text class="record-item__pay" v-if="rec.net_pay || rec.pay">¥{{ (rec.net_pay || rec.pay).toFixed(0) }}</text>
-					</view>
-				</view>
+				<RecordItem
+					v-for="(rec, idx) in filteredRecords"
+					:key="rec.id || rec._id"
+					:rec="rec"
+					:selectMode="selectMode"
+					:selected="selectedSet.has(rec.id || rec._id)"
+					:isLast="idx === filteredRecords.length - 1"
+					@tap="onItemTap"
+				/>
 			</view>
 
 			<view class="empty-wrap" v-else>
@@ -70,6 +59,7 @@
 
 <script>
 import NavBar from '../../components/NavBar.vue'
+import RecordItem from '../../components/RecordItem.vue'
 import { useWorkStore } from '@/stores/workStore'
 import { useProjectStore } from '../../stores/projectStore'
 import { requireAuth } from '@/utils/auth'
@@ -77,7 +67,7 @@ import { requireAuth } from '@/utils/auth'
 function pad(n) { return String(n).padStart(2, '0') }
 
 export default {
-	components: { NavBar },
+	components: { NavBar, RecordItem },
 	data() {
 		const now = new Date()
 		return {
