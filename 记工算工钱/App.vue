@@ -51,7 +51,7 @@
 				try {
 					await Promise.race([
 						this.silentLogin(userStore),
-						new Promise(r => setTimeout(r, 15000))
+						new Promise(r => setTimeout(r, 20000))
 					])
 					if (userStore.isLoggedIn) {
 						const workStore = useWorkStore()
@@ -84,7 +84,7 @@
 					workStore.pullFromCloud()
 				]).finally(() => {
 					this._syncPending = false
-				})
+												})
 			},
 			preloadLocalData() {
 				// 从本地存储预加载工时记录
@@ -134,13 +134,10 @@
 						return
 					}
 					console.log('[silentLogin] 获取到 code:', loginRes.code)
-					const result = await Promise.race([
-						uniCloud.callFunction({
-							name: 'work-calc',
-							data: { action: 'loginByWeixin', code: loginRes.code }
-						}),
-						new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 12000))
-					])
+					const result = await uniCloud.callFunction({
+						name: 'work-calc',
+						data: { action: 'loginByWeixin', code: loginRes.code }
+						})
 					console.log('[silentLogin] 云函数返回 code:', result?.result?.code)
 					if (result && result.result && result.result.code === 0) {
 						const { uid, token, tokenExpired } = result.result.data
