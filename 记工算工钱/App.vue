@@ -47,13 +47,19 @@
 			const token = uni.getStorageSync('uni_id_token')
 			const expired = uni.getStorageSync('uni_id_token_expired')
 			if (!token || (expired && Date.now() > expired)) {
-				// 静默登录改为非阻塞，失败不阻碍用户使用本地功能
-				this.silentLogin(userStore).then(() => {
+				// 静默登录 → 最多等5秒，超时或失败不阻碍使用本地功能
+				try {
+					await Promise.race([
+						this.silentLogin(userStore),
+						new Promise(r => setTimeout(r, 5000))
+					])
 					if (userStore.isLoggedIn) {
 						const workStore = useWorkStore()
 						workStore.mergeOnLogin(userStore.uid)
 					}
-				}).catch(() => {})
+				} catch (e) {
+					console.log("[silentLogin] 超时或失败:", e.message || e)
+				}
 			} else {
 				console.log('[silentLogin] 已有有效 token，跳过登录')
 			}
@@ -96,7 +102,7 @@
 				const m = String(now.getMonth() + 1).padStart(2, '0')
 				workStore.currentMonth = `${now.getFullYear()}-${m}`
 
-				// 从本地存储预加载项目列表
+				// 从本地存储预加载工作列表
 				const projectStore = useProjectStore()
 				const projectDocs = collection('projects').getAll()
 				projectStore.projects = projectDocs.map(p => ({
@@ -189,11 +195,9 @@
 			}
 			// 清除上次的防抖标记
 			this._syncPending = false
-			// 首次同步等待 30 秒（给登录留时间），之后每 30 分钟同步一次
-			this._syncTimer = setTimeout(() => {
-				this._scheduleSync(30 * 60 * 1000)
-				this._doBackgroundSync()
-			}, 30000)
+			// 立刻同步一次，之后每 30 分钟同步一次
+			this._doBackgroundSync()
+			this._scheduleSync(30 * 60 * 1000)
 		},
 		onHide: function() {
 			console.log('App Hide')

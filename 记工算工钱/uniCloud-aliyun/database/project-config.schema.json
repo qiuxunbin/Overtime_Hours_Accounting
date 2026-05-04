@@ -10,7 +10,7 @@
   "properties": {
     "_id": {
       "bsonType": "string",
-      "description": "项目ID，自动生成"
+      "description": "工作ID，自动生成"
     },
     "user_id": {
       "bsonType": "string",
@@ -21,7 +21,7 @@
     },
     "name": {
       "bsonType": "string",
-      "description": "项目名称",
+      "description": "工作名称",
       "maxLength": 50
     },
     "color": {

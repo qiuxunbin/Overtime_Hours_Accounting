@@ -128,7 +128,7 @@
     },
     "project_name": {
       "bsonType": "string",
-      "description": "所属项目名称",
+      "description": "所属工作名称",
       "maxLength": 50
     },
     "project_id": {

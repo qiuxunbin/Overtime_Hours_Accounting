@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@babel/types": "^7.26.0",
     "@qiun/ucharts": "^2.5.0-20230101"
   },
   "devDependencies": {

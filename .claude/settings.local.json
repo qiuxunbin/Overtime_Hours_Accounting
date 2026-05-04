@@ -9,7 +9,10 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebSearch",
       "Bash(mkdir -p \"C:/Users/86136/Desktop/Overtime_Hours_Accounting/.claude/skills\")",
-      "Bash(git clone *)"
+      "Bash(git clone *)",
+      "Skill(qa-only)",
+      "WebFetch(domain:unicloud.dcloud.net.cn)",
+      "Skill(plan-eng-review)"
     ]
   }
 }
