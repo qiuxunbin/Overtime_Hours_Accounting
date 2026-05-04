@@ -79,10 +79,11 @@
 				</view>
 
 				<!-- 工钱预览 -->
-				<view class="pay-card" v-if="estimatedPay > 0">
+				<view class="pay-card" v-if="netPay > 0">
 					<text class="pay-card__label">工钱</text>
-					<text class="pay-card__amount">¥{{ estimatedPay.toFixed(0) }}</text>
+					<text class="pay-card__amount">¥{{ netPay.toFixed(0) }}</text>
 					<text class="pay-card__detail">{{ payFormula }}</text>
+					<text class="pay-card__detail pay-card__detail--sub" v-if="totalSubsidies > 0 || deductionAmount > 0">{{ netPayDetail }}</text>
 				</view>
 				<view class="pay-card pay-card--warn" v-else-if="duration > 0" @tap="goEditProject">
 					<text class="pay-card__warn-text">暂未设置该类型的记工时薪，点击设置</text>
@@ -115,21 +116,21 @@
 							<text class="subsidy-row__label">夜班补贴</text>
 							<view class="subsidy-row__input-wrap">
 								<text class="subsidy-row__prefix">¥</text>
-								<input class="subsidy-row__input" type="digit" :value="subsidies.night_shift || ''" @input="e => onNumInput('subsidies', 'night_shift', e)" placeholder="0" />
+								<input class="subsidy-row__input" type="digit" v-model="subsidies.night_shift" placeholder="0" />
 							</view>
 						</view>
 						<view class="subsidy-row">
 							<text class="subsidy-row__label">餐补</text>
 							<view class="subsidy-row__input-wrap">
 								<text class="subsidy-row__prefix">¥</text>
-								<input class="subsidy-row__input" type="digit" :value="subsidies.meal || ''" @input="e => onNumInput('subsidies', 'meal', e)" placeholder="0" />
+								<input class="subsidy-row__input" type="digit" v-model="subsidies.meal" placeholder="0" />
 							</view>
 						</view>
 						<view class="subsidy-row">
 							<text class="subsidy-row__label">交通补贴</text>
 							<view class="subsidy-row__input-wrap">
 								<text class="subsidy-row__prefix">¥</text>
-								<input class="subsidy-row__input" type="digit" :value="subsidies.transport || ''" @input="e => onNumInput('subsidies', 'transport', e)" placeholder="0" />
+								<input class="subsidy-row__input" type="digit" v-model="subsidies.transport" placeholder="0" />
 							</view>
 						</view>
 						<view class="subsidy-divider"></view>
@@ -137,7 +138,7 @@
 							<text class="subsidy-row__label">扣款金额</text>
 							<view class="subsidy-row__input-wrap">
 								<text class="subsidy-row__prefix">¥</text>
-								<input class="subsidy-row__input" type="digit" :value="deduction.amount || ''" @input="e => onNumInput('deduction', 'amount', e)" placeholder="0" />
+								<input class="subsidy-row__input" type="digit" v-model="deduction.amount" placeholder="0" />
 							</view>
 						</view>
 						<view class="subsidy-row">
@@ -185,9 +186,10 @@
 
 
 				<!-- 工钱 -->
-				<view class="pay-card" v-if="dailyPay > 0">
+				<view class="pay-card" v-if="netPay > 0">
 					<text class="pay-card__label">工钱</text>
-					<text class="pay-card__amount">¥{{ dailyPay.toFixed(0) }}</text>
+					<text class="pay-card__amount">¥{{ netPay.toFixed(0) }}</text>
+					<text class="pay-card__detail pay-card__detail--sub" v-if="totalSubsidies > 0 || deductionAmount > 0">{{ netPayDetail }}</text>
 				</view>
 
 				<!-- 补贴 & 扣款 -->
@@ -201,21 +203,21 @@
 							<text class="subsidy-row__label">夜班补贴</text>
 							<view class="subsidy-row__input-wrap">
 								<text class="subsidy-row__prefix">¥</text>
-								<input class="subsidy-row__input" type="digit" :value="subsidies.night_shift || ''" @input="e => onNumInput('subsidies', 'night_shift', e)" placeholder="0" />
+								<input class="subsidy-row__input" type="digit" v-model="subsidies.night_shift" placeholder="0" />
 							</view>
 						</view>
 						<view class="subsidy-row">
 							<text class="subsidy-row__label">餐补</text>
 							<view class="subsidy-row__input-wrap">
 								<text class="subsidy-row__prefix">¥</text>
-								<input class="subsidy-row__input" type="digit" :value="subsidies.meal || ''" @input="e => onNumInput('subsidies', 'meal', e)" placeholder="0" />
+								<input class="subsidy-row__input" type="digit" v-model="subsidies.meal" placeholder="0" />
 							</view>
 						</view>
 						<view class="subsidy-row">
 							<text class="subsidy-row__label">交通补贴</text>
 							<view class="subsidy-row__input-wrap">
 								<text class="subsidy-row__prefix">¥</text>
-								<input class="subsidy-row__input" type="digit" :value="subsidies.transport || ''" @input="e => onNumInput('subsidies', 'transport', e)" placeholder="0" />
+								<input class="subsidy-row__input" type="digit" v-model="subsidies.transport" placeholder="0" />
 							</view>
 						</view>
 						<view class="subsidy-divider"></view>
@@ -223,7 +225,7 @@
 							<text class="subsidy-row__label">扣款金额</text>
 							<view class="subsidy-row__input-wrap">
 								<text class="subsidy-row__prefix">¥</text>
-								<input class="subsidy-row__input" type="digit" :value="deduction.amount || ''" @input="e => onNumInput('deduction', 'amount', e)" placeholder="0" />
+								<input class="subsidy-row__input" type="digit" v-model="deduction.amount" placeholder="0" />
 							</view>
 						</view>
 						<view class="subsidy-row">
@@ -267,9 +269,10 @@
 				</view>
 
 				<!-- 工钱 -->
-				<view class="pay-card" v-if="piecePay > 0">
+				<view class="pay-card" v-if="netPay > 0">
 					<text class="pay-card__label">工钱</text>
-					<text class="pay-card__amount">¥{{ piecePay.toFixed(0) }}</text>
+					<text class="pay-card__amount">¥{{ netPay.toFixed(0) }}</text>
+					<text class="pay-card__detail pay-card__detail--sub" v-if="totalSubsidies > 0 || deductionAmount > 0">{{ netPayDetail }}</text>
 				</view>
 
 				<!-- 备注 -->
@@ -299,21 +302,21 @@
 							<text class="subsidy-row__label">夜班补贴</text>
 							<view class="subsidy-row__input-wrap">
 								<text class="subsidy-row__prefix">¥</text>
-								<input class="subsidy-row__input" type="digit" :value="subsidies.night_shift || ''" @input="e => onNumInput('subsidies', 'night_shift', e)" placeholder="0" />
+								<input class="subsidy-row__input" type="digit" v-model="subsidies.night_shift" placeholder="0" />
 							</view>
 						</view>
 						<view class="subsidy-row">
 							<text class="subsidy-row__label">餐补</text>
 							<view class="subsidy-row__input-wrap">
 								<text class="subsidy-row__prefix">¥</text>
-								<input class="subsidy-row__input" type="digit" :value="subsidies.meal || ''" @input="e => onNumInput('subsidies', 'meal', e)" placeholder="0" />
+								<input class="subsidy-row__input" type="digit" v-model="subsidies.meal" placeholder="0" />
 							</view>
 						</view>
 						<view class="subsidy-row">
 							<text class="subsidy-row__label">交通补贴</text>
 							<view class="subsidy-row__input-wrap">
 								<text class="subsidy-row__prefix">¥</text>
-								<input class="subsidy-row__input" type="digit" :value="subsidies.transport || ''" @input="e => onNumInput('subsidies', 'transport', e)" placeholder="0" />
+								<input class="subsidy-row__input" type="digit" v-model="subsidies.transport" placeholder="0" />
 							</view>
 						</view>
 						<view class="subsidy-divider"></view>
@@ -321,7 +324,7 @@
 							<text class="subsidy-row__label">扣款金额</text>
 							<view class="subsidy-row__input-wrap">
 								<text class="subsidy-row__prefix">¥</text>
-								<input class="subsidy-row__input" type="digit" :value="deduction.amount || ''" @input="e => onNumInput('deduction', 'amount', e)" placeholder="0" />
+								<input class="subsidy-row__input" type="digit" v-model="deduction.amount" placeholder="0" />
 							</view>
 						</view>
 						<view class="subsidy-row">
@@ -498,7 +501,13 @@ export default {
 		basePay() { return this.estimatedPay || this.dailyPay || this.piecePay || 0 },
 		totalSubsidies() { return Number(this.subsidies.night_shift || 0) + Number(this.subsidies.meal || 0) + Number(this.subsidies.transport || 0) },
 		deductionAmount() { return Number(this.deduction.amount) || 0 },
-		netPay() { return this.basePay + this.totalSubsidies - this.deductionAmount }
+		netPay() { return this.basePay + this.totalSubsidies - this.deductionAmount },
+		netPayDetail() {
+			const parts = []
+			if (this.totalSubsidies > 0) parts.push('+ ¥' + this.totalSubsidies + ' 补贴')
+			if (this.deductionAmount > 0) parts.push('- ¥' + this.deductionAmount + ' 扣款')
+			return parts.join('  ')
+		}
 	},
 	onReady() { setTimeout(() => { this.pageReady = true }, 350) },
 	onLoad(options) {
@@ -531,11 +540,6 @@ export default {
 	},
 	methods: {
 		onDateChange(e) { this.pickerDate = e.detail.value; this.autoDetectType(e.detail.value) },
-		onNumInput(objName, key, e) {
-			const raw = String(e.detail?.value ?? '')
-			const filtered = raw.replace(/[^\d.]/g, '').replace(/(\..*)\./g, '$1')
-			this[objName][key] = filtered === '' || filtered === '.' ? 0 : parseFloat(filtered)
-		},
 		goCreateProject() {
 			uni.navigateTo({ url: '/pages/project-edit/project-edit' })
 		},
@@ -799,7 +803,7 @@ export default {
 
 	&__label { font-size: 14px; color: var(--text-secondary); }
 	&__amount { font-size: 20px; font-weight: 700; color: var(--primary); font-family: var(--font-number); }
-	&__detail { font-size: 12px; color: var(--text-muted); }
+	&__detail { font-size: 12px; color: var(--text-muted); &--sub { color: var(--primary); margin-top: 2px; } }
 	&--warn { background: #FFFBF0; justify-content: center; }
 	&__warn-text { font-size: 14px; color: #E5A100; }
 }
