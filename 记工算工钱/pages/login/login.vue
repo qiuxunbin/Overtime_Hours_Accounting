@@ -1,6 +1,39 @@
 <template>
 	<!-- 小程序端静默登录，不展示登录页 -->
-	<!-- #ifndef MP-WEIXIN -->
+	<!-- #ifdef MP-WEIXIN -->
+		<view class="page-login">
+			<view class="login-header">
+				<view class="login-header__logo">
+					<text class="login-header__logo-icon">&#x23F0;</text>
+				</view>
+				<text class="login-header__title">记工算工钱</text>
+				<text class="login-header__desc">登录后同步您的记工数据到云端</text>
+			</view>
+			<view class="mp-login-area">
+				<view class="mp-login-btn" @tap="handleWechatLogin">
+					<text class="mp-login-btn__text">微信一键登录</text>
+				</view>
+				<view class="mp-login-other">
+					<text class="mp-login-other__label">或使用</text>
+					<text class="mp-login-other__link" @tap="mode = 'pwd'">密码登录</text>
+				</view>
+				<template v-if="mode === 'pwd'">
+					<view class="login-field">
+						<text class="login-field__label">用户名</text>
+						<input class="login-field__input" type="text" v-model="username" placeholder="请输入用户名" />
+					</view>
+					<view class="login-field">
+						<text class="login-field__label">密码</text>
+						<input class="login-field__input" type="password" v-model="password" placeholder="请输入密码" />
+					</view>
+					<view class="mp-login-btn" @tap="handlePwdLogin">
+						<text class="mp-login-btn__text">登录</text>
+					</view>
+				</template>
+			</view>
+		</view>
+		<!-- #endif -->
+		<!-- #ifndef MP-WEIXIN -->
 	<view class="page-login">
 		<!-- 顶部装饰 — 对齐原型绿色背景 -->
 		<view class="login-header">
@@ -272,7 +305,37 @@ export default {
 			})
 		},
 
-		async doLogin(params) {
+		async handleWechatLogin() {
+				if (this.loading) return
+				this.loading = true
+				try {
+					const loginRes = await uni.login({ provider: 'weixin' })
+					if (!loginRes || !loginRes.code) {
+						uni.showToast({ title: '微信登录失败，请用密码登录', icon: 'none' })
+						this.loading = false
+						return
+					}
+					await this.doLogin({
+						action: 'loginByWeixin',
+						code: loginRes.code
+					})
+				} catch (e) {
+					uni.showToast({ title: '微信登录不可用', icon: 'none' })
+					this.loading = false
+				}
+			},
+
+			async handlePwdLogin() {
+				if (!this.username.trim()) { uni.showToast({ title: '请输入用户名', icon: 'none' }); return }
+				if (!this.password) { uni.showToast({ title: '请输入密码', icon: 'none' }); return }
+				await this.doLogin({
+					action: 'loginByPassword',
+					username: this.username.trim(),
+					password: this.password
+				})
+			},
+
+			async doLogin(params) {
 			if (this.loading) return
 			this.loading = true
 
@@ -515,5 +578,23 @@ export default {
 		font-size: 11px;
 		color: var(--text-muted);
 	}
+}
+
+/* 小程序登录 */
+.mp-login-area { padding: 32px 24px; }
+.mp-login-btn {
+	height: 48px; border-radius: 24px; background: var(--primary);
+	display: flex; align-items: center; justify-content: center; margin-bottom: 16px;
+}
+.mp-login-btn__text { font-size: 17px; font-weight: 600; color: #FFFFFF; }
+.mp-login-other { text-align: center; margin-bottom: 24px; }
+.mp-login-other__label { font-size: 13px; color: var(--text-muted); }
+.mp-login-other__link { font-size: 13px; color: var(--primary); margin-left: 4px; }
+.login-field { margin-bottom: 12px; }
+.login-field__label { font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 6px; }
+.login-field__input {
+	width: 100%; height: 44px; padding: 0 14px;
+	background: var(--surface-card); border-radius: 10px; border: 1px solid var(--border);
+	font-size: 15px; color: var(--text-primary); box-sizing: border-box;
 }
 </style>
