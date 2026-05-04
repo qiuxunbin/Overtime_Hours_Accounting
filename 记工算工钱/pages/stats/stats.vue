@@ -357,9 +357,8 @@ export default {
 		},
 		trendMonths() {
 			const months = []
-			const now = new Date()
 			for (let i = 5; i >= 0; i--) {
-				const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+				const d = new Date(this.viewYear, this.viewMonth - 1 - i, 1)
 				const key = d.getFullYear() + '-' + pad(d.getMonth() + 1)
 				const label = pad(d.getMonth() + 1) + '月'
 				const pay = this.allRecords
@@ -542,11 +541,14 @@ export default {
 			const logicalW = this.chartWidth
 			const logicalH = this.ringChartH
 			const pr = this.pixelRatio || 2
-			const pieData = []
-			if (this.weekdayPay > 0) pieData.push({ name: '平日', value: this.weekdayPay })
-			if (this.weekendPay > 0) pieData.push({ name: '周末', value: this.weekendPay })
-			if (this.holidayPay > 0) pieData.push({ name: '节假日', value: this.holidayPay })
+			const colorMap = { '平日': '#1B8A5A', '周末': '#C4A46C', '节假日': '#B85C4A', '无数据': '#9C9C9C' }
+			const pieData = [
+				{ name: '平日', value: this.weekdayPay },
+				{ name: '周末', value: this.weekendPay },
+				{ name: '节假日', value: this.holidayPay }
+				].filter(d => d.value > 0)
 			if (pieData.length === 0) pieData.push({ name: '无数据', value: 1 })
+			const colors = pieData.map(d => colorMap[d.name] || '#9C9C9C')
 			try {
 				const ctx = await this._getCanvas2dCtx('ringChart', logicalW, logicalH)
 				new uCharts({
@@ -576,7 +578,7 @@ export default {
 							borderColor: '#FFFFFF'
 						}
 					},
-					color: ['#1B8A5A', '#C4A46C', '#B85C4A']
+					color: colors
 				})
 			} catch (e) {
 				console.log('[ringChart] error:', e)
