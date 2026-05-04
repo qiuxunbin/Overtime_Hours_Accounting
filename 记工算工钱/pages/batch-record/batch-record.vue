@@ -176,7 +176,7 @@ export default {
 		// 日薪：单日限制
 		isSingleDay() { return this.startDate === this.endDate },
 		dailyMin() { return this.isSingleDay ? 0 : 0.5 },
-		dailyMax() { return this.isSingleDay ? 1 : 999 },
+		dailyMax() { return this.isSingleDay ? 1 : 3 },
 
 		hasProjects() { return useProjectStore().activeProjects.length > 0 },
 		pickerProjects() { return useProjectStore().activeProjects },
