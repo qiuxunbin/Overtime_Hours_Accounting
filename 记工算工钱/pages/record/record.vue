@@ -23,12 +23,12 @@
 					<text class="project-row__mode" style="color: #C4A46C;">前往设置 ›</text>
 				</view>
 			</view>
-			<view class="project-row" v-else @tap="showProjectSelector">
+			<view class="project-row" :class="{ 'project-row--empty': !selectedProject }" v-else @tap="showProjectSelector">
 				<view class="project-row__left" v-if="selectedProject">
 					<view class="project-row__dot" :style="{ background: selectedProject.color }"></view>
 					<text class="project-row__name">{{ selectedProject.name }}</text>
 				</view>
-				<text class="project-row__placeholder" v-else>选工作</text>
+				<text class="project-row__placeholder" v-else>选工作 <text style="color: #E5A100;">*</text></text>
 				<view class="project-row__right">
 					<text class="project-row__mode">{{ payModeIcon }} {{ payModeLabel }}</text>
 				</view>
@@ -755,6 +755,7 @@ export default {
 	&__right { display: flex; align-items: center; }
 	&__mode { font-size: 12px; color: var(--text-muted); margin-right: 4px; }
 	&__arrow { font-size: 16px; color: var(--text-muted); }
+t	&--empty { border: 1px solid #E5A100; background: #FFFBF0; }
 }
 
 /* ===== 时薪：时间列 ===== */

@@ -97,13 +97,18 @@
 
 			<!-- 工作选择 -->
 			<view class="section">
-				<text class="section__title">工作</text>
-				<view class="field-row" @tap="showProjectPicker">
+				<text class="section__title">工作 <text style="color: #B85C4A;">*</text></text>
+				<view class="field-row field-row--warn" v-if="!hasProjects" @tap="goCreateProject">
+					<text class="field-row__value" style="color: #C4A46C;">请先创建工作</text>
+					<text class="field-row__arrow" style="color: #C4A46C;">›</text>
+				</view>
+				<view class="field-row" :class="{ 'field-row--empty': !selectedProject }" v-else @tap="showProjectPicker">
 					<view class="field-row__left" v-if="selectedProject">
 						<view class="field-row__dot" :style="{ background: selectedProject.color }"></view>
 						<text class="field-row__value">{{ selectedProject.name }}</text>
+						<text class="field-row__mode">{{ modeLabel(selectedProject.pay_mode) }}</text>
 					</view>
-					<text class="field-row__value" v-else style="color: #9C9C9C;">选工作（选填）</text>
+					<text class="field-row__value" v-else>选工作</text>
 					<text class="field-row__arrow">›</text>
 				</view>
 			</view>
@@ -192,6 +197,9 @@ export default {
 		pieceUnitOptions() {
 			return PIECE_UNITS
 		},
+t	hasProjects() {
+			return useProjectStore().activeProjects.length > 0
+		},
 		previewDates() {
 			const dates = []
 			const start = new Date(this.startDate)
@@ -269,6 +277,13 @@ export default {
 		}
 	},
 	methods: {
+t	modeLabel(mode) {
+			const m = { hourly: "时薪", daily: "日薪", piece: "计件" }
+			return m[mode] || ""
+		},
+		goCreateProject() {
+			uni.navigateTo({ url: "/pages/project-edit/project-edit" })
+		},
 		onStartDateChange(e) { this.startDate = e.detail.value },
 		onEndDateChange(e) { this.endDate = e.detail.value },
 		onStartTimeChange(e) { this.startTime = e.detail.value },
@@ -321,6 +336,9 @@ export default {
 				uni.showToast({ title: '请设置件数', icon: 'none' }); return
 			}
 
+t	if (!this.selectedProjectId) {
+				uni.showToast({ title: "请先选择工作", icon: "none" }); return
+			}
 			if (!requireAuth()) return
 			this.saving = true
 			const store = useWorkStore()
@@ -589,6 +607,23 @@ export default {
 		color: var(--text-muted);
 		margin-left: 4px;
 	}
+t	&__mode {
+			font-size: 11px;
+			color: var(--primary);
+			background: var(--primary-light);
+			padding: 2px 8px;
+			border-radius: 10px;
+			margin-left: auto;
+			margin-right: 8px;
+		}
+		&--empty {
+			border-color: #E5A100;
+			background: #FFFBF0;
+		}
+		&--warn {
+			border-color: #C4A46C;
+			background: #FFFBF0;
+		}
 }
 
 .batch-remark {
