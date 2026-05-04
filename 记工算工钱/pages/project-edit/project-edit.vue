@@ -255,8 +255,8 @@ export default {
 			if (mode === 'piece' && !this.form.piece_rate) {
 				uni.showToast({ title: '请设置计件单价', icon: 'none' }); return
 			}
-			if (mode === 'hourly' && !this.form.weekday_rate && !this.form.weekend_rate && !this.form.holiday_rate) {
-				uni.showToast({ title: '请至少设置一项时薪标准', icon: 'none' }); return
+			if (mode === 'hourly' && (!this.form.weekday_rate || !this.form.weekend_rate || !this.form.holiday_rate)) {
+				uni.showToast({ title: '请设置完整的时薪标准（平日/周末/节假日）', icon: 'none' }); return
 			}
 
 			const store = useProjectStore()
