@@ -43,26 +43,8 @@
 			const userStore = useUserStore()
 			userStore.loadUser()
 
-			// 已有有效 token 则跳过登录
-			const token = uni.getStorageSync('uni_id_token')
-			const expired = uni.getStorageSync('uni_id_token_expired')
-			if (!token || (expired && Date.now() > expired)) {
-				// 静默登录 → 最多等15秒（云函数冷启动+微信API约5-10秒），超时不阻碍本地功能
-				try {
-					await Promise.race([
-						this.silentLogin(userStore),
-						new Promise(r => setTimeout(r, 20000))
-					])
-					if (userStore.isLoggedIn) {
-						const workStore = useWorkStore()
-						workStore.mergeOnLogin(userStore.uid)
-					}
-				} catch (e) {
-					console.log("[silentLogin] 超时或失败:", e.message || e)
-				}
-			} else {
-				console.log('[silentLogin] 已有有效 token，跳过登录')
-			}
+			// 静默登录：后台刷新，不阻塞启动
+			this.silentLogin(userStore)
 			console.log('App Ready')
 		},
 		methods: {
@@ -125,6 +107,10 @@
 
 			async silentLogin(userStore) {
 				// #ifdef MP-WEIXIN
+				// 已有有效 token 则跳过
+				const _tk = uni.getStorageSync('uni_id_token')
+				const _ex = uni.getStorageSync('uni_id_token_expired')
+				if (_tk && (!_ex || Date.now() < _ex)) { console.log('[silentLogin] 已有有效 token，跳过'); return }
 				try {
 					console.log('[silentLogin] 开始微信静默登录...')
 					const loginRes = await uni.login()
