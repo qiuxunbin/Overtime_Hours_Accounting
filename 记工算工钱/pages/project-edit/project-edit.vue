@@ -195,7 +195,13 @@ export default {
 				weekday_rate: 0,
 				weekend_rate: 0,
 				holiday_rate: 0,
+t			daily_weekday_rate: 0,
+				daily_weekend_rate: 0,
+				daily_holiday_rate: 0,
 				daily_rate: 0,
+t			piece_weekday_rate: 0,
+				piece_weekend_rate: 0,
+				piece_holiday_rate: 0,
 				piece_rate: 0,
 				piece_unit: '件',
 				is_archived: false
@@ -252,12 +258,18 @@ export default {
 				if (last.weekday_rate > 0) this.form.weekday_rate = last.weekday_rate
 				if (last.weekend_rate > 0) this.form.weekend_rate = last.weekend_rate
 				if (last.holiday_rate > 0) this.form.holiday_rate = last.holiday_rate
-			} else if (this.form.pay_mode === 'daily') {
-				if (last.daily_rate > 0) this.form.daily_rate = last.daily_rate
-			} else if (this.form.pay_mode === 'piece') {
-				if (last.piece_rate > 0) this.form.piece_rate = last.piece_rate
-				if (last.piece_unit) this.form.piece_unit = last.piece_unit
-			}
+t			} else if (this.form.pay_mode === 'daily') {
+					if (last.daily_weekday_rate > 0) this.form.daily_weekday_rate = last.daily_weekday_rate
+					if (last.daily_weekend_rate > 0) this.form.daily_weekend_rate = last.daily_weekend_rate
+					if (last.daily_holiday_rate > 0) this.form.daily_holiday_rate = last.daily_holiday_rate
+					if (last.daily_rate > 0) this.form.daily_rate = last.daily_rate
+				} else if (this.form.pay_mode === 'piece') {
+					if (last.piece_weekday_rate > 0) this.form.piece_weekday_rate = last.piece_weekday_rate
+					if (last.piece_weekend_rate > 0) this.form.piece_weekend_rate = last.piece_weekend_rate
+					if (last.piece_holiday_rate > 0) this.form.piece_holiday_rate = last.piece_holiday_rate
+					if (last.piece_rate > 0) this.form.piece_rate = last.piece_rate
+					if (last.piece_unit) this.form.piece_unit = last.piece_unit
+				}
 		},
 		onPieceUnitChange(e) {
 			this.form.piece_unit = this.pieceUnitOptions[e.detail.value] || '件'
@@ -299,8 +311,14 @@ export default {
 				weekday_rate: this.form.weekday_rate || 0,
 				weekend_rate: this.form.weekend_rate || 0,
 				holiday_rate: this.form.holiday_rate || 0,
+t				daily_weekday_rate: this.form.daily_weekday_rate || 0,
+					daily_weekend_rate: this.form.daily_weekend_rate || 0,
+					daily_holiday_rate: this.form.daily_holiday_rate || 0,
 				daily_rate: this.form.daily_rate || 0,
 				piece_rate: this.form.piece_rate || 0,
+t				piece_weekday_rate: this.form.piece_weekday_rate || 0,
+					piece_weekend_rate: this.form.piece_weekend_rate || 0,
+					piece_holiday_rate: this.form.piece_holiday_rate || 0,
 				piece_unit: this.form.piece_unit || '件',
 				is_archived: this.form.is_archived
 			}
