@@ -643,7 +643,9 @@ export default {
 			const payMode = this.effectivePayMode
 
 			if (!this.selectedProjectId) {
-				uni.showToast({ title: '请先选择工作', icon: 'none' }); this.saving = false; return
+				this.saving = false
+				if (!this.hasProjects) { uni.navigateTo({ url: '/pages/project-edit/project-edit' }); return }
+				this.showProjectSelector(); return
 			}
 			if (payMode === 'hourly') {
 				if (this.duration <= 0) { uni.showToast({ title: '请设置起止时间', icon: 'none' }); return }

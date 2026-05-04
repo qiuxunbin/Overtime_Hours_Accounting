@@ -336,8 +336,9 @@ t	modeLabel(mode) {
 				uni.showToast({ title: '请设置件数', icon: 'none' }); return
 			}
 
-t	if (!this.selectedProjectId) {
-				uni.showToast({ title: "请先选择工作", icon: "none" }); return
+t			if (!this.selectedProjectId) {
+				if (!this.hasProjects) { uni.navigateTo({ url: '/pages/project-edit/project-edit' }); return }
+				this.showProjectPicker(); return
 			}
 			if (!requireAuth()) return
 			this.saving = true
