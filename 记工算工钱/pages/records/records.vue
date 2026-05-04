@@ -96,6 +96,7 @@
 import NavBar from '../../components/NavBar.vue'
 import { useWorkStore } from '@/stores/workStore'
 import { useProjectStore } from '../../stores/projectStore'
+import Vue from 'vue'
 
 function pad(n) { return String(n).padStart(2, '0') }
 
@@ -182,9 +183,7 @@ export default {
 		onItemTap(rec) {
 			if (this.selectMode) {
 				const id = rec.id || rec._id
-				const next = { ...this.selectedMap }
-				if (next[id]) { delete next[id] } else { next[id] = true }
-				this.selectedMap = next
+						if (this.selectedMap[id]) { Vue.delete(this.selectedMap, id) } else { Vue.set(this.selectedMap, id, true) }
 			} else {
 				this.goEdit(rec.id || rec._id)
 			}
