@@ -31,7 +31,6 @@
 					:key="rec.id || rec._id"
 					:rec="rec"
 					:selectMode="selectMode"
-					:selected="selectedSet.has(rec.id || rec._id)"
 					:isLast="idx === filteredRecords.length - 1"
 					@tap="onItemTap"
 				/>
@@ -46,10 +45,10 @@
 			<view class="page-records__spacer"></view>
 		</view>
 
-		<view class="batch-bar" v-if="selectMode && selectedList.length > 0">
+		<view class="batch-bar" v-if="selectMode && selectedCount > 0">
 			<view class="batch-bar__inner">
 				<view class="batch-bar__btn batch-bar__btn--del" @tap="batchDelete">
-					<text class="batch-bar__btn-text">删除已选 ({{ selectedList.length }})</text>
+					<text class="batch-bar__btn-text">删除已选 ({{ selectedCount }})</text>
 				</view>
 			</view>
 			<view class="batch-bar__safe"></view>
@@ -76,7 +75,6 @@ export default {
 			projectFilter: null,
 			settleFilter: 'all',
 			selectMode: false,
-			selectedList: []
 		}
 	},
 	computed: {
@@ -101,7 +99,7 @@ export default {
 			if (this.settleFilter !== 'all' || this.projectFilter) return '当前筛选条件下无记录'
 			return '本月没有记工记录'
 		},
-		selectedSet() { return new Set(this.selectedList) }
+		selectedCount() { return this.filteredRecords.filter(r => r._selected).length }
 	},
 	onShow() {
 		if (this.selectMode) return
@@ -120,39 +118,39 @@ export default {
 		onItemTap(rec) {
 			if (!this.selectMode) { this.goEdit(rec.id || rec._id); return }
 			const id = rec.id || rec._id
-			const idx = this.selectedList.indexOf(id)
-			if (idx === -1) { this.selectedList.push(id) } else { this.selectedList.splice(idx, 1) }
+				rec._selected = !rec._selected
 		},
 
 		toggleSelectMode() {
 			this.selectMode = !this.selectMode
-			if (!this.selectMode) this.selectedList = []
+				if (!this.selectMode) this.filteredRecords.forEach(r => r._selected = false)
 		},
 
-		async batchDelete() {
-			if (this.selectedList.length === 0) return
-			if (!requireAuth()) return
-			uni.showModal({
-				title: '确认删除',
-				content: `将删除 ${this.selectedList.length} 条记录，删除后无法恢复`,
-				confirmText: '删除',
-				confirmColor: '#B85C4A',
-				success: async (res) => {
-					if (!res.confirm) return
-					const store = useWorkStore(); let ok = 0, fail = 0
-					for (const id of this.selectedList) {
-						const r = await store.deleteRecord(id)
-						if (r && r.success) ok++; else fail++
+		async async batchDelete() {
+				const sel = this.filteredRecords.filter(r => r._selected)
+				if (sel.length === 0) return
+				if (!requireAuth()) return
+				uni.showModal({
+					title: '确认删除',
+					content: '将删除 ' + sel.length + ' 条记录，删除后无法恢复',
+					confirmText: '删除',
+					confirmColor: '#B85C4A',
+					success: async (res) => {
+						if (!res.confirm) return
+						const store = useWorkStore(); let ok = 0, fail = 0
+						for (const rec of sel) {
+							const r = await store.deleteRecord(rec.id || rec._id)
+							if (r && r.success) ok++; else fail++
+						}
+						const parts = []
+						if (ok > 0) parts.push('已删除 ' + ok + ' 条')
+						if (fail > 0) parts.push(fail + ' 条失败')
+						uni.showToast({ title: parts.join('，'), icon: ok > 0 ? 'success' : 'none' })
+						this.filteredRecords.forEach(r => r._selected = false)
+						this.selectMode = false
 					}
-					const parts = []
-					if (ok > 0) parts.push('已删除 ' + ok + ' 条')
-					if (fail > 0) parts.push(fail + ' 条失败')
-					uni.showToast({ title: parts.join('，'), icon: ok > 0 ? 'success' : 'none' })
-					this.selectedList = []
-					this.selectMode = false
-				}
-			})
-},,
+				})
+},,,
 
 		onProjectFilter() {
 			const pStore = useProjectStore()

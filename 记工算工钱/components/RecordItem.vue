@@ -33,7 +33,7 @@ export default {
 		itemClasses() {
 			return {
 				'record-item--last': this.isLast,
-				'record-item--sel': this.selectMode && this.selected
+				'record-item--sel': this.selectMode && this.rec._selected
 			}
 		}
 	},
