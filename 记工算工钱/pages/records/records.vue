@@ -97,6 +97,7 @@ import NavBar from '../../components/NavBar.vue'
 import { useWorkStore } from '@/stores/workStore'
 import { useProjectStore } from '../../stores/projectStore'
 import Vue from 'vue'
+import { requireAuth } from '@/utils/auth'
 
 function pad(n) { return String(n).padStart(2, '0') }
 
@@ -193,6 +194,7 @@ export default {
 			if (!this.selectMode) this.selectedMap = {}
 		},
 		batchDelete() {
+t		if (!requireAuth()) return
 			if (this.selectedCount === 0) return
 			uni.showModal({
 				title: '确认删除',
