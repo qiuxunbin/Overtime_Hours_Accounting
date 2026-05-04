@@ -300,7 +300,9 @@ export default {
 			const pStore = useProjectStore()
 			pStore.loadProjects()
 			setTimeout(() => {
-				const modeProjects = pStore.activeProjects.filter(p => p.pay_mode === this.payMode || p.pay_mode === this.payMode)
+				if (pStore.activeProjects.length === 0) {
+					uni.navigateTo({ url: "/pages/project-edit/project-edit" }); return
+				}
 				const allProjects = [
 					{ text: '无工作', value: null },
 					...pStore.activeProjects.map(p => ({
