@@ -129,7 +129,7 @@ export default {
 			if (!this.selectMode) this.selectedList = []
 		},
 
-		batchDelete() {
+		async batchDelete() {
 			if (this.selectedList.length === 0) return
 			if (!requireAuth()) return
 			uni.showModal({
@@ -137,16 +137,22 @@ export default {
 				content: `将删除 ${this.selectedList.length} 条记录，删除后无法恢复`,
 				confirmText: '删除',
 				confirmColor: '#B85C4A',
-				success: (res) => {
+				success: async (res) => {
 					if (!res.confirm) return
-					const store = useWorkStore()
-					for (const id of this.selectedList) { store.deleteRecord(id) }
-					uni.showToast({ title: `已删除 ${this.selectedList.length} 条`, icon: 'success' })
+					const store = useWorkStore(); let ok = 0, fail = 0
+					for (const id of this.selectedList) {
+						const r = await store.deleteRecord(id)
+						if (r && r.success) ok++; else fail++
+					}
+					const parts = []
+					if (ok > 0) parts.push('已删除 ' + ok + ' 条')
+					if (fail > 0) parts.push(fail + ' 条失败')
+					uni.showToast({ title: parts.join('，'), icon: ok > 0 ? 'success' : 'none' })
 					this.selectedList = []
 					this.selectMode = false
 				}
 			})
-		},
+},,
 
 		onProjectFilter() {
 			const pStore = useProjectStore()

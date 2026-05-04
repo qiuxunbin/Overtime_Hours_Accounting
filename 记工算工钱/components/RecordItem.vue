@@ -48,3 +48,33 @@ export default {
 	}
 }
 </script>
+
+<style lang="scss" scoped>
+.record-item { display: flex; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--border); cursor: pointer;
+	&--last { border-bottom: none; }
+	&--sel { background: rgba(184, 92, 74, 0.06); }
+	&__check { margin-right: 8px; flex-shrink: 0; }
+	&__checkbox { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; color: #FFFFFF;
+		&--on { background: #B85C4A; border-color: #B85C4A; }
+	}
+	&__icon { width: 34px; height: 34px; border-radius: 17px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 10px;
+		&--weekday { background: rgba(27, 138, 90, 0.12); }
+		&--weekend { background: rgba(0, 100, 149, 0.12); }
+		&--holiday { background: rgba(162, 61, 51, 0.12); }
+	}
+	&__icon-text { font-size: 11px; font-weight: 600; color: var(--primary); }
+	&__icon--weekend &__icon-text { color: #006495; }
+	&__icon--holiday &__icon-text { color: #A23D33; }
+	&__info { flex: 1; }
+	&__date { font-size: 14px; font-weight: 500; color: var(--text-primary); display: block; }
+	&__project { font-size: 11px; color: var(--primary); margin-top: 2px; display: block; }
+	&__right { text-align: right; min-width: 80px; }
+	&__mode { font-size: 10px; color: var(--primary); background: var(--primary-light); padding: 1px 5px; border-radius: 4px; display: inline-block; margin-bottom: 2px; }
+	&__settle { font-size: 10px; padding: 1px 5px; border-radius: 4px; display: inline-block; margin-bottom: 2px;
+		&--pending { color: #E5A100; background: #FFF8E6; }
+		&--done { color: var(--primary); background: #E6FFF0; }
+	}
+	&__qty { font-size: 15px; font-weight: 600; color: var(--primary); display: block; }
+	&__pay { font-size: 12px; color: var(--text-muted); display: block; margin-top: 1px; }
+}
+</style>

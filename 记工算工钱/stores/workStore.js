@@ -211,10 +211,11 @@ export const useWorkStore = defineStore('work', {
 		},
 
 		async deleteRecord(id) {
-		if (!requireAuth()) return
-		col.remove(id)
-		this.records = this.records.filter(r => r.id !== id && r._id !== id)
-		this.enqueueSync('delete', id, null)
+			if (!requireAuth()) return { success: false, reason: 'no_auth' }
+			col.remove(id)
+			this.records = this.records.filter(r => r.id !== id && r._id !== id)
+			this.enqueueSync('delete', id, null)
+			return { success: true }
 		},
 
 		setCurrentMonth(month) {
