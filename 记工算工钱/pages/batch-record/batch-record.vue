@@ -102,6 +102,7 @@
 			<!-- 预览 -->
 			<view class="preview-section" v-if="previewDates.length > 0">
 				<text class="preview-section__title">预览 — 按日期批量生成 {{ previewDates.length }} 条（每条为单日数据）</text>
+				<text class="preview-section__tip" v-if="effectivePayMode === 'hourly'">节假日/周末按工作设置对应费率计算</text>
 				<text class="preview-section__sum" v-if="totalPay > 0">批量合计 = 单日工钱 × {{ previewDates.length }} 天 = ¥{{ fmtMoney(totalPay) }}</text>
 				<view class="preview-list">
 					<view class="preview-item" v-for="(d, idx) in previewDates" :key="idx">
@@ -235,7 +236,7 @@ export default {
 
 		adjustDailyDays(delta) {
 			if (delta < 0 && this.dailyDays <= this.dailyMin) return
-			if (delta > 0 && this.dailyDays >= this.dailyMax) return
+			if (delta > 0 && this.dailyDays >= this.dailyMax) { if (this.isSingleDay) uni.showToast({ title: "单日工时不能超过 1 天", icon: "none" }); return }
 			this.dailyDays = Math.max(this.dailyMin, Math.min(this.dailyMax, Math.round((this.dailyDays + delta) * 10) / 10))
 		},
 		adjustPieceQty(delta) {
@@ -342,6 +343,7 @@ export default {
 .preview-section { margin-top: 16px;
 	&__title { font-size: 13px; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 8px; }
 	&__sum { font-size: 14px; color: var(--primary); font-weight: 600; display: block; margin-bottom: 6px; }
+	&__tip { font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 8px; }
 }
 .preview-list { background: var(--surface-card); border-radius: 12px; border: 1px solid var(--border); max-height: 260px; overflow-y: auto; }
 .preview-item { display: flex; align-items: center; padding: 8px 14px; border-bottom: 1px solid var(--border);
