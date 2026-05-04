@@ -305,43 +305,43 @@ export default {
 			})
 		},
 
-		async handleWechatLogin() {
-				if (this.loading) return
-				this.loading = true
-				try {
-					const loginRes = await uni.login({ provider: 'weixin' })
-					if (!loginRes || !loginRes.code) {
-						uni.showToast({ title: '微信登录失败，请用密码登录', icon: 'none' })
-						this.loading = false
-						return
-					}
-					await this.doLogin({
-						action: 'loginByWeixin',
-						code: loginRes.code
-					})
-				} catch (e) {
-					uni.showToast({ title: '微信登录不可用', icon: 'none' })
-					this.loading = false
-				}
-			},
-
-			async handlePwdLogin() {
-				if (!this.username.trim()) { uni.showToast({ title: '请输入用户名', icon: 'none' }); return }
-				if (!this.password) { uni.showToast({ title: '请输入密码', icon: 'none' }); return }
-				await this.doLogin({
-					action: 'loginByPassword',
-					username: this.username.trim(),
-					password: this.password
-				})
-			},
-
-			async doLogin(params) {
+	async handleWechatLogin() {
 			if (this.loading) return
 			this.loading = true
-
 			try {
-				const result = await uniCloud.callFunction({
-					name: 'work-calc',
+				const loginRes = await uni.login()
+				if (!loginRes || !loginRes.code) {
+					uni.showToast({ title: '微信登录失败，请用密码登录', icon: 'none' })
+					this.loading = false
+					return
+				}
+				await this.doLogin({
+					action: 'loginByWeixin',
+					code: loginRes.code
+				})
+			} catch (e) {
+				uni.showToast({ title: '微信登录不可用', icon: 'none' })
+				this.loading = false
+			}
+		},
+
+		async handlePwdLogin() {
+			if (!this.username.trim()) { uni.showToast({ title: '请输入用户名', icon: 'none' }); return }
+			if (!this.password) { uni.showToast({ title: '请输入密码', icon: 'none' }); return }
+			await this.doLogin({
+				action: 'loginByPassword',
+				username: this.username.trim(),
+				password: this.password
+			})
+		},
+
+		async doLogin(params) {
+		if (this.loading) return
+		this.loading = true
+
+		try {
+			const result = await uniCloud.callFunction({
+				name: 'work-calc',
 					data: params
 				})
 
