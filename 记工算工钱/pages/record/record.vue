@@ -754,7 +754,7 @@ export default {
 				uni.showToast({ title: '已更新', icon: 'success' })
 			} else {
 				const saveRes = await store.addRecord(baseData)
-				if (saveRes.duplicated) {
+				if (saveRes && saveRes.duplicated) {
 					uni.showToast({ title: '该时段已有记录', icon: 'warning' }); this.saving = false; return
 				}
 				uni.showToast({ title: '已保存', icon: 'success' })

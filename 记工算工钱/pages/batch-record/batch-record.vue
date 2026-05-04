@@ -272,7 +272,7 @@ if (mode === 'piece') return `平¥${p?.piece_weekday_rate || 0} 休¥${p?.piece
 				const dupeDates = this.previewDates.filter(item => {
 					return store.records.some(r => {
 						if (r.date !== item.date || r.project_id !== this.selectedProjectId) return false
-						if (mode === 'hourly') return r.start_time === this.startTime && r.end_time === this.endTime
+						if (mode === 'hourly') return r.start_time < this.endTime && this.startTime < r.end_time
 						if (mode === 'daily') return r.pay_mode === 'daily'
 						if (mode === 'piece') return r.pay_mode === 'piece'
 						return false
@@ -299,7 +299,7 @@ if (mode === 'piece') return `平¥${p?.piece_weekday_rate || 0} 休¥${p?.piece
 				for (const item of this.previewDates) {
 					const isDupe = store.records.some(r => {
 						if (r.date !== item.date || r.project_id !== this.selectedProjectId) return false
-						if (mode === 'hourly') return r.start_time === this.startTime && r.end_time === this.endTime
+						if (mode === 'hourly') return r.start_time < this.endTime && this.startTime < r.end_time
 						if (mode === 'daily') return r.pay_mode === 'daily'
 						if (mode === 'piece') return r.pay_mode === 'piece'
 						return false

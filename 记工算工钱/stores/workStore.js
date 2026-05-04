@@ -176,7 +176,7 @@ export const useWorkStore = defineStore('work', {
 			// 查重：相同日期+项目+时段禁止重复
 			const dup = this.records.find(r => {
 				if (r.date !== doc.date || r.project_id !== doc.project_id) return false
-				if (payMode === 'hourly') return r.start_time === doc.start_time && r.end_time === doc.end_time
+				if (payMode === 'hourly') return r.start_time < doc.end_time && doc.start_time < r.end_time
 				if (payMode === 'daily') return r.pay_mode === 'daily'
 				if (payMode === 'piece') return r.pay_mode === 'piece'
 				return false
