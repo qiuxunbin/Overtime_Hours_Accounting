@@ -4,6 +4,9 @@ import { getDeviceId, getOwner } from '@/utils/device'
 
 import { requireAuth } from '@/utils/auth'
 
+// 查重工具：时间字符串 → 分钟数
+function toMinutes(t) { if (!t) return -1; const p = t.split(':'); return parseInt(p[0] || 0, 10) * 60 + parseInt(p[1] || 0, 10) }
+
 const col = collection('work_records')
 
 function hasToken() {
@@ -176,7 +179,11 @@ export const useWorkStore = defineStore('work', {
 			// 查重：相同日期+项目+时段禁止重复
 			const dup = this.records.find(r => {
 				if (r.date !== doc.date || r.project_id !== doc.project_id) return false
-				if (payMode === 'hourly') return r.start_time < doc.end_time && doc.start_time < r.end_time
+				if (payMode === 'hourly') {
+					const s1 = toMinutes(r.start_time); const e1 = toMinutes(r.end_time)
+					const s2 = toMinutes(doc.start_time); const e2 = toMinutes(doc.end_time)
+					return s1 >= 0 && e1 >= 0 && s1 < e2 && s2 < e1
+				}
 				if (payMode === 'daily') return r.pay_mode === 'daily'
 				if (payMode === 'piece') return r.pay_mode === 'piece'
 				return false

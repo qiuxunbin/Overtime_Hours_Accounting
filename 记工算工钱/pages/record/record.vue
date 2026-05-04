@@ -757,6 +757,7 @@ export default {
 				if (saveRes && saveRes.duplicated) {
 					uni.showToast({ title: '该时段已有记录', icon: 'warning' }); this.saving = false; return
 				}
+				if (!saveRes) { this.saving = false; return }
 				uni.showToast({ title: '已保存', icon: 'success' })
 			}
 			setTimeout(() => { uni.navigateBack() }, 500)

@@ -153,6 +153,7 @@ import { requireAuth } from '@/utils/auth'
 import { round2 } from '@/utils/calculator'
 
 function pad(n) { return String(n).padStart(2, '0') }
+function toMinutes(t) { if (!t) return -1; const p = t.split(':'); return parseInt(p[0] || 0, 10) * 60 + parseInt(p[1] || 0, 10) }
 function formatDate(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` }
 function fmtDec(v) { if (v === 0) return '0'; const s = String(Math.round(v * 100) / 100); return s.indexOf('.') > 0 ? s.replace(/0+$/, '').replace(/\.$/, '') : s }
 
@@ -272,7 +273,7 @@ if (mode === 'piece') return `平¥${p?.piece_weekday_rate || 0} 休¥${p?.piece
 				const dupeDates = this.previewDates.filter(item => {
 					return store.records.some(r => {
 						if (r.date !== item.date || r.project_id !== this.selectedProjectId) return false
-						if (mode === 'hourly') return r.start_time < this.endTime && this.startTime < r.end_time
+						if (mode === 'hourly') { const s1 = toMinutes(r.start_time), e1 = toMinutes(r.end_time); const s2 = toMinutes(this.startTime), e2 = toMinutes(this.endTime); return s1 >= 0 && e1 >= 0 && s1 < e2 && s2 < e1 }
 						if (mode === 'daily') return r.pay_mode === 'daily'
 						if (mode === 'piece') return r.pay_mode === 'piece'
 						return false
@@ -299,7 +300,7 @@ if (mode === 'piece') return `平¥${p?.piece_weekday_rate || 0} 休¥${p?.piece
 				for (const item of this.previewDates) {
 					const isDupe = store.records.some(r => {
 						if (r.date !== item.date || r.project_id !== this.selectedProjectId) return false
-						if (mode === 'hourly') return r.start_time < this.endTime && this.startTime < r.end_time
+						if (mode === 'hourly') { const s1 = toMinutes(r.start_time), e1 = toMinutes(r.end_time); const s2 = toMinutes(this.startTime), e2 = toMinutes(this.endTime); return s1 >= 0 && e1 >= 0 && s1 < e2 && s2 < e1 }
 						if (mode === 'daily') return r.pay_mode === 'daily'
 						if (mode === 'piece') return r.pay_mode === 'piece'
 						return false
