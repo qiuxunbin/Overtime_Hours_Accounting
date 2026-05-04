@@ -287,12 +287,11 @@ export default {
 				return
 			}
 			const mode = this.form.pay_mode
-t		if (mode === 'daily' && (!this.form.daily_weekday_rate || !this.form.daily_weekend_rate || !this.form.daily_holiday_rate)) {
+				if (mode === 'daily' && (!this.form.daily_weekday_rate || !this.form.daily_weekend_rate || !this.form.daily_holiday_rate)) {
 				uni.showToast({ title: '请设置完整的日薪标准（平日/周末/节假日）', icon: 'none' }); return
 			}
 			if (mode === 'piece' && (!this.form.piece_weekday_rate || !this.form.piece_weekend_rate || !this.form.piece_holiday_rate)) {
 				uni.showToast({ title: '请设置完整的计件单价（平日/周末/节假日）', icon: 'none' }); return
-			}
 			}
 			if (mode === 'hourly' && (!this.form.weekday_rate || !this.form.weekend_rate || !this.form.holiday_rate)) {
 				uni.showToast({ title: '请设置完整的时薪标准（平日/周末/节假日）', icon: 'none' }); return
