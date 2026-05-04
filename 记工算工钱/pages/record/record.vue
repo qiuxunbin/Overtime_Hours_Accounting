@@ -544,13 +544,13 @@ export default {
 		}
 	},
 	onReady() { setTimeout(() => { this.pageReady = true }, 350) },
-	onShow() {
-		this.loadProjectPicker()
+	async onShow() {
+		await this.loadProjectPicker()
 		if (!this.selectedProjectId) this.autoSelectProject()
 	},
-	onLoad(options) {
+	async onLoad(options) {
 		if (options.date) this.pickerDate = options.date
-		this.loadProjectPicker()
+		await this.loadProjectPicker()
 		this.autoSelectProject()
 		if (options.id) {
 			this.editId = options.id
