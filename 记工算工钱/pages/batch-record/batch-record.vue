@@ -317,9 +317,9 @@ export default {
 			return this.previewDates.reduce(function(s, d) { return s + (d.pay || 0); }, 0).toFixed(0)
 		},
 	},
-	onShow() {
+	async onShow() {
 		const pStore = useProjectStore()
-		if (pStore.projects.length === 0) { pStore.loadProjects() }
+		if (pStore.projects.length === 0) { await pStore.loadProjects() }
 		if (!this.selectedProjectId) this.autoSelectProject()
 	},
 	autoSelectProject() {
