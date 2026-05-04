@@ -40,6 +40,14 @@
 						<text class="pay-mode-tab__label">计件</text>
 					</view>
 				</view>
+				<view class="pay-mode-rates" v-if="selectedProject">
+					<text class="pay-mode-rates__text" v-if="payMode === 'hourly'">平 ¥{{ selectedProject.weekday_rate || 0 }}/h · 休 ¥{{ selectedProject.weekend_rate || 0 }}/h · 节 ¥{{ selectedProject.holiday_rate || 0 }}/h</text>
+					<text class="pay-mode-rates__text" v-if="payMode === 'daily'">¥{{ selectedProject.daily_rate || 0 }}/天</text>
+					<text class="pay-mode-rates__text" v-if="payMode === 'piece'">¥{{ selectedProject.piece_rate || 0 }}/{{ selectedProject.piece_unit || '件' }}</text>
+				</view>
+				<view class="pay-mode-rates pay-mode-rates--hint" v-else>
+					<text class="pay-mode-rates__text">选择工作后显示计薪标准</text>
+				</view>
 			</view>
 
 			<!-- 统一数量 — 时薪 -->
@@ -837,5 +845,15 @@ export default {
 .work-picker__add {
 	display: block; text-align: center; font-size: 16px; font-weight: 600;
 	color: var(--primary); padding: 10px 0;
+}
+
+.pay-mode-rates {
+	margin-top: 12px; padding: 10px 12px;
+	background: var(--surface); border-radius: 8px;
+	text-align: center;
+}
+.pay-mode-rates--hint { background: transparent; }
+.pay-mode-rates__text {
+	font-size: 13px; color: var(--text-secondary); font-weight: 500;
 }
 </style>
