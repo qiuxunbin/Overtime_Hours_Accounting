@@ -625,7 +625,6 @@ export default {
 		adjustQty(delta) { this.pieceQuantity = Math.max(0, (this.pieceQuantity || 0) + delta) },
 		showProjectSelector() {
 			const pStore = useProjectStore()
-			await pStore.loadProjects()
 			if (pStore.activeProjects.length === 0) {
 				this.goCreateProject(); return
 			}
