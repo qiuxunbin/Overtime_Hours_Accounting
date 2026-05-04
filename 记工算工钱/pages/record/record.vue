@@ -14,21 +14,13 @@
 				</view>
 			</picker>
 
-			<!-- 公共：工作行 — 无工作时引导创建 -->
-			<view class="project-row project-row--warn" v-if="!hasProjects" @tap="goCreateProject">
-				<view class="project-row__left">
-					<text class="project-row__name" style="color: #C4A46C;">请先创建工作</text>
-				</view>
-				<view class="project-row__right">
-					<text class="project-row__mode" style="color: #C4A46C;">前往设置 ›</text>
-				</view>
-			</view>
-			<view class="project-row" :class="{ 'project-row--empty': !selectedProject }" v-else @tap="showProjectSelector">
+<!-- 工作行 -->
+			<view class="project-row" :class="{ 'project-row--empty': !selectedProject }" @tap="showProjectSelector">
 				<view class="project-row__left" v-if="selectedProject">
 					<view class="project-row__dot" :style="{ background: selectedProject.color }"></view>
 					<text class="project-row__name">{{ selectedProject.name }}</text>
 				</view>
-				<text class="project-row__placeholder" v-else>选工作 <text style="color: #E5A100;">*</text></text>
+				<text class="project-row__placeholder" v-else>请选择工作 <text style="color: #E5A100;">*</text></text>
 				<view class="project-row__right">
 					<text class="project-row__mode">{{ payModeIcon }} {{ payModeLabel }}</text>
 				</view>
