@@ -257,27 +257,71 @@ if (mode === 'piece') return `平¥${p?.piece_weekday_rate || 0} 休¥${p?.piece
 		rateSummary(p) { if (!p) return ''; if (p.pay_mode === 'daily') return '日薪 平¥' + (p.daily_weekday_rate || p.daily_rate || 0) + ' 休¥' + (p.daily_weekend_rate || 0) + ' 节¥' + (p.daily_holiday_rate || 0) + '/天'; if (p.pay_mode === 'piece') return '计件 平¥' + (p.piece_weekday_rate || p.piece_rate || 0) + ' 休¥' + (p.piece_weekend_rate || 0) + ' 节¥' + (p.piece_holiday_rate || 0) + '/' + (p.piece_unit || '件'); return '平 ¥' + (p.weekday_rate || 0) + ' · 休 ¥' + (p.weekend_rate || 0) + ' · 节 ¥' + (p.holiday_rate || 0) },
 		fmtMoney(v) { return fmtDec(v) },
 
-		async handleBatchSave() {
-			if (this.saving || this.previewDates.length === 0) return
-			const mode = this.effectivePayMode
-			if (mode === 'hourly' && this.durationNum <= 0) { uni.showToast({ title: '请设置有效时间', icon: 'none' }); return }
-			
-			if (mode === 'piece' && this.pieceQuantity <= 0) { uni.showToast({ title: '请设置件数', icon: 'none' }); return }
-			if (!this.selectedProjectId) { if (!this.hasProjects) { uni.navigateTo({ url: '/pages/project-edit/project-edit' }); return } this.showProjectPicker(); return }
-			if (mode === 'hourly' && this.currentRate <= 0) { this.goEditProject(); return }
-			if (!requireAuth()) return
-			this.saving = true; const store = useWorkStore(); const proj = this.selectedProject; let success = 0, fail = 0
-			for (const item of this.previewDates) {
-				try {
-					const base = { date: item.date, pay_mode: mode, remark: this.remark, project_id: this.selectedProjectId, project_name: proj ? proj.name : '', photos: [], settled: false, subsidies: { night_shift: 0, meal: 0, transport: 0 }, deduction: { amount: 0, note: '' }, day_type: item.type }
-					if (mode === 'hourly') Object.assign(base, { start_time: this.startTime, end_time: this.endTime, duration: round2(this.durationNum), rate: item.rate || 0, pay: item.pay, net_pay: item.pay })
-					else if (mode === 'daily') Object.assign(base, { start_time: '', end_time: '', duration: 0, days: 1, daily_rate: item.rate || 0, rate: item.rate || 0, pay: item.pay, net_pay: item.pay })
-					else if (mode === 'piece') Object.assign(base, { start_time: '', end_time: '', duration: 0, quantity: item.quantity || 0, piece_rate: item.rate || 0, piece_unit: item.unit || '件', rate: item.rate || 0, pay: item.pay, net_pay: item.pay })
-					await store.addRecord(base); success++
-				} catch (e) { fail++ }
+					async handleBatchSave() {
+				if (this.saving || this.previewDates.length === 0) return
+				const mode = this.effectivePayMode
+				if (mode === 'hourly' && this.durationNum <= 0) { uni.showToast({ title: '请设置有效时间', icon: 'none' }); return }
+				if (mode === 'piece' && this.pieceQuantity <= 0) { uni.showToast({ title: '请设置件数', icon: 'none' }); return }
+				if (!this.selectedProjectId) { if (!this.hasProjects) { uni.navigateTo({ url: '/pages/project-edit/project-edit' }); return } this.showProjectPicker(); return }
+				if (mode === 'hourly' && this.currentRate <= 0) { this.goEditProject(); return }
+				if (!requireAuth()) return
+				
+				const store = useWorkStore(); const proj = this.selectedProject
+				
+				// pre-dupe check
+				const dupeDates = this.previewDates.filter(item => {
+					return store.records.some(r => {
+						if (r.date !== item.date || r.project_id !== this.selectedProjectId) return false
+						if (mode === 'hourly') return r.start_time === this.startTime && r.end_time === this.endTime
+						if (mode === 'daily') return r.pay_mode === 'daily'
+						if (mode === 'piece') return r.pay_mode === 'piece'
+						return false
+					})
+				})
+				if (dupeDates.length > 0) {
+					const dupeLabels = dupeDates.length <= 3
+						? dupeDates.map(d => d.date).join('、')
+						: dupeDates.map(d => d.date).slice(0, 3).join('、') + ' 等' + dupeDates.length + '天'
+					const typeLabel = mode === 'daily' ? '日薪' : mode === 'piece' ? '计件' : '时薪'
+					const confirm = await new Promise(resolve => {
+						uni.showModal({
+							title: '部分日期已有记录',
+							content: dupeLabels + ' 已存在' + typeLabel + '记录，是否跳过这些日期继续保存？',
+							confirmText: '跳过并继续',
+							cancelText: '取消',
+							success: (res) => resolve(res.confirm)
+						})
+					})
+					if (!confirm) return
+				}
+				
+				this.saving = true; let success = 0, fail = 0, skipped = 0
+				for (const item of this.previewDates) {
+					const isDupe = store.records.some(r => {
+						if (r.date !== item.date || r.project_id !== this.selectedProjectId) return false
+						if (mode === 'hourly') return r.start_time === this.startTime && r.end_time === this.endTime
+						if (mode === 'daily') return r.pay_mode === 'daily'
+						if (mode === 'piece') return r.pay_mode === 'piece'
+						return false
+					})
+					if (isDupe) { skipped++; continue }
+					
+					try {
+						const base = { date: item.date, pay_mode: mode, remark: this.remark, project_id: this.selectedProjectId, project_name: proj ? proj.name : '', photos: [], settled: false, subsidies: { night_shift: 0, meal: 0, transport: 0 }, deduction: { amount: 0, note: '' }, day_type: item.type }
+						if (mode === 'hourly') Object.assign(base, { start_time: this.startTime, end_time: this.endTime, duration: round2(this.durationNum), rate: item.rate || 0, pay: item.pay, net_pay: item.pay })
+						else if (mode === 'daily') Object.assign(base, { start_time: '', end_time: '', duration: 0, days: 1, daily_rate: item.rate || 0, rate: item.rate || 0, pay: item.pay, net_pay: item.pay })
+						else if (mode === 'piece') Object.assign(base, { start_time: '', end_time: '', duration: 0, quantity: item.quantity || 0, piece_rate: item.rate || 0, piece_unit: item.unit || '件', rate: item.rate || 0, pay: item.pay, net_pay: item.pay })
+						await store.addRecord(base); success++
+					} catch (e) { fail++ }
+				}
+				this.saving = false
+				const parts = []
+				if (success > 0) parts.push('创建 ' + success + ' 条')
+				if (skipped > 0) parts.push('跳过 ' + skipped + ' 条')
+				if (fail > 0) parts.push(fail + ' 条失败')
+				uni.showToast({ title: parts.join('，'), icon: 'success' })
+				setTimeout(() => { uni.navigateBack() }, 1000)
 			}
-			this.saving = false; uni.showToast({ title: `创建 ${success} 条${fail > 0 ? '，' + fail + ' 条失败' : ''}`, icon: 'success' }); setTimeout(() => { uni.navigateBack() }, 1000)
-		}
 	}
 }
 </script>

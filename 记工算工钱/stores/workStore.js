@@ -178,6 +178,7 @@ export const useWorkStore = defineStore('work', {
 				if (r.date !== doc.date || r.project_id !== doc.project_id) return false
 				if (payMode === 'hourly') return r.start_time === doc.start_time && r.end_time === doc.end_time
 				if (payMode === 'daily') return r.pay_mode === 'daily'
+				if (payMode === 'piece') return r.pay_mode === 'piece'
 				return false
 			})
 			if (dup) return { duplicated: true }
