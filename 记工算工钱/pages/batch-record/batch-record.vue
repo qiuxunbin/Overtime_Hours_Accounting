@@ -320,6 +320,25 @@ export default {
 	onShow() {
 		const pStore = useProjectStore()
 		if (pStore.projects.length === 0) { pStore.loadProjects() }
+		if (!this.selectedProjectId) this.autoSelectProject()
+	},
+	autoSelectProject() {
+		const pStore = useProjectStore()
+		const wStore = useWorkStore()
+		const activeProjects = pStore.activeProjects
+		if (activeProjects.length === 0) return
+		const sortedRecords = [...wStore.records].sort((a, b) => {
+			const da = a.date || '', db = b.date || ''
+			if (da !== db) return db.localeCompare(da)
+			return (b.created_at || 0) - (a.created_at || 0)
+		})
+		const lastUsedId = sortedRecords[0]?.project_id
+		if (lastUsedId && activeProjects.some(p => p._id === lastUsedId)) {
+			this.selectedProjectId = lastUsedId
+			return
+		}
+		const first = activeProjects[0]
+		if (first) { this.selectedProjectId = first._id }
 	},
 	methods: {
 		onStartDateChange(e) { this.startDate = e.detail.value },
