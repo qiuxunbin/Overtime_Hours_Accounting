@@ -336,7 +336,6 @@ export default {
 		},
 
 		async doLogin(params) {
-		if (this.loading) return
 		this.loading = true
 
 		try {
