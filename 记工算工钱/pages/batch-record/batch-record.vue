@@ -232,7 +232,7 @@ export default {
 	},
 	watch: {
 			selectedProject(val) { if (!val && this.selectedProjectId) this.autoSelectProject() },
-			isSingleDay(val) { if (val && this.dailyDays > 1) this.dailyDays = 1 }
+			dailyMax(val) { if (this.dailyDays > val) this.dailyDays = val }
 		},
 	async onShow() { await useProjectStore().loadProjects(); this.$nextTick(() => { if (!this.selectedProjectId || !this.selectedProject) this.autoSelectProject() }) },
 	methods: {
