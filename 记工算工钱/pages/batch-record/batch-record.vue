@@ -1,29 +1,23 @@
 <template>
-	<view class="page-batch">
+	<view class="page-record">
 		<NavBar title="批量记工" :showBack="true" />
 
-		<view class="page-batch__content">
-			<!-- 日期范围 -->
-			<view class="section">
-				<text class="section__title">日期范围</text>
-				<view class="date-range">
+		<view class="page-record__content">
+			<!-- 日期范围 — 与记工页 field-row 同款 -->
+			<view class="field-row">
+				<text class="field-row__label">日期</text>
+				<view class="field-row__right">
 					<picker mode="date" :value="startDate" :end="todayStr" @change="onStartDateChange">
-						<view class="date-range__picker">
-							<text class="date-range__label">从</text>
-							<text class="date-range__value">{{ startDate }}</text>
-						</view>
+						<text class="field-row__value">{{ startDate }}</text>
 					</picker>
-					<text class="date-range__sep">至</text>
+					<text class="field-row__sep">—</text>
 					<picker mode="date" :value="endDate" :end="todayStr" @change="onEndDateChange">
-						<view class="date-range__picker">
-							<text class="date-range__label">到</text>
-							<text class="date-range__value">{{ endDate }}</text>
-						</view>
+						<text class="field-row__value">{{ endDate }}</text>
 					</picker>
 				</view>
 			</view>
 
-			<!-- 工作行 — 与记工页一致 -->
+			<!-- 工作行 — 与记工页完全一致 -->
 			<view class="project-row project-row--warn" v-if="!hasProjects" @tap="goCreateProject">
 				<view class="project-row__left">
 					<text class="project-row__name" style="color: #C4A46C;">请先创建工作</text>
@@ -43,7 +37,7 @@
 				</view>
 			</view>
 
-			<!-- ===== 时薪 ===== -->
+			<!-- ==================== 时薪 ==================== -->
 			<template v-if="effectivePayMode === 'hourly'">
 				<view class="time-columns">
 					<picker mode="time" :value="startTime" @change="onStartTimeChange" class="time-col">
@@ -52,7 +46,9 @@
 							<text class="time-col__value">{{ startTime }}</text>
 						</view>
 					</picker>
-					<text class="time-col__sep">—</text>
+					<view class="time-columns__sep">
+						<text class="time-columns__sep-text">—</text>
+					</view>
 					<picker mode="time" :value="endTime" @change="onEndTimeChange" class="time-col">
 						<view class="time-col__inner">
 							<text class="time-col__label">结束</text>
@@ -61,20 +57,26 @@
 					</picker>
 				</view>
 
+				<view class="tag-row" v-if="duration > 0">
+					<view class="tag tag--duration">
+						<text class="tag__text">{{ duration }}h</text>
+					</view>
+					<view class="tag tag--type">
+						<text class="tag__text">每天</text>
+					</view>
+				</view>
+
 				<view class="pay-card" v-if="duration > 0 && currentRate > 0">
 					<text class="pay-card__label">工钱</text>
 					<text class="pay-card__amount">¥{{ estimatedPay.toFixed(0) }}</text>
-					<text class="pay-card__detail">{{ duration }}h × ¥{{ currentRate }}/h</text>
+					<text class="pay-card__detail">{{ duration }}h × ¥{{ currentRate }}/h = ¥{{ estimatedPay.toFixed(0) }} / 天</text>
 				</view>
 				<view class="pay-card pay-card--warn" v-else-if="duration > 0" @tap="goEditProject">
 					<text class="pay-card__warn-text">暂未设置该类型的记工时薪，点击设置</text>
 				</view>
-
-				<text class="section__hint" v-if="startDate !== endDate && duration > 0">每天 {{ duration }}h，共 {{ previewDates.length }} 天，合计 {{ totalPreviewQuantity }}h</text>
-				<text class="section__hint" v-else-if="startDate === endDate">起止日期相同，只生成 <text class="section__hint--highlight">1</text> 条记工记录</text>
 			</template>
 
-			<!-- ===== 日薪 ===== -->
+			<!-- ==================== 日薪 ==================== -->
 			<template v-if="effectivePayMode === 'daily'">
 				<view class="qty-stepper">
 					<view class="qty-stepper__btn" @tap="adjustDailyDays(-0.5)"><text>−</text></view>
@@ -86,14 +88,11 @@
 				<view class="pay-card" v-if="dailyPay > 0">
 					<text class="pay-card__label">工钱</text>
 					<text class="pay-card__amount">¥{{ dailyPay.toFixed(0) }}</text>
-					<text class="pay-card__detail">{{ dailyDays }}天 × ¥{{ projectDailyRate }}/天</text>
+					<text class="pay-card__detail">{{ dailyDays }}天 × ¥{{ projectDailyRate }}/天 = ¥{{ dailyPay.toFixed(0) }} / 天</text>
 				</view>
-
-				<text class="section__hint" v-if="previewDates.length > 0 && dailyDays > 0">每天 {{ dailyDays }} 天，共 {{ previewDates.length }} 天记工 · 合计 {{ totalPreviewQuantity }} 天</text>
-				<text class="section__hint" v-else-if="startDate === endDate">起止日期相同，只生成 <text class="section__hint--highlight">1</text> 条记工记录</text>
 			</template>
 
-			<!-- ===== 计件 ===== -->
+			<!-- ==================== 计件 ==================== -->
 			<template v-if="effectivePayMode === 'piece'">
 				<view class="qty-stepper">
 					<view class="qty-stepper__btn" @tap="adjustPieceQty(-1)"><text>−</text></view>
@@ -105,23 +104,20 @@
 				<view class="pay-card" v-if="piecePay > 0">
 					<text class="pay-card__label">工钱</text>
 					<text class="pay-card__amount">¥{{ piecePay.toFixed(0) }}</text>
-					<text class="pay-card__detail">{{ pieceQuantity }}{{ pieceUnit }} × ¥{{ projectPieceRate }}/{{ pieceUnit }}</text>
+					<text class="pay-card__detail">{{ pieceQuantity }}{{ pieceUnit }} × ¥{{ projectPieceRate }}/{{ pieceUnit }} = ¥{{ piecePay.toFixed(0) }} / 天</text>
 				</view>
-
-				<text class="section__hint" v-if="previewDates.length > 0 && pieceQuantity > 0">每天 {{ pieceQuantity }}{{ pieceUnit }}，共 {{ previewDates.length }} 天 · 合计 {{ totalPreviewQuantity }}{{ pieceUnit }}</text>
-				<text class="section__hint" v-else-if="startDate === endDate">起止日期相同，只生成 <text class="section__hint--highlight">1</text> 条记工记录</text>
 			</template>
 
 			<!-- 备注 -->
-			<view class="section">
-				<text class="section__title">备注（选填）</text>
-				<textarea class="batch-remark" v-model="remark" placeholder="所有记录共用此备注" placeholder-style="color: var(--text-muted); font-size: 14px;" />
+			<view class="remark-area">
+				<textarea class="remark-area__input" v-model="remark" placeholder="备注（选填）"
+					placeholder-style="color: var(--text-muted); font-size: 14px;" />
 			</view>
 
 			<!-- 预览 -->
-			<view class="section" v-if="previewDates.length > 0">
-				<text class="section__title">预览（共 {{ previewDates.length }} 条）</text>
-				<text class="section__summary" v-if="estimatedTotalPay > 0">预估总工钱 ¥{{ estimatedTotalPay }}</text>
+			<view class="preview-section" v-if="previewDates.length > 0">
+				<text class="preview-section__title">预览（共 {{ previewDates.length }} 条）</text>
+				<text class="preview-section__sum" v-if="estimatedTotalPay > 0">合计 ¥{{ estimatedTotalPay }}</text>
 				<view class="preview-list">
 					<view class="preview-item" v-for="(d, idx) in previewDates" :key="idx">
 						<text class="preview-item__date">{{ d.date }}</text>
@@ -133,7 +129,7 @@
 				</view>
 			</view>
 
-			<view class="page-batch__spacer"></view>
+			<view class="page-record__spacer"></view>
 		</view>
 
 		<!-- 底部 -->
@@ -230,7 +226,6 @@ export default {
 			if (!this.selectedProjectId) return ''; return icons[this.effectivePayMode] || '⏱'
 		},
 		payModeLabel() {
-			const labels = { hourly: '时薪', daily: '日薪', piece: '计件' }
 			if (!this.selectedProjectId) return ''
 			const p = this.selectedProject
 			const mode = this.effectivePayMode
@@ -242,7 +237,6 @@ export default {
 			if (this.selectedProject?.piece_unit) return this.selectedProject.piece_unit
 			return '件'
 		},
-		// 时薪
 		currentRate() {
 			if (!this.selectedProject) return 0
 			const key = this.dayType + '_rate'
@@ -256,19 +250,16 @@ export default {
 			if (d <= 0 || this.currentRate <= 0) return 0
 			return round2(d * this.currentRate)
 		},
-		// 日薪
 		projectDailyRate() {
 			if (this.selectedProject?.daily_rate > 0) return this.selectedProject.daily_rate
 			return 0
 		},
 		dailyPay() { return round2((this.dailyDays || 0) * this.projectDailyRate) },
-		// 计件
 		projectPieceRate() {
 			if (this.selectedProject?.piece_rate > 0) return this.selectedProject.piece_rate
 			return 0
 		},
 		piecePay() { return round2((this.pieceQuantity || 0) * this.projectPieceRate) },
-		// 预览
 		previewDates() {
 			const dates = []
 			const start = new Date(this.startDate)
@@ -322,14 +313,6 @@ export default {
 			}
 			return dates
 		},
-		totalPreviewQuantity() {
-			const mode = this.effectivePayMode
-			const len = this.previewDates.length
-			if (len === 0) return '0'
-			if (mode === 'hourly') return (parseFloat(this.duration) * len || 0).toFixed(1)
-			if (mode === 'daily') return (this.dailyDays * len || 0)
-			return (this.pieceQuantity * len || 0)
-		},
 		estimatedTotalPay() {
 			return this.previewDates.reduce(function(s, d) { return s + (d.pay || 0); }, 0).toFixed(0)
 		},
@@ -370,10 +353,6 @@ export default {
 			this.selectedProjectId = id
 			this.showWorkPicker = false
 		},
-		modeLabel(mode) {
-			const m = { hourly: '时薪', daily: '日薪', piece: '计件' }
-			return m[mode] || ''
-		},
 		rateSummary(p) {
 			if (!p) return ''
 			if (p.pay_mode === 'daily') return '日薪 ¥' + (p.daily_rate || 0) + '/天'
@@ -410,13 +389,10 @@ export default {
 			for (const item of this.previewDates) {
 				try {
 					const base = {
-						date: item.date,
-						pay_mode: mode,
-						remark: this.remark,
+						date: item.date, pay_mode: mode, remark: this.remark,
 						project_id: this.selectedProjectId,
 						project_name: proj ? proj.name : '',
-						photos: [],
-						settled: false,
+						photos: [], settled: false,
 						subsidies: { night_shift: 0, meal: 0, transport: 0 },
 						deduction: { amount: 0, note: '' },
 						day_type: item.type
@@ -447,7 +423,6 @@ export default {
 					success++
 				} catch (e) {
 					fail++
-					console.log('[batch-save] error:', e)
 				}
 			}
 
@@ -460,16 +435,23 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.page-batch {
+/* 复用 record.vue 的所有核心样式 */
+.page-record {
 	padding-top: 56px; min-height: 100vh; background: var(--surface);
 	&__content { padding: 0 16px 100px; max-width: 640px; margin: 0 auto; }
 	&__spacer { height: 60px; }
 }
 
-.section {
-	margin-top: 16px;
-	&__title { font-size: 14px; font-weight: 500; color: var(--text-primary); margin-bottom: 10px; display: block; }
-	&__hint { font-size: 12px; color: var(--text-muted); margin-top: 8px; display: block; text-align: center; }
+/* 日期/工作行 */
+.field-row {
+	display: flex; align-items: center; justify-content: space-between;
+	padding: 14px 16px; background: var(--surface-card); border-radius: 12px;
+	border: 1px solid var(--border); margin-top: 12px;
+	&__label { font-size: 16px; color: var(--text-primary); font-weight: 500; }
+	&__right { display: flex; align-items: center; gap: 6px; }
+	&__value { font-size: 14px; color: var(--text-secondary); }
+	&__sep { font-size: 14px; color: var(--text-muted); margin: 0 4px; }
+	&__arrow { font-size: 18px; color: var(--text-muted); margin-left: 4px; }
 }
 
 /* 工作行 */
@@ -486,33 +468,33 @@ export default {
 	&--warn { border: 1px solid #C4A46C; background: #FFFBF0; margin-top: 12px; }
 }
 
-/* 日期范围 */
-.date-range {
-	display: flex; align-items: center;
-	background: var(--surface-card); border-radius: 12px; border: 1px solid var(--border); padding: 12px 16px;
-	&__picker { flex: 1; display: flex; align-items: center; }
-	&__label { font-size: 14px; color: var(--text-muted); margin-right: 8px; }
-	&__value { font-size: 15px; font-weight: 500; color: var(--text-primary); }
-	&__sep { font-size: 14px; color: var(--text-muted); margin: 0 12px; }
-}
-
 /* 时薪时间列 */
 .time-columns {
-	display: flex; align-items: center;
-	background: var(--surface-card); border-radius: 12px; border: 1px solid var(--border); padding: 16px;
+	display: flex; align-items: center; margin-top: 12px;
+	&__sep { padding: 0 16px; &-text { font-size: 16px; color: var(--text-muted); } }
 }
 .time-col {
-	flex: 1;
+	flex: 1; background: var(--surface-card); border-radius: 12px; border: 1px solid var(--border); padding: 12px;
 	&__inner { text-align: center; }
 	&__label { font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 4px; }
-	&__value { font-size: 24px; font-weight: 700; color: var(--text-primary); }
-	&__sep { font-size: 16px; color: var(--text-muted); padding: 0 12px; }
+	&__value { font-size: 22px; font-weight: 700; color: var(--text-primary); }
+}
+
+/* 标签行 */
+.tag-row { display: flex; gap: 8px; margin-top: 12px; }
+.tag {
+	padding: 4px 10px; border-radius: 20px;
+	&--duration { background: var(--primary-light); }
+	&--type { background: var(--surface-hover); }
+	&__text { font-size: 12px; font-weight: 500; color: var(--primary); }
+	.tag--type &__text { color: var(--text-secondary); }
 }
 
 /* 日薪/计件步进器 */
 .qty-stepper {
-	display: flex; align-items: center; justify-content: center;
-	background: var(--surface-card); border-radius: 12px; border: 1px solid var(--border); padding: 16px; gap: 16px;
+	display: flex; align-items: center; justify-content: center; gap: 16px;
+	background: var(--surface-card); border-radius: 12px; border: 1px solid var(--border);
+	padding: 16px; margin-top: 12px;
 	&__btn {
 		width: 40px; height: 40px; border-radius: 50%;
 		background: var(--surface-hover); display: flex; align-items: center; justify-content: center;
@@ -535,25 +517,31 @@ export default {
 }
 
 /* 备注 */
-.batch-remark {
+.remark-area { margin-top: 12px; }
+.remark-area__input {
 	width: 100%; min-height: 80px; padding: 14px 16px;
 	background: var(--surface-card); border-radius: 12px; border: 1px solid var(--border);
 	font-size: 14px; color: var(--text-primary); box-sizing: border-box;
 }
 
 /* 预览 */
+.preview-section {
+	margin-top: 16px;
+	&__title { font-size: 14px; font-weight: 600; color: var(--text-primary); display: block; margin-bottom: 8px; }
+	&__sum { font-size: 13px; color: var(--primary); font-weight: 500; display: block; margin-bottom: 6px; }
+}
 .preview-list {
 	background: var(--surface-card); border-radius: 12px; border: 1px solid var(--border);
-	max-height: 300px; overflow-y: auto;
+	max-height: 260px; overflow-y: auto;
 }
 .preview-item {
-	display: flex; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--border);
+	display: flex; align-items: center; padding: 8px 14px; border-bottom: 1px solid var(--border);
 	&:last-child { border-bottom: none; }
-	&__date { font-size: 14px; color: var(--text-primary); flex: 2; }
-	&__type { font-size: 12px; color: var(--text-muted); flex: 1; text-align: center; }
-	&__qty { font-size: 13px; font-weight: 500; color: var(--primary); flex: 1; text-align: right; padding-right: 8px; }
-	&__pay { font-size: 14px; font-weight: 600; color: var(--primary); flex: 0 0 60px; text-align: right;
-		&--zero { color: var(--text-muted); font-weight: 400; font-size: 12px; }
+	&__date { font-size: 13px; color: var(--text-primary); flex: 2; }
+	&__type { font-size: 11px; color: var(--text-muted); flex: 1; text-align: center; }
+	&__qty { font-size: 12px; font-weight: 500; color: var(--primary); flex: 1; text-align: right; padding-right: 8px; }
+	&__pay { font-size: 13px; font-weight: 600; color: var(--primary); flex: 0 0 55px; text-align: right;
+		&--zero { color: var(--text-muted); font-weight: 400; font-size: 11px; }
 	}
 }
 
@@ -570,9 +558,6 @@ export default {
 	&__save-text { font-size: 17px; font-weight: 600; color: #FFFFFF; }
 	&__safe { height: constant(safe-area-inset-bottom); height: env(safe-area-inset-bottom); }
 }
-
-.section__summary { font-size: 13px; color: var(--primary); display: block; margin-bottom: 8px; font-weight: 500; }
-.section__hint--highlight { color: var(--primary); font-weight: 700; }
 
 /* 工作选择面板 */
 .work-picker-mask {
