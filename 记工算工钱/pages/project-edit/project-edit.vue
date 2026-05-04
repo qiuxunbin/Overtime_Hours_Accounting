@@ -69,36 +69,80 @@
 				<!-- 日薪表单 -->
 				<view v-if="form.pay_mode === 'daily'" class="rate-section">
 					<text class="rate-section__title">日薪标准</text>
-					<text class="rate-section__desc">设置每天的工作报酬</text>
+					<text class="rate-section__desc">设置每天的计酬标准（区分日期类型）</text>
 					<view class="rate-inputs">
-						<view class="rate-input rate-input--last">
-							<text class="rate-input__label">日薪</text>
+						<view class="rate-input">
+							<text class="rate-input__label">平日</text>
 							<view class="rate-input__right">
 								<text class="rate-input__prefix">¥</text>
-								<input class="rate-input__field" type="digit" :value="form.daily_rate || ''" @input="e => onRateInput(e, 'daily_rate')" placeholder="0" />
+								<input class="rate-input__field" type="digit" :value="form.daily_weekday_rate || ''" @input="e => onRateInput(e, 'daily_weekday_rate')" placeholder="0" />
+								<text class="rate-input__suffix">/天</text>
+							</view>
+						</view>
+						<view class="rate-input">
+							<text class="rate-input__label">周末</text>
+							<view class="rate-input__right">
+								<text class="rate-input__prefix">¥</text>
+								<input class="rate-input__field" type="digit" :value="form.daily_weekend_rate || ''" @input="e => onRateInput(e, 'daily_weekend_rate')" placeholder="0" />
+								<text class="rate-input__suffix">/天</text>
+							</view>
+						</view>
+						<view class="rate-input rate-input--last">
+							<text class="rate-input__label">节假日</text>
+							<view class="rate-input__right">
+								<text class="rate-input__prefix">¥</text>
+								<input class="rate-input__field" type="digit" :value="form.daily_holiday_rate || ''" @input="e => onRateInput(e, 'daily_holiday_rate')" placeholder="0" />
 								<text class="rate-input__suffix">/天</text>
 							</view>
 						</view>
 					</view>
-					<text class="rate-section__example">例：1天 × ¥300/天 = ¥300</text>
 				</view>
 
 				<!-- 计件表单 -->
 				<view v-if="form.pay_mode === 'piece'" class="rate-section">
 					<text class="rate-section__title">计件标准</text>
-					<text class="rate-section__desc">设置每件的计酬单价</text>
+					<text class="rate-section__desc">设置每件的计酬单价（区分日期类型）</text>
 					<view class="rate-inputs">
-						<view class="rate-input rate-input--last">
-							<text class="rate-input__label">单价</text>
+						<view class="rate-input">
+							<text class="rate-input__label">平日</text>
 							<view class="rate-input__right">
 								<text class="rate-input__prefix">¥</text>
-								<input class="rate-input__field" type="digit" :value="form.piece_rate || ''" @input="e => onRateInput(e, 'piece_rate')" placeholder="0" />
+								<input class="rate-input__field" type="digit" :value="form.piece_weekday_rate || ''" @input="e => onRateInput(e, 'piece_weekday_rate')" placeholder="0" />
 								<text class="rate-input__suffix">/</text>
 								<picker class="rate-input__picker" :value="pieceUnitIndex" :range="pieceUnitOptions" @change="onPieceUnitChange">
 									<text class="rate-input__picker-text">{{ form.piece_unit }}</text>
 									<text class="rate-input__picker-arrow">▼</text>
 								</picker>
 							</view>
+						</view>
+						<view class="rate-input">
+							<text class="rate-input__label">周末</text>
+							<view class="rate-input__right">
+								<text class="rate-input__prefix">¥</text>
+								<input class="rate-input__field" type="digit" :value="form.piece_weekend_rate || ''" @input="e => onRateInput(e, 'piece_weekend_rate')" placeholder="0" />
+								<text class="rate-input__suffix">/</text>
+								<picker class="rate-input__picker" :value="pieceUnitIndex" :range="pieceUnitOptions" @change="onPieceUnitChange">
+									<text class="rate-input__picker-text">{{ form.piece_unit }}</text>
+									<text class="rate-input__picker-arrow">▼</text>
+								</picker>
+							</view>
+						</view>
+						<view class="rate-input rate-input--last">
+							<text class="rate-input__label">节假日</text>
+							<view class="rate-input__right">
+								<text class="rate-input__prefix">¥</text>
+								<input class="rate-input__field" type="digit" :value="form.piece_holiday_rate || ''" @input="e => onRateInput(e, 'piece_holiday_rate')" placeholder="0" />
+								<text class="rate-input__suffix">/</text>
+								<picker class="rate-input__picker" :value="pieceUnitIndex" :range="pieceUnitOptions" @change="onPieceUnitChange">
+									<text class="rate-input__picker-text">{{ form.piece_unit }}</text>
+									<text class="rate-input__picker-arrow">▼</text>
+								</picker>
+							</view>
+						</view>
+					</view>
+				</view>
+
+				<!-- 
 						</view>
 					</view>
 					<text class="rate-section__example">例：50件 × ¥6/件 = ¥300</text>

@@ -74,11 +74,15 @@ export function calcDeduction(deduction) {
 export function calcPay(record, project) {
   switch (record.pay_mode) {
     case 'daily': {
-      const rate = project?.daily_rate || record.daily_rate || 0
+      const key = 'daily_' + (record.day_type || 'weekday') + '_rate'
+      const projectRate = project?.[key]
+      const rate = (projectRate > 0) ? projectRate : (project?.daily_rate || record.daily_rate || 0)
       return round2((record.days || 0) * rate)
     }
     case 'piece': {
-      const rate = project?.piece_rate || record.piece_rate || 0
+      const key = 'piece_' + (record.day_type || 'weekday') + '_rate'
+      const projectRate = project?.[key]
+      const rate = (projectRate > 0) ? projectRate : (project?.piece_rate || record.piece_rate || 0)
       return round2((record.quantity || 0) * rate)
     }
     case 'hourly':
@@ -102,13 +106,17 @@ export function getPayFormula(record, project) {
   const pay = record.pay ?? calcPay(record, project)
   switch (record.pay_mode) {
     case 'daily': {
-      const rate = project?.daily_rate || record.daily_rate || 0
-      const src = project?.daily_rate > 0 ? (project.name || '工作') : '保存记录'
+      const key = 'daily_' + (record.day_type || 'weekday') + '_rate'
+      const projectRate = project?.[key]
+      const rate = (projectRate > 0) ? projectRate : (project?.daily_rate || record.daily_rate || 0)
+      const src = (projectRate > 0) ? (project.name || '工作') : (project?.daily_rate > 0 ? (project.name || '工作') : '保存记录')
       return (record.days || 1) + '天×¥' + rate + '/天=¥' + pay.toFixed(0) + '(' + src + ')'
     }
     case 'piece': {
-      const rate = project?.piece_rate || record.piece_rate || 0
-      const src = project?.piece_rate > 0 ? (project.name || '工作') : '保存记录'
+      const key = 'piece_' + (record.day_type || 'weekday') + '_rate'
+      const projectRate = project?.[key]
+      const rate = (projectRate > 0) ? projectRate : (project?.piece_rate || record.piece_rate || 0)
+      const src = (projectRate > 0) ? (project.name || '工作') : (project?.piece_rate > 0 ? (project.name || '工作') : '保存记录')
       return (record.quantity || 0) + '件×¥' + rate + '/' + (record.piece_unit || '件') + '=¥' + pay.toFixed(0) + '(' + src + ')'
     }
     case 'hourly':
