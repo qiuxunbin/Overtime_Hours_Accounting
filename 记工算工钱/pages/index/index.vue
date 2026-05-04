@@ -477,12 +477,7 @@ export default {
 				}
 			},
 			goRecord() {
-			const pStore = useProjectStore()
-				if (pStore.activeProjects.length === 0) {
-					uni.navigateTo({ url: '/pages/project-edit/project-edit' })
-				} else {
-					uni.navigateTo({ url: '/pages/record/record' })
-				}
+				uni.navigateTo({ url: '/pages/record/record' })
 			},
 			goEdit(id) {
 				uni.navigateTo({ url: '/pages/record/record?id=' + id })
