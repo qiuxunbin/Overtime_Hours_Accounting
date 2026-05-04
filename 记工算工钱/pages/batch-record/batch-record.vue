@@ -42,14 +42,14 @@
 				</view>
 
 				<view class="tag-row" v-if="durationNum > 0">
-					<view class="tag tag--duration"><text class="tag__text">{{ durationText }}h</text></view>
-					<view class="tag tag--type"><text class="tag__text">每天单日时长</text></view>
+					<view class="tag tag--duration"><text class="tag__text">{{ durationText }}</text></view>
+					<view class="tag tag--type"><text class="tag__text">每日工时</text></view>
 				</view>
 
 				<view class="pay-card" v-if="durationNum > 0 && currentRate > 0">
-					<text class="pay-card__label">单日工钱（共 {{ previewDates.length }} 天）</text>
+					<text class="pay-card__label">单日工钱</text>
 					<text class="pay-card__amount">¥{{ fmtMoney(estimatedPay) }}</text>
-					<text class="pay-card__detail">{{ durationText }}h × ¥{{ currentRate }}/h = ¥{{ fmtMoney(estimatedPay) }}</text>
+					<text class="pay-card__detail">{{ durationText }} × ¥{{ currentRate }}/h = ¥{{ fmtMoney(estimatedPay) }}</text>
 				</view>
 				<view class="pay-card pay-card--warn" v-else-if="durationNum > 0" @tap="goEditProject">
 					<text class="pay-card__warn-text">暂未设置该类型的记工时薪，点击设置</text>
@@ -59,14 +59,15 @@
 			<!-- 日薪 -->
 			<template v-if="effectivePayMode === 'daily'">
 				<view class="qty-stepper">
-					<view class="qty-stepper__btn" @tap="adjustDailyDays(-0.5)"><text>−</text></view>
+					<view class="qty-stepper__btn" :class="{ 'qty-stepper__btn--off': dailyDays <= dailyMin }" @tap="adjustDailyDays(-0.5)"><text>−</text></view>
 					<text class="qty-stepper__num">{{ dailyDays }}</text>
 					<text class="qty-stepper__unit">天</text>
-					<view class="qty-stepper__btn qty-stepper__btn--add" @tap="adjustDailyDays(0.5)"><text>+</text></view>
+					<view class="qty-stepper__btn qty-stepper__btn--add" :class="{ 'qty-stepper__btn--off': dailyDays >= dailyMax }" @tap="adjustDailyDays(0.5)"><text>+</text></view>
 				</view>
+				<text class="field-hint" v-if="isSingleDay && dailyDays > 1">⚠ 单日工时不能超过 1 天</text>
 
 				<view class="pay-card" v-if="dailyPay > 0">
-					<text class="pay-card__label">单日工钱（共 {{ previewDates.length }} 天）</text>
+					<text class="pay-card__label">单日工钱</text>
 					<text class="pay-card__amount">¥{{ fmtMoney(dailyPay) }}</text>
 					<text class="pay-card__detail">{{ dailyDays }}天 × ¥{{ projectDailyRate }}/天 = ¥{{ fmtMoney(dailyPay) }}</text>
 				</view>
@@ -75,18 +76,23 @@
 			<!-- 计件 -->
 			<template v-if="effectivePayMode === 'piece'">
 				<view class="qty-stepper">
-					<view class="qty-stepper__btn" @tap="adjustPieceQty(-1)"><text>−</text></view>
+					<view class="qty-stepper__btn" :class="{ 'qty-stepper__btn--off': pieceQuantity <= 0 }" @tap="adjustPieceQty(-1)"><text>−</text></view>
 					<text class="qty-stepper__num">{{ pieceQuantity }}</text>
 					<text class="qty-stepper__unit">{{ pieceUnit }}</text>
 					<view class="qty-stepper__btn qty-stepper__btn--add" @tap="adjustPieceQty(1)"><text>+</text></view>
 				</view>
 
 				<view class="pay-card" v-if="piecePay > 0">
-					<text class="pay-card__label">单日工钱（共 {{ previewDates.length }} 天）</text>
+					<text class="pay-card__label">单日工钱</text>
 					<text class="pay-card__amount">¥{{ fmtMoney(piecePay) }}</text>
 					<text class="pay-card__detail">{{ pieceQuantity }}{{ pieceUnit }} × ¥{{ projectPieceRate }}/{{ pieceUnit }} = ¥{{ fmtMoney(piecePay) }}</text>
 				</view>
 			</template>
+
+			<!-- 强提示 -->
+			<view class="warn-banner" v-if="previewDates.length > 1">
+				<text class="warn-banner__text">以上数值为单日数据，将按所选日期批量创建 {{ previewDates.length }} 条记录</text>
+			</view>
 
 			<!-- 备注 -->
 			<view class="remark-area">
@@ -96,7 +102,7 @@
 			<!-- 预览 -->
 			<view class="preview-section" v-if="previewDates.length > 0">
 				<text class="preview-section__title">预览 — 按日期批量生成 {{ previewDates.length }} 条（每条为单日数据）</text>
-				<text class="preview-section__sum" v-if="totalPay > 0">批量合计 ¥{{ fmtMoney(totalPay) }}</text>
+				<text class="preview-section__sum" v-if="totalPay > 0">批量合计 = 单日工钱 × {{ previewDates.length }} 天 = ¥{{ fmtMoney(totalPay) }}</text>
 				<view class="preview-list">
 					<view class="preview-item" v-for="(d, idx) in previewDates" :key="idx">
 						<text class="preview-item__date">{{ d.date }}</text>
@@ -157,13 +163,17 @@ export default {
 	},
 	computed: {
 		todayStr() { const n = new Date(); return `${n.getFullYear()}-${pad(n.getMonth() + 1)}-${pad(n.getDate())}` },
-		durationNum() {
-			const [sh, sm] = this.startTime.split(':').map(Number)
-			const [eh, em] = this.endTime.split(':').map(Number)
-			const minutes = (eh * 60 + em) - (sh * 60 + sm)
-			return minutes > 0 ? minutes / 60 : 0
-		},
-		durationText() { return this.durationNum > 0 ? String(Math.round(this.durationNum * 100) / 100) : '0' },
+
+		// 时薪：精确到分钟的时间差
+		durationMinutes() { const [sh, sm] = this.startTime.split(':').map(Number); const [eh, em] = this.endTime.split(':').map(Number); let m = (eh * 60 + em) - (sh * 60 + sm); if (m < 0) m += 24 * 60; return m },
+		durationNum() { return this.durationMinutes / 60 },
+		durationText() { const m = this.durationMinutes; const h = Math.floor(m / 60); const min = m % 60; return h + 'h ' + min + 'min' },
+
+		// 日薪：单日限制
+		isSingleDay() { return this.startDate === this.endDate },
+		dailyMin() { return this.isSingleDay ? 0 : 0.5 },
+		dailyMax() { return this.isSingleDay ? 1 : 999 },
+
 		hasProjects() { return useProjectStore().activeProjects.length > 0 },
 		pickerProjects() { return useProjectStore().activeProjects },
 		selectedProject() { if (!this.selectedProjectId) return null; return useProjectStore().getProjectById(this.selectedProjectId) },
@@ -184,6 +194,7 @@ export default {
 		dailyPay() { return round2((this.dailyDays || 0) * this.projectDailyRate) },
 		projectPieceRate() { return this.selectedProject?.piece_rate || 0 },
 		piecePay() { return round2((this.pieceQuantity || 0) * this.projectPieceRate) },
+
 		previewDates() {
 			const dates = []; const start = new Date(this.startDate); const end = new Date(this.endDate)
 			if (end < start) return []
@@ -191,12 +202,10 @@ export default {
 			if (mode === 'hourly') {
 				const h = this.durationNum; if (h <= 0) return []
 				const proj = this.selectedProject; let d = new Date(start)
-				while (d <= end) {
-					const dateStr = formatDate(d); const type = useHolidayStore().getDayType(dateStr); const rateKey = type + '_rate'
+				while (d <= end) { const dateStr = formatDate(d); const type = useHolidayStore().getDayType(dateStr); const rateKey = type + '_rate'
 					const rate = (proj && proj[rateKey] > 0) ? proj[rateKey] : 0; const pay = round2(h * rate)
-					dates.push({ date: dateStr, typeLabel: typeLabels[type] || '平日', qtyLabel: fmtDec(h) + 'h', type, pay, rate, payText: fmtDec(pay) })
-					d.setDate(d.getDate() + 1)
-				}
+					dates.push({ date: dateStr, typeLabel: typeLabels[type] || '平日', qtyLabel: this.durationText, type, pay, rate, payText: fmtDec(pay) })
+					d.setDate(d.getDate() + 1) }
 			} else if (mode === 'daily') {
 				const days = this.dailyDays; if (days <= 0) return []
 				const proj = this.selectedProject; const rate = (proj && proj.daily_rate > 0) ? proj.daily_rate : 0
@@ -223,8 +232,17 @@ export default {
 		onEndDateChange(e) { this.endDate = e.detail.value },
 		onStartTimeChange(e) { this.startTime = e.detail.value },
 		onEndTimeChange(e) { this.endTime = e.detail.value },
-		adjustDailyDays(delta) { this.dailyDays = Math.max(0.5, Math.round((this.dailyDays + delta) * 10) / 10) },
-		adjustPieceQty(delta) { this.pieceQuantity = Math.max(0, this.pieceQuantity + delta) },
+
+		adjustDailyDays(delta) {
+			if (delta < 0 && this.dailyDays <= this.dailyMin) return
+			if (delta > 0 && this.dailyDays >= this.dailyMax) return
+			this.dailyDays = Math.max(this.dailyMin, Math.min(this.dailyMax, Math.round((this.dailyDays + delta) * 10) / 10))
+		},
+		adjustPieceQty(delta) {
+			if (delta < 0 && this.pieceQuantity <= 0) return
+			this.pieceQuantity = Math.max(0, this.pieceQuantity + delta)
+		},
+
 		goCreateProject() { uni.navigateTo({ url: '/pages/project-edit/project-edit' }) },
 		goEditProject() { if (!this.selectedProjectId) { uni.navigateTo({ url: '/pages/project-edit/project-edit' }); return } uni.navigateTo({ url: '/pages/project-edit/project-edit?id=' + this.selectedProjectId }) },
 		showProjectPicker() { const pStore = useProjectStore(); if (pStore.activeProjects.length === 0) { uni.navigateTo({ url: '/pages/project-edit/project-edit' }); return } this.showWorkPicker = true },
@@ -240,11 +258,13 @@ export default {
 		modeLabel(m) { const o = { hourly: '时薪', daily: '日薪', piece: '计件' }; return o[m] || '' },
 		rateSummary(p) { if (!p) return ''; if (p.pay_mode === 'daily') return '日薪 ¥' + (p.daily_rate || 0) + '/天'; if (p.pay_mode === 'piece') return '计件 ¥' + (p.piece_rate || 0) + '/' + (p.piece_unit || '件'); return '平 ¥' + (p.weekday_rate || 0) + ' · 休 ¥' + (p.weekend_rate || 0) + ' · 节 ¥' + (p.holiday_rate || 0) },
 		fmtMoney(v) { return fmtDec(v) },
+
 		async handleBatchSave() {
 			if (this.saving || this.previewDates.length === 0) return
 			const mode = this.effectivePayMode
 			if (mode === 'hourly' && this.durationNum <= 0) { uni.showToast({ title: '请设置有效时间', icon: 'none' }); return }
 			if (mode === 'daily' && this.dailyDays <= 0) { uni.showToast({ title: '请设置天数', icon: 'none' }); return }
+			if (mode === 'daily' && this.isSingleDay && this.dailyDays > 1) { uni.showToast({ title: '单日工时不能超过 1 天', icon: 'none' }); return }
 			if (mode === 'piece' && this.pieceQuantity <= 0) { uni.showToast({ title: '请设置件数', icon: 'none' }); return }
 			if (!this.selectedProjectId) { if (!this.hasProjects) { uni.navigateTo({ url: '/pages/project-edit/project-edit' }); return } this.showProjectPicker(); return }
 			if (mode === 'hourly' && this.currentRate <= 0) { this.goEditProject(); return }
@@ -253,7 +273,7 @@ export default {
 			for (const item of this.previewDates) {
 				try {
 					const base = { date: item.date, pay_mode: mode, remark: this.remark, project_id: this.selectedProjectId, project_name: proj ? proj.name : '', photos: [], settled: false, subsidies: { night_shift: 0, meal: 0, transport: 0 }, deduction: { amount: 0, note: '' }, day_type: item.type }
-					if (mode === 'hourly') Object.assign(base, { start_time: this.startTime, end_time: this.endTime, duration: this.durationNum, rate: item.rate || 0, pay: item.pay, net_pay: item.pay })
+					if (mode === 'hourly') Object.assign(base, { start_time: this.startTime, end_time: this.endTime, duration: round2(this.durationNum), rate: item.rate || 0, pay: item.pay, net_pay: item.pay })
 					else if (mode === 'daily') Object.assign(base, { start_time: '', end_time: '', duration: 0, days: item.days || 1, daily_rate: item.rate || 0, rate: item.rate || 0, pay: item.pay, net_pay: item.pay })
 					else if (mode === 'piece') Object.assign(base, { start_time: '', end_time: '', duration: 0, quantity: item.quantity || 0, piece_rate: item.rate || 0, piece_unit: item.unit || '件', rate: item.rate || 0, pay: item.pay, net_pay: item.pay })
 					await store.addRecord(base); success++
@@ -285,6 +305,7 @@ export default {
 	&__mode { font-size: 12px; color: var(--text-muted); margin-right: 4px; }
 	&--empty { border: 1px solid #E5A100; background: #FFFBF0; }
 }
+.field-hint { font-size: 12px; color: #E5A100; display: block; margin-top: 6px; text-align: center; }
 .time-columns { display: flex; align-items: center; margin-top: 12px;
 	&__sep { padding: 0 16px; &-text { font-size: 16px; color: var(--text-muted); } }
 }
@@ -302,10 +323,13 @@ export default {
 .qty-stepper { display: flex; align-items: center; justify-content: center; gap: 16px; background: var(--surface-card); border-radius: 12px; border: 1px solid var(--border); padding: 16px; margin-top: 12px;
 	&__btn { width: 40px; height: 40px; border-radius: 50%; background: var(--surface-hover); display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--text-secondary);
 		&--add { background: var(--primary); color: #FFFFFF; }
+		&--off { opacity: 0.3; pointer-events: none; }
 	}
 	&__num { font-size: 28px; font-weight: 700; color: var(--text-primary); min-width: 60px; text-align: center; }
 	&__unit { font-size: 15px; color: var(--text-muted); }
 }
+.warn-banner { background: #FFFBF0; border: 1px solid #E5A100; border-radius: 8px; padding: 8px 12px; margin-top: 12px; text-align: center; }
+.warn-banner__text { font-size: 12px; color: #C4952C; }
 .pay-card { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: var(--primary-light); border-radius: 8px; margin-top: 12px;
 	&__label { font-size: 14px; color: var(--text-secondary); }
 	&__amount { font-size: 20px; font-weight: 700; color: var(--primary); }
