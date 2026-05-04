@@ -395,6 +395,7 @@ import { useProjectStore } from '../../stores/projectStore'
 import { formatDate, calcDuration } from '../../utils/date.js'
 import { useHolidayStore } from '@/stores/holidayStore'
 import { round2, getPayFormula } from '@/utils/calculator'
+import { requireAuth } from '@/utils/auth'
 
 function pad(n) { return String(n).padStart(2, '0') }
 
@@ -692,6 +693,8 @@ export default {
 			if (payMode === 'piece' && this.projectPieceRate <= 0) {
 				uni.showToast({ title: '未设置计件单价，请前往薪资设置', icon: 'none' }); return
 			}
+
+			if (!requireAuth()) { this.saving = false; return }
 
 			this.saving = true
 

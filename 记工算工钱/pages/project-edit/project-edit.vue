@@ -135,6 +135,7 @@
 import NavBar from '../../components/NavBar.vue'
 import { useProjectStore } from '../../stores/projectStore'
 
+import { requireAuth } from '@/utils/auth'
 import { PAY_MODES, PIECE_UNITS } from '../../utils/constants'
 
 export default {
@@ -230,6 +231,7 @@ export default {
 		},
 
 		async handleSave() {
+			if (!requireAuth()) return
 			if (!this.form.name.trim()) {
 				uni.showToast({ title: '请输入工作名称', icon: 'none' })
 				return
