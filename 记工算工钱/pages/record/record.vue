@@ -20,7 +20,7 @@
 					<view class="project-row__dot" :style="{ background: selectedProject.color }"></view>
 					<text class="project-row__name">{{ selectedProject.name }}</text>
 				</view>
-				<text class="project-row__placeholder" v-else>请先设置工作 <text style="color: #E5A100;">*</text></text>
+				<view class="project-row__placeholder" v-else><text>请先设置工作 </text><text style="color: #E5A100;">*</text></view>
 				<view class="project-row__right">
 					<text class="project-row__mode">{{ payModeIcon }} {{ payModeLabel }}</text>
 				</view>
