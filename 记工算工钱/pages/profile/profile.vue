@@ -29,7 +29,7 @@
 			<view class="profile-menu" v-if="isLoggedIn || !isApp">
 				<view class="cell-item" @tap="goProjects">
 					<view class="cell-item__icon"><text class="cell-item__icon-text">&#x1F3E0;</text></view>
-					<view class="cell-item__content"><text class="cell-item__label">工作设置</text></view>
+					<view class="cell-item__content"><text class="cell-item__label">工作管理</text></view>
 					<view class="cell-item__right"><text class="cell-item__arrow">&#x203A;</text></view>
 				</view>
 				<view class="cell-item" @tap="goBatchRecord">
